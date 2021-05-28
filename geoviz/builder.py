@@ -21,6 +21,7 @@ from os.path import join as pjoin
 import sys
 from typing import List, Dict, Any, Optional, ClassVar, Union, Tuple
 from shapely.geometry import Polygon, Point, MultiPolygon
+from .structures.dataset import DataSetDict
 
 import plotly.io as pio
 import logging
@@ -33,17 +34,17 @@ CSV_PATH = pjoin(pjoin(sys.path[0], 'data'), 'csv-data')
 
 region_definitions = {
     'CanadaCart': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'cartographic'),
-    'CanadaBound': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'boundary'),
+    'CanadaBound': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'sample3-stations-canboundary'),
     'CanadaCoast': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'coastal_waters'),
-    'CanadaAdmin': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'admin')
+    'CanadaAdmin': pjoin(pjoin(SHAPE_PATH, 'canada_definitions'), 'sample1-fires-canoutline')
 }
 
 sample_definitions = {
-    'SAR_Bases': pjoin(CSV_PATH, 'SAR_Bases.csv'),
-    'SAR_Incidents': pjoin(CSV_PATH, 'SAR_Incidents.csv'),
-    'Canadian_AirPorts': pjoin(CSV_PATH, 'AirPorts.csv'),
-    'Canadian_COVID': pjoin(CSV_PATH, 'Covid-Compiled.csv'),
-    'Sample_Data': pjoin(pjoin(SHAPE_PATH, 'Fire_Ignition_Locations'), 'Fire_Ignition_Locations.shp')
+    'SAR_Bases': pjoin(CSV_PATH, 'sample4-sarbases.csv'),
+    'SAR_Incidents': pjoin(CSV_PATH, 'sample3-sarincidents.csv'),
+    'Canadian_AirPorts': pjoin(CSV_PATH, 'sample1-fires-canoutline.csv'),
+    'Canadian_COVID': pjoin(CSV_PATH, 'sample2-covidcompiled.csv'),
+    'Sample_Data': pjoin(pjoin(SHAPE_PATH, 'sample1-fires-canoutline'), 'sample1-fires-canoutline.shp')
 }
 
 _group_functions = {
@@ -63,11 +64,7 @@ FileOutputManager = Dict[str, Any]
 DataFrame = pd.DataFrame
 GeoDataFrame = gpd.GeoDataFrame
 
-valid_ds_field = ['data', 'hex_resolution', 'id_field', 'value_field', 'binning_fn', 'binning_field', 'hex_resolution',
-                  'latitude_field', 'longitude_field', 'geometry_field', 'hover_fields', 'text_field', 'v_type',
-                  'manager']
-
-pio.kaleido.scope.topojson = pjoin(pjoin(pjoin(pjoin(sys.path[0], 'data'), 'envplotly'), 'plotly-topojson'), '')
+# pio.kaleido.scope.topojson = pjoin(pjoin(pjoin(pjoin(__file__, 'data'), 'envplotly'), 'plotly-topojson'), '')
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -114,9 +111,7 @@ def builder_from_dict(builder_dict: Dict[str, Any] = None, **kwargs):
         builder.update_point_manager(v, name=k)
 
     builder.update_file_output_manager(plotly_managers.get('file_output', {}))
-    print(plot_settings)
     builder.update_plot_settings(**plot_settings)
-    print(builder._plot_settings)
 
     return builder
 
@@ -172,7 +167,7 @@ def _convert(dataset: DataSet) -> DataSet:
         raise gce.BuilderDatasetInfoError(
             "There must be a 'data' field passed (either DataFrame, GeoDataFrame, of filepath).")
 
-    df = dataset['data']
+    df = dataset.pop('data')
     # attempt to read the file as a DataFrame or GeoDataFrame
     if isinstance(df, str) or isinstance(df, dict):
         # this means it could be a file path
@@ -205,9 +200,12 @@ def _convert(dataset: DataSet) -> DataSet:
                 df = _extension_mapping[extension](filepath)
             except KeyError:
                 logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
+    else:
+        df = df.copy(deep=True)
 
     dataset['data'] = df
     rename_dataset(dataset)
+
     df = dataset['data']
     latitude_field = get_column_or_default(df, 'latitude_field')
     longitude_field = get_column_or_default(df, 'longitude_field')
@@ -459,8 +457,9 @@ class PlotBuilder:
     ))
 
     _default_grids: ClassVar[Dict[str, Dict]] = dict(canada=dict(
-        data=region_definitions['CanadaBound']
+        data='CANADA'
     ))
+    # _default_grids = {}
 
     _default_hex_resolution: ClassVar[int] = 3
     _default_range_buffer_lat: ClassVar[Tuple[float, float]] = (0.0, 0.0)
@@ -550,6 +549,7 @@ class PlotBuilder:
         logger.debug('initialized internal figure.')
 
         self._main_dataset = None
+        self._datasets: DataSets = {}
         self._grids: DataSets = {}
         self._points: DataSets = {}
         self._regions: DataSets = {}
@@ -557,7 +557,7 @@ class PlotBuilder:
 
         if main_dataset is not None:
             self.main_dataset = main_dataset
-            if self.main_dataset['v_type'] == 'str':
+            if self._main_dataset['v_type'] == 'str':
                 self._dataset_manager['colorscale'] = 'Set3'
 
         if grids is None:
@@ -614,7 +614,10 @@ class PlotBuilder:
 
     @property
     def main_dataset(self):
-        return self._main_dataset
+        return deepcopy(self._datasets['MAIN'])
+
+    def _get_main_dataset(self):
+        return self._datasets['MAIN']
 
     @main_dataset.setter
     def main_dataset(self, value: DataSet):
@@ -639,6 +642,7 @@ class PlotBuilder:
         _convert_to_hex_dataset(value, self.hex_resolution)
         logger.debug('ended conversion of main dataset.')
         self._main_dataset = value
+        self._datasets['MAIN'] = value
 
     def add_grid(self, name: str, grid: DataSet):
         """Adds a region hex to the builder.
@@ -650,6 +654,11 @@ class PlotBuilder:
         """
 
         logger.debug(f'began conversion of grid, name={name}.')
+        try:
+            grid['data'] = butil.get_shapes_from_world(grid['data'])
+        except (KeyError, ValueError, TypeError):
+            logger.debug("If a region name was a country or continent, the process failed.")
+
         _convert_to_hex_dataset(grid, self.hex_resolution)
         df = grid['data']
 
@@ -773,7 +782,6 @@ class PlotBuilder:
         """
 
         if name:
-            print('UPDATED_POINT')
             dict_deep_update((self._points[name])['manager'], manager)
         else:
             for pname in self._points:
@@ -931,7 +939,6 @@ class PlotBuilder:
 
         output = None
         if show:
-            print('SHOWED')
             self._figure.show(renderer='browser')
         else:
             output = self._figure
@@ -942,7 +949,6 @@ class PlotBuilder:
                                      **self._file_output_manager)
 
         logger.debug('figure output successfully.')
-        print('FIGURE OUTPUT')
         return output
 
     def print_datasets(self):
@@ -958,9 +964,9 @@ class PlotBuilder:
         """
         self._output_stats = {}
         self._clear_figure()
-        self._dataset_manager = deepcopy(self._default_dataset_manager)
-        self._grid_manager = deepcopy(self._default_grid_manager)
-        self._figure_manager = deepcopy(self._default_figure_manager)
+        self._dataset_manager = {}
+        self._grid_manager = {}
+        self._figure_manager = {}
         self._file_output_manager = deepcopy(self._default_file_output_manager)
         self.hex_resolution = self._default_hex_resolution
         self.range_buffer_lat = (0.0, 0.0)
@@ -1306,6 +1312,32 @@ class PlotBuilder:
 
         logger.debug(f'plot datasets clipped, mode={clip_mode}.')
 
+    def _prepare_dataset(self):
+        if isvalid_dataset(self.main_dataset):
+
+            ds = self.main_dataset
+            df = ds['data']
+            v_type = ds['v_type']
+
+            if not df.empty:
+
+                empty_symbol = 'empty' if v_type == 'str' else 0
+                empties = df[df['value_field'] == empty_symbol]
+                if len(empties) > 0:
+                    empties['value_field'] = 0
+                    if self._plot_settings['replot_empties']:
+                        self._grids['*REMOVED*'] = {'data': empties}
+
+                if self._plot_settings['remove_empties']:
+                    df = df[df['value_field'] != empty_symbol]
+                    logger.debug(f'removed empty rows from main dataset, length={len(df)}.')
+
+                ds['data'] = df
+
+                return ds
+            return None
+        raise gce.BuilderPlotBuildError("The main dataset was not valid.")
+
     def _get_dataset(self):
         """Gets the main dataset and alters it slightly.
 
@@ -1433,7 +1465,7 @@ class PlotBuilder:
 
             for i, (typer, plot_df, prop) in enumerate(plot_dfs):
 
-                self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)})
+                self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
                 choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
 
                 if conform_alpha:
@@ -1618,6 +1650,21 @@ class PlotBuilder:
 
         logger.info(f'Final Output Stats: {self._output_stats}')
         return self._output_figure(show=self._plot_settings['show'], file_output=self._plot_settings['file_output'])
+
+    def get_regions(self):
+        return deepcopy(self._regions)
+
+    def get_outlines(self):
+        return deepcopy(self._outlines)
+
+    def get_grids(self):
+        return deepcopy(self._grids)
+
+    def get_points(self):
+        return deepcopy(self._points)
+
+    def get_dataset(self):
+        return self.main_dataset
 
 
 def update_figure_plotly(fig: Figure, updates: dict = None, **kwargs):
