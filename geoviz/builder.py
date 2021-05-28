@@ -21,7 +21,6 @@ from os.path import join as pjoin
 import sys
 from typing import List, Dict, Any, Optional, ClassVar, Union, Tuple
 from shapely.geometry import Polygon, Point, MultiPolygon
-from .structures.dataset import DataSetDict
 
 import plotly.io as pio
 import logging
@@ -364,7 +363,7 @@ class PlotBuilder:
             ),
             color='white',
             symbol='circle-dot',
-            size=3
+            size=20
         ),
         showlegend=False,
         textposition='top center',
@@ -420,7 +419,7 @@ class PlotBuilder:
     _default_figure_manager: ClassVar[FigureManager] = dict(
         geos=dict(
             projection=dict(
-                type='azimuthal equal area'
+                type='orthographic'
             ),
             showcoastlines=False,
             showland=True,
@@ -548,7 +547,6 @@ class PlotBuilder:
         self._figure: Figure = Figure()
         logger.debug('initialized internal figure.')
 
-        self._main_dataset = None
         self._datasets: DataSets = {}
         self._grids: DataSets = {}
         self._points: DataSets = {}
@@ -614,10 +612,10 @@ class PlotBuilder:
 
     @property
     def main_dataset(self):
-        return deepcopy(self._datasets['MAIN'])
+        return deepcopy(self._datasets['*MAIN*'])
 
     def _get_main_dataset(self):
-        return self._datasets['MAIN']
+        return self._datasets['*MAIN*']
 
     @main_dataset.setter
     def main_dataset(self, value: DataSet):
@@ -641,8 +639,7 @@ class PlotBuilder:
         logger.debug('began conversion of main dataset.')
         _convert_to_hex_dataset(value, self.hex_resolution)
         logger.debug('ended conversion of main dataset.')
-        self._main_dataset = value
-        self._datasets['MAIN'] = value
+        self._datasets['*MAIN*'] = value
 
     def add_grid(self, name: str, grid: DataSet):
         """Adds a region hex to the builder.
@@ -954,7 +951,7 @@ class PlotBuilder:
     def print_datasets(self):
         """Prints the datasets currently within the builder.
         """
-        print('[MAIN DATASET]\n', self._main_dataset, '\n')
+        print('[MAIN DATASET]\n', self._datasets['*MAIN*'], '\n')
         print('[GRIDS]\n', self._grids, '\n')
         print('[POINTS]\n', self._points, '\n')
         print('[REGIONS]\n', self._regions, '\n')
@@ -974,7 +971,7 @@ class PlotBuilder:
         self._hone_geometry = []
         self._plot_settings = deepcopy(self._default_plot_settings)
 
-        self._main_dataset = None
+        self._datasets: DataSets = {}
         self._grids: DataSets = {}
         self._points: DataSets = {}
         self._regions: DataSets = {}
@@ -1110,9 +1107,14 @@ class PlotBuilder:
         """
 
         lats, lons = butil.to_plotly_points_format(gdf, disjoint=disjoint)
+        print(lats, lons)
         scatt = Scattergeo(
             lat=lats,
-            lon=lons).update(initial_properties).update(final_properties if final_properties else {})
+            lon=lons
+        ).update(initial_properties).update(final_properties if final_properties else {})
+        print(initial_properties)
+        print(final_properties)
+        print(scatt)
         logger.debug('scattergeo trace generated.')
         return scatt
 
@@ -1174,8 +1176,8 @@ class PlotBuilder:
             elif clip_mode == 'outlines':
                 grid = gcg.get_hex_geodataframe_loss(self._outlines['*COMBINED*']['data'])
 
-            elif self._main_dataset:
-                grid = gcg.generate_grid_over_hexes(self.main_dataset['data'])
+            elif self._datasets['*MAIN*']:
+                grid = gcg.generate_grid_over_hexes(self._datasets['*MAIN*']['data'])
 
             else:
                 raise gce.BuilderDatasetInfoError("There is no dataset to form an auto-grid with!")
@@ -1246,6 +1248,50 @@ class PlotBuilder:
         else:
             raise gce.BuilderPlotBuildError("There were no grid-type datasets detected!")
 
+    def _clip_to_regions(self):
+        try:
+            rds = self._regions['*COMBINED*']
+            if self._plot_settings['clip_mode'] == 'regions':
+                try:
+                    ds = self._datasets['*ALTERED*']
+                    ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], rds['data'])
+                except (KeyError, AttributeError):
+                    pass
+
+                try:
+                    gds = self._grids['*COMBINED*']
+                    gds['data'] = gcg.clip_hexes_to_polygons(gds['data'], rds['data'])
+                except (KeyError, AttributeError):
+                    pass
+
+                if self._plot_settings['clip_points']:
+                    try:
+                        pds = self._points['*COMBINED*']
+                        pds['data'] = gcg.clip_points_to_polygons(pds['data'], rds['data'])
+                    except (KeyError, AttributeError):
+                        pass
+        except KeyError:
+            pass
+
+    def _clip_to_grids(self):
+        try:
+            gds = self._grids['*COMBINED*']
+            if self._plot_settings['clip_mode'] == 'grids':
+                try:
+                    ds = self._datasets['*ALTERED*']
+                    ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], gds['data'])
+                except (KeyError, AttributeError):
+                    pass
+
+                if self._plot_settings['clip_points']:
+                    try:
+                        pds = self._points['*COMBINED*']
+                        pds['data'] = gcg.clip_points_to_polygons(pds['data'], gds['data'])
+                    except (KeyError, AttributeError):
+                        pass
+        except KeyError:
+            pass
+
     def _clip_datasets(self, ds: DataSet, rds: DataSet, gds: DataSet, ods: DataSet, pds: DataSet):
         """Clips the geometries of each merged dataset.
 
@@ -1263,9 +1309,20 @@ class PlotBuilder:
         clip_points = self._plot_settings['clip_points']
         regions_clipped, grids_clipped, outlines_clipped = False, False, False
 
-        # something weird happening here if the conform is not there
+        self._clip_to_regions()
+        self._clip_to_grids()
+        combreg = self._regions.get('*COMBINED*')
+        try:
+            self._regions['*COMBINED*'] = self._outlines['*COMBINED*']
+            self._clip_to_regions()
+            self._regions.pop('*COMBINED*')
+            if combreg:
+                self._regions['*COMBINED*'] = combreg
+        except KeyError:
+            pass
 
-        if clip_mode == 'regions' and isvalid_dataset(rds):
+        '''
+                if clip_mode == 'regions' and isvalid_dataset(rds):
             if isvalid_dataset(ds):
                 ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], rds['data'])
 
@@ -1309,34 +1366,32 @@ class PlotBuilder:
             if outlines_clipped:
                 pdf3 = gcg.clip_points_to_polygons(pdgeom, ods['data'])
                 pds['data'] = pds['data'].merge(pdf3['geometry'], how='outer')
+        '''
 
         logger.debug(f'plot datasets clipped, mode={clip_mode}.')
 
     def _prepare_dataset(self):
-        if isvalid_dataset(self.main_dataset):
 
-            ds = self.main_dataset
+        ds = self.main_dataset  # KeyError thrown here if not found
+        if isvalid_dataset(ds):
             df = ds['data']
             v_type = ds['v_type']
+            empty_symbol = 'empty' if v_type == 'str' else 0
+            empties = df[df['value_field'] == empty_symbol]
+            if len(empties) > 0:
+                empties['value_field'] = 0
+                if self._plot_settings['replot_empties']:
+                    self._grids['*REMOVED*'] = {'data': empties}
 
-            if not df.empty:
+            if self._plot_settings['remove_empties']:
+                df = df[df['value_field'] != empty_symbol]
+                logger.debug(f'removed empty rows from main dataset, length={len(df)}.')
 
-                empty_symbol = 'empty' if v_type == 'str' else 0
-                empties = df[df['value_field'] == empty_symbol]
-                if len(empties) > 0:
-                    empties['value_field'] = 0
-                    if self._plot_settings['replot_empties']:
-                        self._grids['*REMOVED*'] = {'data': empties}
-
-                if self._plot_settings['remove_empties']:
-                    df = df[df['value_field'] != empty_symbol]
-                    logger.debug(f'removed empty rows from main dataset, length={len(df)}.')
-
-                ds['data'] = df
-
-                return ds
-            return None
-        raise gce.BuilderPlotBuildError("The main dataset was not valid.")
+            cpy = deepcopy(ds)
+            cpy.pop('data')
+            self._datasets['*ALTERED*'] = {'data': df, **cpy}
+        else:
+            raise gce.BuilderPlotBuildError("The main dataset was invalid.")
 
     def _get_dataset(self):
         """Gets the main dataset and alters it slightly.
@@ -1345,9 +1400,9 @@ class PlotBuilder:
         :rtype: DataSet
         """
 
-        if isvalid_dataset(self.main_dataset):
+        if isvalid_dataset(self._datasets['*MAIN*']):
 
-            ds = self.main_dataset
+            ds = self._datasets['*MAIN*']
             df = ds['data']
             v_type = ds['v_type']
 
@@ -1370,18 +1425,26 @@ class PlotBuilder:
             return None
         raise gce.BuilderPlotBuildError("The main dataset was not valid.")
 
-    def _plot_dataset_traces(self, ds: DataSet):
+    def _make_dataset_traces(self, ds: DataSet):
+
+        try:
+            df = ds['data']
+        except KeyError:
+            pass
+
+    def _plot_dataset_traces(self):
         """Plots the trace of the main dataset onto the internal figure.
 
         :param ds: The main dataset (after alteration)
         :type ds: DataSet
         """
-        logger.debug('adding main dataset to plot.')
-        df = ds['data']
 
-        self._output_stats['main-dataset'] = defaultdict(dict)
-
-        if len(df) > 0:
+        dgeoms = []
+        try:
+            ds = self._datasets['*ALTERED*']
+            self._output_stats['main-dataset'] = defaultdict(dict)
+            logger.debug('adding main dataset to plot.')
+            df = ds['data']
 
             try:
                 bounds = min(df['value_field']), max(df['value_field'])
@@ -1415,6 +1478,8 @@ class PlotBuilder:
                 kw = {}
 
             if mode == 'logarithmic':
+                butil.logify_scale(DataFrame({'value_field': []}))  # remove this
+
                 updates = butil.logify_scale(df, **kw)
                 dict_deep_update(self._dataset_manager, updates)
                 bounds = updates['zmin'], updates['zmax']
@@ -1465,17 +1530,21 @@ class PlotBuilder:
 
             for i, (typer, plot_df, prop) in enumerate(plot_dfs):
 
-                self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
-                choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
+                if not plot_df.empty:
+                    self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
+                    choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
 
-                if conform_alpha:
-                    choro.colorscale = configureScaleWithAlpha(list(choro.colorscale), float(choro.marker.opacity))
+                    if conform_alpha:
+                        choro.colorscale = configureScaleWithAlpha(list(choro.colorscale), float(choro.marker.opacity))
 
-                self._figure.add_trace(choro)
-                logger.debug(f'{typer} dataset trace added.')
+                    self._figure.add_trace(choro)
+                    logger.debug(f'{typer} dataset trace added.')
 
             self._output_stats['main-dataset'] = dict(self._output_stats['main-dataset'])
-            return list(df.geometry)
+            dgeoms = list(df.geometry)
+        except KeyError:
+            pass
+        return dgeoms
 
     def _remove_underlying_grid(self, ds: DataSet, gds: DataSet):
         """Removes the grid from underneath the data (lower file size).
@@ -1493,6 +1562,88 @@ class PlotBuilder:
                               how='difference')
             gdf = gcg.remove_other_geometries(gdf, 'Polygon')
             gds['data'] = gdf
+
+    def _plot_regions(self):
+        rgeoms = []
+
+        if self._plot_settings['plot_regions']:
+            logger.debug('adding regions to plot.')
+            try:
+                rds = self._regions['*COMBINED*']
+                self._output_stats['regions'] = {}
+                newregs = dissolve_multi_dataset(rds, self._regions)
+                initial_prop = deepcopy(self._default_region_manager)
+                for regname, regds in newregs.items():
+                    self._output_stats['regions'][regname] = get_stats(regds['data'])
+                    regds['manager']['text'] = regname
+                    initial_prop['text'] = regname
+                    self._figure.add_trace(
+                        self._make_general_trace(regds['data'], initial_prop, final_properties=regds['manager']))
+                rgeoms = list(rds['data'].geometry)
+            except KeyError:
+                pass
+        return rgeoms
+
+    def _plot_outlines(self):
+
+        ogeoms = []
+        if self._plot_settings['plot_outlines']:
+            logger.debug('adding outlines to plot.')
+            try:
+                ods = self._outlines['*COMBINED*']
+                self._output_stats['outlines'] = {}
+                initial_prop = deepcopy(self._default_outline_manager)
+                for outname, outds in dissolve_multi_dataset(ods, self._outlines).items():
+                    self._output_stats['outlines'][outname] = get_stats(outds['data'])
+                    initial_prop['name'] = outname
+                    initial_prop['text'] = f'{outname}-outline'
+                    self._figure.add_trace(
+                        self._make_general_scatter_trace(outds['data'], initial_prop, final_properties=outds['manager']))
+                ogeoms = list(ods['data'].geometry)
+            except KeyError:
+                pass
+        return ogeoms
+
+    def _plot_grids(self):
+
+        ggeoms = []
+        if self._plot_settings['plot_grids']:
+            logger.debug('adding grids to plot.')
+            try:
+                gds = self._grids['*COMBINED*']
+                self._output_stats['grids'] = {}
+                initial_prop = deepcopy(self._default_outline_manager)
+                for gdname, gdds in dissolve_multi_dataset(gds, self._grids).items():
+                    self._output_stats['grids'][gdname] = get_stats(gdds['data'])
+                    initial_prop['name'] = gdname
+                    initial_prop['text'] = f'{gdname}-grid'
+                    self._figure.add_trace(
+                        self._make_general_scatter_trace(gdds['data'], initial_prop, final_properties=gdds['manager']))
+            except KeyError:
+                pass
+        return ggeoms
+
+    def _plot_points(self):
+        pgeoms = []
+        if self._plot_settings['plot_grids']:
+            logger.debug('adding points to plot.')
+            try:
+                pds = self._points['*COMBINED*']
+                self._output_stats['points'] = {}
+                initial_prop = deepcopy(self._default_point_manager)
+                for poiname, poids in dissolve_multi_dataset(pds, self._points).items():
+                    print('TFTFTF', poiname, poids)
+                    self._output_stats['points'][poiname] = get_stats(poids['data'])
+                    initial_prop['name'] = poiname
+                    initial_prop['hovertext'] = _get_hover_field(poids['data'], poids['hover_fields'])
+                    initial_prop['text'] = get_column_or_default(poids['data'], 'text_field')
+                    self._figure.add_trace(
+                        self._make_general_scatter_trace(poids['data'], initial_prop, final_properties=poids['manager'],
+                                                         disjoint=False))
+                pgeoms = list(pds['data'].geometry)
+            except KeyError:
+                pass
+        return pgeoms
 
     def _plot_traces(self, ds, rds, gds, ods, pds):
         """Plots each of the merged dataset collections.
@@ -1514,6 +1665,20 @@ class PlotBuilder:
         outlines_on = self._plot_settings['plot_outlines']
         points_on = self._plot_settings['plot_points']
 
+        rgeoms = self._plot_regions()
+        ggeoms = self._plot_grids()
+        dgeoms = self._plot_dataset_traces()
+        ogeoms = self._plot_outlines()
+        pgeoms = self._plot_points()
+
+        if not dgeoms:
+            self._hone_geometry.extend(ogeoms if ogeoms else ggeoms if ggeoms else rgeoms)
+        else:
+            self._hone_geometry.extend(dgeoms)
+
+        '''
+                print('HERE', self._points)
+
         rgeoms = []
         if regions_on and isvalid_dataset(rds):
             logger.debug('adding regions to plot.')
@@ -1529,6 +1694,7 @@ class PlotBuilder:
 
             rgeoms = list(rds['data'].geometry)
 
+        ogeoms = []
         if outlines_on and isvalid_dataset(ods):
             logger.debug('adding outlines to plot.')
             self._output_stats['outlines'] = {}
@@ -1543,8 +1709,7 @@ class PlotBuilder:
         ggeoms = []
         if grids_on and isvalid_dataset(gds):
             logger.debug('adding grids to plot.')
-            if isvalid_dataset(ds):
-                self._remove_underlying_grid(ds, gds)
+            self._remove_underlying_grid(ds, gds)
 
             merged_grids = (gds['data'])
             merged_grids['text_field'] = 'GRID'
@@ -1554,21 +1719,24 @@ class PlotBuilder:
             self._figure.add_trace(
                 self._make_general_trace(merged_grids, initial_prop, final_properties=self._grid_manager))
             ggeoms = list(merged_grids.geometry)
-
+            
         dgeoms = []
-        if isvalid_dataset(ds):
+        try:
             dgeoms = self._plot_dataset_traces(ds)
+        except ValueError:
+            pass
 
         if not dgeoms:
             self._hone_geometry.extend(ggeoms if ggeoms else rgeoms)
         else:
             self._hone_geometry.extend(dgeoms)
-
+            
         if points_on and isvalid_dataset(pds):
             logger.debug('adding points to plot.')
             self._output_stats['points'] = {}
             initial_prop = deepcopy(self._default_point_manager)
             for poiname, poids in dissolve_multi_dataset(pds, self._points).items():
+                print('TFTFTF', poiname, poids)
                 self._output_stats['points'][poiname] = get_stats(poids['data'])
                 initial_prop['name'] = poiname
                 initial_prop['hovertext'] = _get_hover_field(poids['data'], poids['hover_fields'])
@@ -1576,6 +1744,12 @@ class PlotBuilder:
                 self._figure.add_trace(
                     self._make_general_scatter_trace(poids['data'], initial_prop, final_properties=poids['manager'],
                                                      disjoint=False))
+        '''
+
+
+
+
+
 
     def _make_multi_region_dataset(self):
 
@@ -1603,10 +1777,11 @@ class PlotBuilder:
         self.update_plot_settings(**kwargs)
 
         try:
-            ds = self._get_dataset()
-        except gce.BuilderPlotBuildError as e:
-            logger.warning(f'{e.message} Ignoring and returning figure...')
-            ds = None
+            self._prepare_dataset()
+        except KeyError:
+            logger.warning('No main dataset was detected. Ignoring and returning figure...')
+        except gce.BuilderPlotBuildError:
+            logger.warning('The main dataset was invalid. Ingoring and returning figure...')
 
         '''
         try:
@@ -1636,6 +1811,7 @@ class PlotBuilder:
         except IndexError:
             logger.warning('No grid-type datasets were detected. Ignoring and returning figure...')
 
+        ds = self._datasets.get('*ALTERED*')
         rds = self._regions.get('*COMBINED*')
         ods = self._outlines.get('*COMBINED*')
         pds = self._points.get('*COMBINED*')
