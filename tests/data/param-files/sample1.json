@@ -1,0 +1,81 @@
+{
+	"plot_name": "SARDefault",
+	"main_dataset": {
+		"data":"E:\\software\\cjoc_py\\geocan\\data\\csv-data\\SAR_Incidents.csv",
+		"latitude_field":"incpos_latitude",
+		"longitude_field":"incpos_longitude",
+		"hex_resolution":3
+	},
+	"regions": {
+		"France": {
+			"data": "FRANCE",
+			"manager": {
+				"colorscale": "Inferno"
+			}
+		},
+		"Germany": {
+			"data": "GERMANY",
+			"manager": {
+				"colorscale": "Plasma"
+			}
+		}
+	},
+	"points": {
+		"POI1": {
+			"data": "E:\\software\\cjoc_py\\geocan\\data\\csv-data\\AirPorts.csv",
+			"latitude_field": "Latitude",
+			"longitude_field": "Longitude",
+			"text_field": "Kind",
+			"hover_fields": {
+				"NAME": "Name"
+			},
+			"manager": {
+				"mode": "markers",
+				"marker_color": "gray",
+				"marker_size": 8
+			}
+		},
+		"POI2": {
+			"data": "E:\\software\\cjoc_py\\geocan\\data\\csv-data\\SAR_Bases.csv",
+			"latitude_field": "latitude",
+			"longitude_field": "longitude",
+			"text_field": "SAR_Base",
+			"manager": {
+				"textfont_size": 13,
+				"textfont_color": "white",
+				"marker_size": 14,
+				"marker_color": "lime"
+			}
+		}
+	},
+	"builder_managers": {
+		"main_dataset": {
+			"colorscale": {
+				"scale_value": null,
+				"scale_type": "sequential",
+				"discrete": {
+					"discrete_size": 1
+				}
+			},
+			"colorbar": {
+				"bgcolor": "rgba(176,203,247,1)"
+			}
+		},
+		"figure": {
+			"layout": {
+				"paper_bgcolor": "rgba(255,255,255,0.75)",
+				"plot_bgcolor": "rgba(142,144,148,1)"
+			}
+		}
+	},
+	"plot_settings": {
+		"auto_grid": true,
+		"clip_mode": "regions",
+		"scale_mode": "logarithmic",
+        "file_output":"E:\\software\\cjoc_py\\geocan\\output\\figures\\refdoc",
+        "show": true
+	},
+    "default_grids": false,
+    "default_regions": true,
+	"logging_file":"E:\\software\\cjoc_py\\geocan\\output\\logs\\refdoc"
+}
