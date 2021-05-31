@@ -1,17 +1,17 @@
 import numpy as np
-from typing import Sequence, Union, Set, Dict, Any, Optional
+from typing import Sequence, Union, Set, Dict, Any, Optional, List, Tuple
 import math
 
 import geopandas as gpd
-from geojson import MultiLineString
 from geopandas import GeoDataFrame
 from pandas import DataFrame
-from shapely.geometry import Point, LineString, Polygon, MultiPolygon
 from . import colorscales as cli
+from .geoutils import pointify_geodataframe
 
 world_shape_definitions = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
 world_shape_definitions['name'] = world_shape_definitions['name'].apply(lambda s: s.upper())
 world_shape_definitions['continent'] = world_shape_definitions['continent'].apply(lambda s: s.upper())
+
 
 def get_shapes_from_world(name: Optional[str] = None) -> GeoDataFrame:
     if name:
@@ -189,83 +189,11 @@ def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
         properties['colorscale'] = cli.configureScaleWithAlpha(properties['colorscale'], alpha=alpha)
 
 
-def geopolygons_to_points(gdf: GeoDataFrame):
-    nodes = gpd.GeoDataFrame(columns=list(gdf.columns))
-    # Extraction of the polygon nodes and attributes values from polys and integration into the new GeoDataFrame
-    i = 0
-    gdf['POLY_NUM'] = 0
-    for index, row in gdf.iterrows():
-        for j in list(row['geometry'].exterior.coords):
-            nodes = nodes.append(
-                {'POLY_NUM': i, 'geometry': Point(j)},
-                ignore_index=True)
-        i += 1
-    return nodes
-
-
-def linestring_to_points(ls, columns):
-    nodes = gpd.GeoDataFrame(columns=columns)
-    for x, y in ls.coords.xy:
-        nodes.append({'geometry': Point(y, x)}, ignore_index=True)
-    return nodes
-
-
-def polygon_to_points(poly, columns):
-    nodes = gpd.GeoDataFrame(columns=columns)
-    for j in list(poly.exterior.coords):
-        nodes = nodes.append(
-            {'geometry': Point(j)},
-            ignore_index=True)
-    return nodes
-
-
-def geos_to_points(gdf: GeoDataFrame, set_index: bool = True, errors: str = 'raise'):
-    nodes = gpd.GeoDataFrame(columns=list(gdf.columns))
-    if not gdf.empty:
-        i = 0
-        gdf['POLY_NUM'] = 0
-        for index, row in gdf.iterrows():
-            shape = row.geometry
-            if isinstance(shape, LineString):
-                points = linestring_to_points(shape, list(gdf.columns))
-            elif isinstance(shape, MultiLineString):
-                points = gpd.GeoDataFrame(columns=list(gdf.columns))
-                for ls in shape:
-                    points = points.append(
-                        linestring_to_points(ls, list(gdf.columns)), ignore_index=True)
-            elif isinstance(shape, Polygon):
-                points = polygon_to_points(shape, list(gdf.columns))
-            elif isinstance(shape, MultiPolygon):
-                points = gpd.GeoDataFrame(columns=list(gdf.columns))
-                for mp in shape:
-                    points = points.append(
-                        polygon_to_points(mp, list(gdf.columns)), ignore_index=True)
-            elif isinstance(shape, Point):
-                points = gpd.GeoDataFrame(columns=list(gdf.columns))
-                points = points.append({'geometry': shape}, ignore_index=True)
-            else:
-                raise AttributeError(f"The shape can not be converted into points, shape={shape}.")
-
-            for col in gdf.columns:
-                if col not in ['POLY_NUM', 'geometry']:
-                    points[col] = row[col]
-            points['POLY_NUM'] = i
-            nodes = nodes.append(points, ignore_index=True)
-            i += 1
-        if set_index:
-            nodes.set_index('POLY_NUM', drop=True, inplace=True)
-        return nodes
-    if errors == 'raise':
-        raise ValueError("The given dataframe must not be empty.")
-
-    return nodes
-
 
 def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
     gdf['gtype'] = gdf.geom_type.astype(str)
     notpoints = gdf[gdf['gtype'] != 'Point']
-    notpoints = geos_to_points(notpoints, errors='ignore')
-
+    notpoints = pointify_geodataframe(notpoints)
     notpoints = notpoints.append(gdf[gdf['gtype'] == 'Point'], ignore_index=False)
 
     notpoints.index.set_names('POLY_NUM', inplace=True)

@@ -5,9 +5,10 @@ import numpy as np
 import pandas as pd
 import geopandas as gpd
 import plotly
+from pandas import Series
 from plotly.graph_objects import Figure, Choropleth, Scattergeo
 
-from . import hexgrid as gcg
+from .utils import geoutils as gcg
 from . import errors as gce
 from .utils.util import dict_deep_update, fix_filepath, get_sorted_occurrences, \
     make_multi_dataset, dissolve_multi_dataset, get_stats, rename_dataset, get_column_or_default, \
@@ -21,10 +22,10 @@ from os.path import join as pjoin
 import sys
 from typing import List, Dict, Any, Optional, ClassVar, Union, Tuple
 from shapely.geometry import Polygon, Point, MultiPolygon
+from .structures.tracecontainer import PlotlyDataContainer
 
 import logging
 from copy import deepcopy
-
 
 pd.options.mode.chained_assignment = None
 
@@ -143,7 +144,7 @@ def _is_list_like(sequence):
     return isinstance(sequence, list) or isinstance(sequence, tuple)
 
 
-def _get_hover_field(gdf: GeoDataFrame, hover_fields: dict):
+def _get_hover_field(gdf: GeoDataFrame, hover_fields: dict) -> Series:
     """Makes a text field for the given dataframe.
 
     :param gdf: The dataframe to make a text field for
@@ -151,7 +152,7 @@ def _get_hover_field(gdf: GeoDataFrame, hover_fields: dict):
     :param hover_fields: A dictionary including all labels and fields to go into the text field
     :type hover_fields: dict
     :return: A text field for the dataframe
-    :rtype: GeoSeries
+    :rtype: Series
     """
     gdf['GEN-txt'] = ''
     for hov_field in hover_fields.items():
@@ -170,7 +171,7 @@ _extension_mapping = {
 }
 
 
-def _convert(dataset: DataSet) -> DataSet:
+def _read_dataset(dataset: DataSet) -> DataSet:
     """Converts the 'data' of the given hex to a proper GeoDataFrame.
 
     :param dataset: The dataset that will be converted into proper format
@@ -265,9 +266,10 @@ def _convert(dataset: DataSet) -> DataSet:
         raise gce.BuilderDatasetInfoError("You input an invalid dataset!")
 
     logger.debug('dataset data converted into GeoDataFrame.')
+    dataset['manager'] = dataset.get('manager', {})
 
 
-def _convert_to_hex_dataset(dataset: DataSet, hex_resolution: int) -> DataSet:
+def _hexbinify_dataset(dataset: DataSet, hex_resolution: int) -> DataSet:
     """Sets the main dataset of the builder.
 
     bins are dicts formatted as such:
@@ -294,8 +296,6 @@ def _convert_to_hex_dataset(dataset: DataSet, hex_resolution: int) -> DataSet:
     :type to_point: bool
     """
 
-    _convert(dataset)
-
     hex_resolution = dataset.get('hex_resolution', hex_resolution)
     dataset['binning_fn'] = dataset.get('binning_fn', None)
     binning_kw = {}
@@ -312,7 +312,7 @@ def _convert_to_hex_dataset(dataset: DataSet, hex_resolution: int) -> DataSet:
     if dataset['binning_fn'] in _group_functions:
         dataset['binning_fn'] = _group_functions[dataset['binning_fn']]
 
-    g_field = gcg.get_column_or_default(dataset['data'], 'binning_field')
+    g_field = get_column_or_default(dataset['data'], 'binning_field')
     df = gcg.hexify_geodataframe(dataset['data'], hex_resolution=hex_resolution)
     logger.debug(f'hexagonal overlay added, res={hex_resolution}.')
     dataset['hex_resolution'] = hex_resolution
@@ -569,7 +569,7 @@ class PlotBuilder:
 
         if main_dataset is not None:
             self.main_dataset = main_dataset
-            if self._main_dataset['v_type'] == 'str':
+            if self._get_main_dataset()['v_type'] == 'str':
                 self._dataset_manager['colorscale'] = 'Set3'
 
         if grids is None:
@@ -631,8 +631,7 @@ class PlotBuilder:
     def _get_main_dataset(self):
         return self._datasets['*MAIN*']
 
-    @main_dataset.setter
-    def main_dataset(self, value: DataSet):
+    def set_main_dataset(self, dataset: DataSet):
         """Sets the main dataset of the builder.
 
         bins are dicts formatted as such:
@@ -651,11 +650,17 @@ class PlotBuilder:
         the user inputs their dict.
         """
         logger.debug('began conversion of main dataset.')
-        _convert_to_hex_dataset(value, self.hex_resolution)
+        _read_dataset(dataset)
+        _hexbinify_dataset(dataset, self.hex_resolution)
         logger.debug('ended conversion of main dataset.')
-        self._datasets['*MAIN*'] = value
+        # dataset['tc'] = PlotlyDataContainer(dataset['data'], Choropleth())
+        self._datasets['*MAIN*'] = dataset
 
-    def add_grid(self, name: str, grid: DataSet):
+    @main_dataset.setter
+    def main_dataset(self, dataset: DataSet):
+        self.set_main_dataset(dataset)
+
+    def add_grid(self, name: str, dataset: DataSet):
         """Adds a region hex to the builder.
 
         :param name: The name this dataset will be referred to as
@@ -666,20 +671,23 @@ class PlotBuilder:
 
         logger.debug(f'began conversion of grid, name={name}.')
         try:
-            grid['data'] = butil.get_shapes_from_world(grid['data'])
+            dataset['data'] = butil.get_shapes_from_world(dataset['data'])
         except (KeyError, ValueError, TypeError):
             logger.debug("If a region name was a country or continent, the process failed.")
 
-        _convert_to_hex_dataset(grid, self.hex_resolution)
-        df = grid['data']
+        _read_dataset(dataset)
+        _hexbinify_dataset(dataset, self.hex_resolution)
+        df = dataset['data']
 
         df['value_field'] = 0
-        grid['data'] = df
+        dataset['data'] = df
 
-        self._grids[name] = grid
+        # dataset['tc'] = PlotlyDataContainer(df, Choropleth())
+
+        self._grids[name] = dataset
         logger.debug(f'ended conversion of grid, name={name}.')
 
-    def add_region(self, name: str, region: DataSet):
+    def add_region(self, name: str, dataset: DataSet):
         """Adds a region to the builder. (Should be loaded as GeoDataFrames)
 
         The region being added MUST have Polygon geometry.
@@ -692,46 +700,44 @@ class PlotBuilder:
         logger.debug(f'began conversion of region, name={name}.')
 
         try:
-            df = butil.get_shapes_from_world(region['data'])
+            dataset['data'] = butil.get_shapes_from_world(dataset['data'])
         except (KeyError, ValueError, TypeError):
             logger.debug("If a region name was a country or continent, the process failed.")
-            _convert(region)
-            df = region['data']
 
-        df = gcg.conform_geogeometry(df, fix_polys=region.get('validate', True))[['geometry']]
+        _read_dataset(dataset)
+        df = dataset['data']
+        df = gcg.conform_geogeometry(df, fix_polys=dataset.get('validate', True))[['geometry']]
 
-        if region.get('to_boundary', False):
+        if dataset.get('to_boundary', False):
             geom = df.unary_union.boundary
             polys = [Polygon(list(g.coords)) for g in geom]
-            mpl = MultiPolygon(polys)
+            mpl = MultiPolygon(polys).boundary
 
             df = GeoDataFrame({'geometry': [x := mpl]}, crs='EPSG:4326')
+
+        # dataset['tc'] = PlotlyDataContainer(df, Choropleth())
 
         df['text_field'] = name
         df['value_field'] = 0
 
         logger.debug('dataframe geometry conformed to GeoJSON standard.')
-        region['data'] = df
+        dataset['data'] = df
 
-        manager = {}
-        dict_deep_update(manager, region.get('manager', {}))
-        region['manager'] = manager
+        self._regions[name] = dataset
 
-        self._regions[name] = region
         logger.debug(f'ended conversion of region, name={name}.')
 
-    def add_outline(self, name: str, outline: DataSet):
+    def add_outline(self, name: str, dataset: DataSet):
         tempname = f'*{name}*'
-        self.add_region(tempname, outline)
-        outline = self._regions.pop(tempname)
-        self._outlines[name] = outline
+        self.add_region(tempname, dataset)
+        self._outlines[name] = self._regions.pop(tempname)
 
     def add_region_from_world(self, name, store_as: Optional[str] = None):
         region_dataset = {'data': butil.get_shapes_from_world(name)}
         store_as = store_as if store_as else name
         self.add_region(store_as, region_dataset)
 
-    def add_point(self, name: str, point: DataSet):
+    def add_point(self, name: str, dataset: DataSet):
         """Adds a point hex to the builder.
 
         :param name: The name this dataset will be referred to as
@@ -740,17 +746,14 @@ class PlotBuilder:
         :type point: DataSet
         """
         logger.debug(f'began conversion of points, name={name}.')
-        _convert(point)
+        _read_dataset(dataset)
         try:
-            df = point['data'].explode()
+            df = dataset['data'].explode()
         except IndexError:
-            df = point['data']
+            df = dataset['data']
 
-        manager = {}
-        dict_deep_update(manager, point.get('manager', {}))
-        point['manager'] = manager
-        point['data'] = df
-        self._points[name] = point
+        dataset['data'] = df
+        self._points[name] = dataset
         logger.debug(f'ended conversion of points, name={name}.')
 
     def update_dataset_manager(self, manager: DataSetManager):
@@ -1121,10 +1124,13 @@ class PlotBuilder:
         """
 
         lats, lons = butil.to_plotly_points_format(gdf, disjoint=disjoint)
+        print(lats, lons)
         scatt = Scattergeo(
             lat=lats,
             lon=lons
         ).update(initial_properties).update(final_properties if final_properties else {})
+
+        print(scatt)
         logger.debug('scattergeo trace generated.')
         return scatt
 
@@ -1136,7 +1142,7 @@ class PlotBuilder:
         :type gdf: GeoDataFrame
         """
 
-        geojson = gcg.geodataframe_to_geojson(gdf, 'value_field')
+        geojson = gcg.simple_geojson(gdf, 'value_field')
 
         choro = Choropleth(
             locations=gdf.index,
@@ -1147,28 +1153,6 @@ class PlotBuilder:
 
         logger.debug('choropleth trace generated.')
         return choro
-
-    def _add_generic_traces(self, gdf: GeoDataFrame, **kwargs):
-        """Adds a generic choropleth trace to the internal figure.
-
-        :param gdf: The GeoDataFrame to plot
-        :type gdf: GeoDataFrame
-        :param kwargs: Keyword arguments to update the plotly choropleth with
-        :type kwargs: **kwargs
-        """
-
-        # gdf = gcg.conform_geodataframe_geometry(gdf)
-        geojson = gcg.geodataframe_to_geojson(gdf, 'value_field')
-
-        choro = Choropleth(
-            locations=gdf.index,
-            z=gdf['value_field'],
-            geojson=geojson,
-            legendgroup='choros'
-        ).update(**kwargs)
-
-        self._figure.add_trace(choro)
-        logger.debug('choropleth trace added to plot.')
 
     def _get_auto_grid(self) -> DataSet:
         """Gets the auto grid dataset.
@@ -1181,10 +1165,10 @@ class PlotBuilder:
         if self._plot_settings['auto_grid']:
             logger.debug('attempting to get auto grid dataset.')
             if clip_mode == 'regions':
-                grid = gcg.get_hex_geodataframe_loss(self._regions['*COMBINED*']['data'])
+                grid = gcg.hexify_geodataframe(self._regions['*COMBINED*']['data'])
 
             elif clip_mode == 'outlines':
-                grid = gcg.get_hex_geodataframe_loss(self._outlines['*COMBINED*']['data'])
+                grid = gcg.hexify_geodataframe(self._outlines['*COMBINED*']['data'])
 
             elif self._datasets['*MAIN*']:
                 grid = gcg.generate_grid_over_hexes(self._datasets['*MAIN*']['data'])
@@ -1262,6 +1246,7 @@ class PlotBuilder:
         try:
             rds = self._regions['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'regions':
+                print('CLIPPER REGIONS')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], rds['data'])
@@ -1287,6 +1272,7 @@ class PlotBuilder:
         try:
             ods = self._outlines['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'outlines':
+                print('CLIPPER OUTLINES')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], ods['data'])
@@ -1312,6 +1298,7 @@ class PlotBuilder:
         try:
             gds = self._grids['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'grids':
+                print('CLIPPER GRIDS')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], gds['data'])
@@ -1450,13 +1437,6 @@ class PlotBuilder:
             return None
         raise gce.BuilderPlotBuildError("The main dataset was not valid.")
 
-    def _make_dataset_traces(self, ds: DataSet):
-
-        try:
-            df = ds['data']
-        except KeyError:
-            pass
-
     def _plot_dataset_traces(self):
         """Plots the trace of the main dataset onto the internal figure.
 
@@ -1467,6 +1447,7 @@ class PlotBuilder:
         dgeoms = []
         try:
             ds = self._datasets['*ALTERED*']
+
             self._output_stats['main-dataset'] = defaultdict(dict)
             logger.debug('adding main dataset to plot.')
             df = ds['data']
@@ -1503,14 +1484,14 @@ class PlotBuilder:
                 kw = {}
 
             if mode == 'logarithmic':
-                butil.logify_scale(DataFrame({'value_field': []}))  # remove this
-
                 updates = butil.logify_scale(df, **kw)
                 dict_deep_update(self._dataset_manager, updates)
                 bounds = updates['zmin'], updates['zmax']
 
             plot_dfs = []
+
             if ds['v_type'] == 'num':
+
                 df_prop = deepcopy(self._dataset_manager)
                 logger.debug(f'scale implemented, mode={mode}.')
                 logger.debug(
@@ -1556,6 +1537,7 @@ class PlotBuilder:
             for i, (typer, plot_df, prop) in enumerate(plot_dfs):
 
                 self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
+
                 choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
 
                 if conform_alpha:
@@ -1566,7 +1548,7 @@ class PlotBuilder:
 
             self._output_stats['main-dataset'] = dict(self._output_stats['main-dataset'])
             dgeoms = list(df.geometry)
-        except KeyError:
+        except (KeyError, ValueError):
             pass
         return dgeoms
 
@@ -1600,6 +1582,7 @@ class PlotBuilder:
                 for regname, regds in newregs.items():
                     self._output_stats['regions'][regname] = get_stats(regds['data'])
                     regds['manager']['text'] = regname
+
                     initial_prop['text'] = regname
                     self._figure.add_trace(
                         self._make_general_trace(regds['data'], initial_prop, final_properties=regds['manager']))
@@ -1612,17 +1595,22 @@ class PlotBuilder:
 
         ogeoms = []
         if self._plot_settings['plot_outlines']:
+            print('adding outlines to plot')
             logger.debug('adding outlines to plot.')
             try:
                 ods = self._outlines['*COMBINED*']
                 self._output_stats['outlines'] = {}
                 initial_prop = deepcopy(self._default_outline_manager)
                 for outname, outds in dissolve_multi_dataset(ods, self._outlines).items():
+
                     self._output_stats['outlines'][outname] = get_stats(outds['data'])
                     initial_prop['name'] = outname
                     initial_prop['text'] = f'{outname}-outline'
+
+
                     self._figure.add_trace(
-                        self._make_general_scatter_trace(outds['data'], initial_prop, final_properties=outds['manager']))
+                        self._make_general_scatter_trace(outds['data'], initial_prop,
+                                                         final_properties=outds['manager'], disjoint=True))
                 ogeoms = list(ods['data'].geometry)
             except KeyError:
                 pass
@@ -1645,10 +1633,8 @@ class PlotBuilder:
                 self._output_stats['grids'] = get_stats(gds['data'], hexed=True)
                 initial_prop = deepcopy(self._default_grid_manager)
                 initial_prop['text'] = 'GRID'
-                print(gds['data'])
                 self._figure.add_trace(
-                    x:=self._make_general_trace(gds['data'], initial_prop, final_properties=self._grid_manager))
-                print(x)
+                    x := self._make_general_trace(gds['data'], initial_prop, final_properties=self._grid_manager))
                 ggeoms = list(gds['data'].geometry)
             except KeyError as e:
                 raise e
@@ -1690,11 +1676,6 @@ class PlotBuilder:
         :param pds: The merged points dataset
         :type pds: DataSet
         """
-
-        regions_on = self._plot_settings['plot_regions']
-        grids_on = self._plot_settings['plot_grids']
-        outlines_on = self._plot_settings['plot_outlines']
-        points_on = self._plot_settings['plot_points']
 
         rgeoms = self._plot_regions()
         ggeoms = self._plot_grids()
@@ -1777,11 +1758,6 @@ class PlotBuilder:
                                                      disjoint=False))
         '''
 
-
-
-
-
-
     def _make_multi_region_dataset(self):
 
         if self._plot_settings['plot_regions'] or self._plot_settings['clip_mode'] == 'regions':
@@ -1847,10 +1823,9 @@ class PlotBuilder:
         except IndexError:
             logger.warning('No grid-type datasets were detected. Ignoring and returning figure...')
 
-
         self._clip_datasets()
         self._plot_traces()
-        #self._plot_traces()
+        # self._plot_traces()
 
         update_figure_plotly(self._figure, self._default_figure_manager)
         update_figure_plotly(self._figure, self._figure_manager)

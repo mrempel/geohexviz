@@ -1,6 +1,6 @@
 import collections.abc
 import os.path as pth
-from typing import Dict, Any, List, Iterable
+from typing import Dict, Any, List, Iterable, Union
 from collections import defaultdict
 import numpy as np
 import collections
@@ -13,9 +13,11 @@ from operator import itemgetter
 from h3 import h3
 from pandas import DataFrame
 from pandas.api.types import is_hashable, is_numeric_dtype, is_string_dtype
+from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, MultiLineString, GeometryCollection
 
 DataSet = Dict[str, Any]
-
+GeometryContainer = Union[MultiPolygon, MultiPoint, MultiLineString, GeometryCollection]
+AnyGeom = Union[Polygon, Point, LineString, GeometryContainer]
 
 def fix_filepath(filepath: str, add_filename: str = '', add_ext: str = '') -> str:
     """Converts a directorypath, or filepath into a valid filepath.
