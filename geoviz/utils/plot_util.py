@@ -260,10 +260,6 @@ def geos_to_points(gdf: GeoDataFrame, set_index: bool = True, errors: str = 'rai
 
     return nodes
 
-def get_linear_spaced_ticks(values: list, include_max: bool = True):
-    print()
-
-
 
 def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
     gdf['gtype'] = gdf.geom_type.astype(str)

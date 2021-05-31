@@ -122,7 +122,9 @@ def make_multi_dataset(dss, errors: str = 'raise'):
     except ValueError as e:
         if errors == 'raise':
             raise e
-        return {'data': GeoDataFrame()}
+        data = GeoDataFrame()
+        data['*DS_NAME*'] = ''
+        return {'data': data}
 
 
 def dissolve_multi_dataset(mds, properties, dropmds: bool = True, mdsname: str = '*COMBINED*', errors: str = 'raise'):
