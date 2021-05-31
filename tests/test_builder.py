@@ -1,8 +1,20 @@
+"""
+Notes for refactoring:
+
+We need to monitor the process of the builder, externally.
+We have access to the attributes.
+
+Think about testing:
+1) Adding the main data set (and what happens to it)
+2) Adding the regions, points, grids, and outlines (and what happen to them)
+3) Plot output (file exists?)
+4) Logging file
+"""
+
 import unittest
 from geoviz import builder
-from shapely.geometry import Point, Polygon
+from shapely.geometry import Point
 from testingstructures import TestingShape
-from geopandas import GeoDataFrame
 from pandas import DataFrame
 from os.path import join as pjoin
 import os

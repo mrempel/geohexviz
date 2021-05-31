@@ -1,3 +1,9 @@
+"""
+Notes for refactoring:
+
+We can perhaps integrate this with the builder class.
+"""
+
 class BuilderPlotBuildError(Exception):
 
     def __init__(self, message="An error occurred while plotting."):
