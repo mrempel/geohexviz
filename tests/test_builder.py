@@ -34,10 +34,12 @@ class BuilderTestCase(unittest.TestCase):
         }
 
         ds = self.builder.main_dataset
-        self.builder.build_plot(show=True, scale_mode='logarithmic')
+        self.builder.build_plot(show=True, scale_mode='logarithmic', clip_mode=None)
         print(self.builder.main_dataset)
 
     def test_c(self):
+        self.assertTrue(True)
+
         self.builder.main_dataset = {
             'data': pjoin(CSV_PATH, 'sample3-sarincidents.csv'),
             'latitude_field': 'incpos_latitude',
@@ -54,13 +56,13 @@ class BuilderTestCase(unittest.TestCase):
         })
 
         self.builder.add_outline('NEW1', {
-            'data': 'SOUTH AMERICA',
-            'to_boundary': True
+            'data': 'SOUTH AMERICA'
         })
 
         self.builder.print_datasets()
 
-        self.builder.build_plot(show=True, clip_mode='outlines', plot_points=True, clip_points=True)
+        self.builder.build_plot(show=True, plot_points=True, clip_points=True)
+
 
 
 if __name__ == '__main__':
