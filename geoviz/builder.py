@@ -69,19 +69,18 @@ GeoDataFrame = gpd.GeoDataFrame
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
-'''
-with warnings.catch_warnings(record=True) as w:
-    # Cause all warnings to always be triggered.
-    warnings.simplefilter("default")
+"""
+Notes for refactoring:
 
+Think about the overall process, can data be clipped when it is passed in?
+How can we rearrange the process to make the steps more and more like:
 
+1) Manipulate data
+1.5) Get Plotly properties
+2) Plot data
 
-    for wi in w:
-        if wi.line is None:
-            wi.line = linecache.getline(wi.filename, wi.lineno)
-        print('line number {}:'.format(wi.lineno))
-        print('line: {}'.format(wi.line))
-'''
+And hence we may be able to separate it from Plotly entirely, as they are two separate things.
+"""
 
 
 class FocusMode(Enum):
@@ -1124,13 +1123,11 @@ class PlotBuilder:
         """
 
         lats, lons = butil.to_plotly_points_format(gdf, disjoint=disjoint)
-        print(lats, lons)
         scatt = Scattergeo(
             lat=lats,
             lon=lons
         ).update(initial_properties).update(final_properties if final_properties else {})
 
-        print(scatt)
         logger.debug('scattergeo trace generated.')
         return scatt
 
@@ -1246,7 +1243,6 @@ class PlotBuilder:
         try:
             rds = self._regions['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'regions':
-                print('CLIPPER REGIONS')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], rds['data'])
@@ -1272,7 +1268,6 @@ class PlotBuilder:
         try:
             ods = self._outlines['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'outlines':
-                print('CLIPPER OUTLINES')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], ods['data'])
@@ -1298,7 +1293,6 @@ class PlotBuilder:
         try:
             gds = self._grids['*COMBINED*']
             if self._plot_settings['clip_mode'] == 'grids':
-                print('CLIPPER GRIDS')
                 try:
                     ds = self._datasets['*ALTERED*']
                     ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], gds['data'])
@@ -1316,15 +1310,6 @@ class PlotBuilder:
 
     def _clip_datasets(self):
         """Clips the geometries of each merged dataset.
-
-        :param ds: The main dataset
-        :type ds: DataSet
-        :param rds: The merged region dataset
-        :type rds: DataSet
-        :param gds: The merged grid dataset
-        :type gds: DataSet
-        :param pds: The merged point dataset
-        :type pds: DataSet
         """
 
         clip_mode = self._plot_settings['clip_mode']
@@ -1332,53 +1317,6 @@ class PlotBuilder:
         self._clip_to_regions()
         self._clip_to_grids()
         self._clip_to_outlines()
-
-        '''
-                if clip_mode == 'regions' and isvalid_dataset(rds):
-            if isvalid_dataset(ds):
-                ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], rds['data'])
-
-            if isvalid_dataset(gds):
-                gds['data'] = gcg.clip_hexes_to_polygons(gds['data'], rds['data'])
-                grids_clipped = True
-            regions_clipped = True
-
-        elif clip_mode == 'grids' and isvalid_dataset(gds):
-            if isvalid_dataset(ds):
-                ds['data'] = gcg.clip_hexes_to_hexes(ds['data'], gds['data'])
-
-            grids_clipped = True
-
-        elif clip_mode == 'outlines' and isvalid_dataset(ods):
-            if isvalid_dataset(ds):
-                ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], ods['data'])
-
-            if isvalid_dataset(gds):
-                gds['data'] = gcg.clip_hexes_to_polygons(gds['data'], ods['data'])
-                grids_clipped = True
-            outlines_clipped = True
-
-        if clip_points and isvalid_dataset(pds):
-            if isvalid_dataset(ds):
-                pds['data'] = gcg.clip_points_to_polygons(pds['data'], ds['data'])
-            else:
-                pds['data'] = GeoDataFrame(DataFrame(columns=pds['data'].columns), geometry=None, crs='EPSG:4326')
-
-            pdgeom = GeoDataFrame(pds['data'].geometry.to_frame(name='geometry'), geometry='geometry')
-            pdgeom.crs = pds['data'].crs
-
-            if regions_clipped:
-                pdf2 = gcg.clip_points_to_polygons(pdgeom, rds['data'])
-                pds['data'] = pds['data'].merge(pdf2['geometry'], how='outer')
-
-            if grids_clipped:
-                pdf1 = gcg.clip_points_to_polygons(pdgeom, gds['data'])
-                pds['data'] = pds['data'].merge(pdf1['geometry'], how='outer')
-
-            if outlines_clipped:
-                pdf3 = gcg.clip_points_to_polygons(pdgeom, ods['data'])
-                pds['data'] = pds['data'].merge(pdf3['geometry'], how='outer')
-        '''
 
         logger.debug(f'plot datasets clipped, mode={clip_mode}.')
 
