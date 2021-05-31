@@ -29,44 +29,6 @@ GeometryContainer = Union[MultiPolygon, MultiPoint, MultiLineString, GeometryCol
 AnyGeom = Union[Polygon, Point, LineString, GeometryContainer]
 
 
-def rename_dataset(dataset: DataSet):
-    df = dataset.pop('data')
-    for item in dataset.items():
-        if is_hashable(item[1]) and item[1] in df.columns:
-            df.rename({item[1]: item[0]}, axis=1, inplace=True)
-
-    dataset['data'] = df
-
-
-def get_column_or_default(df: DataFrame, col: str, default_val=None):
-    try:
-        return df[col]
-    except KeyError:
-        return default_val
-
-
-def get_column_type(df: DataFrame, col: str):
-    col = get_column_or_default(df, col)
-    if col is not None:
-        if is_numeric_dtype(col):
-            return 'num'
-        elif is_string_dtype(col):
-            return 'str'
-    return 'unk'
-
-
-def generate_random_ids(n: int):
-    gids = set()
-    while len(gids) != n:
-        gids.add(np.random.randint(0, n))
-    return gids
-
-
-def generate_dataframe_random_ids(df: DataFrame):
-    df['r-ids'] = generate_random_ids(len(df))
-    return df
-
-
 """
 COMBINING WITH ORIGINAL FUNCTIONALITY TO MAKE IT BETTER.
 ____________________________________________________________________
@@ -688,7 +650,7 @@ def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None
 
 
 def find_center_simple(col):
-    gs = GeoSeries(col)
+    gs = GeoSeries(col, dtype='float64')
     return gs.unary_union.centroid
 
 
@@ -722,7 +684,7 @@ def find_center(col: List[Union[Point, Polygon]]):
 
 
 def find_ranges_simple(col):
-    gs = GeoSeries(col)
+    gs = GeoSeries(col, dtype='float64')
     bounds = gs.total_bounds
     return (bounds[0], bounds[2]), (bounds[1], bounds[3])
 
