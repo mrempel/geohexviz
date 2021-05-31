@@ -559,7 +559,6 @@ def clip_hexes_to_polygons(hexes: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFr
             geodf.set_index('hex', inplace=True)
         except KeyError:
             pass
-        print('GEODF', geodf)
         return geodf
     return hexes
 
@@ -585,7 +584,7 @@ def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None
     hex_resolutiones = get_occurrences(list(hex_resolution_col))
     hes_res = int(max(hex_resolutiones.items(), key=operator.itemgetter(1))[0])
 
-    range_lon, range_lat = find_ranges(gdf.geometry)
+    range_lon, range_lat = find_ranges_simple(gdf.geometry)
     range_lat, range_lon = list(range_lat), list(range_lon)
 
     bl = [range_lon[0], range_lat[0]]
@@ -607,175 +606,7 @@ def find_center_simple(col):
     return gs.unary_union.centroid
 
 
-def find_center(col: List[Union[Point, Polygon]]):
-    """Finds the center of a given list of geometry.
-
-    :param col: The geometry to find the center of
-    :type col: List[Union[Point,Polygon]]
-    :return: The center point
-    :rtype: Point
-    """
-    x_list = []
-    y_list = []
-    for s in col:
-        if isinstance(s, Point):
-            x_list.append(s.x)
-            y_list.append(s.y)
-        elif isinstance(s, Polygon):
-            for p in s.exterior.coords:
-                x_list.append(p[1])
-                y_list.append(p[0])
-
-    # center_x = sum(x_list) / len(x_list)  # (max(x_list) - min(x_list)) / 2
-    # center_y = sum(y_list) / len(y_list)  # (max(y_list) - min(y_list)) /2
-    try:
-        center_x = (max(x_list) + min(x_list)) / 2
-        center_y = (max(y_list) + min(y_list)) / 2
-        return Point(center_y, center_x)
-    except ValueError:
-        return None
-
-
 def find_ranges_simple(col):
     gs = GeoSeries(col, dtype='float64')
     bounds = gs.total_bounds
     return (bounds[0], bounds[2]), (bounds[1], bounds[3])
-
-
-def find_ranges(col):
-    x_list = []
-    y_list = []
-
-    for s in col:
-        if isinstance(s, Point):
-            x_list.append(s.x)
-            y_list.append(s.y)
-        elif isinstance(s, Polygon):
-            for p in s.exterior.coords:
-                x_list.append(p[0])
-                y_list.append(p[1])
-
-    try:
-        range_x = min(x_list), max(x_list)
-        range_y = min(y_list), max(y_list)
-        return range_x, range_y
-    except ValueError:
-        return None
-
-
-'''
-_______________________________________________________________________________
-This section provides some functions that may be applied to dataframes for
-analysis purposes.
-_______________________________________________________________________________
-'''
-
-"""
-Prints a DataFrame or GeoDataFrame along with some important information
-"""
-
-
-def print_dataframe_info(df: GeoDataFrame, name='Dataframe'):
-    print(name, '|LEN: ' + str(len(df)) + '|TYPE: ' + str(type(df)) + '|\n', df.head())
-
-
-def apply_dist(row, hex_id_field, lat, lon):
-    point = h3.h3_to_geo(row[hex_id_field])
-    return h3.point_dist((lat, lon), (point.y, point.x))
-
-
-def apply_reachable(row, hex_id_field, lat, lon, time, speed):
-    point = h3.h3_to_geo(row[hex_id_field])
-    dist = h3.point_dist((lat, lon), (point.y, point.x))
-    return 1 if dist / speed <= time else 0
-
-
-def apply_time_to(row, hex_id_field, lat, lon, speed, max_time):
-    # point = h3.h3_to_geo(row[hex_id_field])
-    point = row.geometry.centroid
-    dist = calculate_latlon_distance(lat, lon, point.y, point.x)
-    # dist = h3.point_dist((lat, lon), (point.y, point.x))
-
-    return dist / speed if (dist / speed) <= max_time else 0
-
-
-"""
-Uses the Heaverside function to calculate the distance
-between two lat/lon coordinates.
-"""
-
-
-def calculate_latlon_distance(lat1, lon1, lat2, lon2):
-    R = 6373.0
-
-    lat1 = math.radians(lat1)
-    lon1 = math.radians(lon1)
-    lat2 = math.radians(lat2)
-    lon2 = math.radians(lon2)
-
-    dlon = lon2 - lon1
-    dlat = lat2 - lat1
-    a = math.sin(dlat / 2) ** 2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon / 2) ** 2
-    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
-    distance = R * c
-    return distance
-
-
-def lat_lng_2_theta_phi(lat, lng):
-    theta = 90 - lat
-    if lng > 0:
-        phi = lng
-    else:
-        phi = 360 - lng
-    return theta, phi
-
-
-def polar_2_cart(theta, phi, radius=1):
-    x = radius * math.sin(theta) * math.cos(phi)
-    y = radius * math.sin(theta) * math.sin(phi)
-    z = radius * math.cos(theta)
-    return x, y, z
-
-
-def deg_2_rad(deg):
-    return math.pi * deg / 180.
-
-
-# determine the winding of a polygon where
-# pc is the center of the polygon
-# p0 is the first point in the list
-# p1 is the second point in the list
-# all points originally in lat/lng
-def is_winding_ccw(pc, p0, p1):
-    # convert the points from lat/lng to polar
-    pcPolar = lat_lng_2_theta_phi(pc[1], pc[0])
-    p0Polar = lat_lng_2_theta_phi(p0[1], p0[0])
-    p1Polar = lat_lng_2_theta_phi(p1[1], p1[0])
-    # convert from polar to cartesian
-    pcCart = polar_2_cart(pcPolar[0], pcPolar[1])
-    p0Cart = polar_2_cart(p0Polar[0], p0Polar[1])
-    p1Cart = polar_2_cart(p1Polar[0], p1Polar[1])
-    # determine the winding direction
-    pd1 = (p0Cart[0] - pcCart[0], p0Cart[1] - pcCart[1], p0Cart[2] - pcCart[2])
-    pd2 = (p1Cart[0] - pcCart[0], p1Cart[1] - pcCart[1], p1Cart[2] - pcCart[2])
-    crss = np.cross(pd1, pd2)
-    w = np.dot(crss, pcCart)
-    if w > 0:
-        return True
-    else:
-        return False
-
-
-def determine_orient(poly: Polygon) -> bool:
-    coords = list(poly.exterior.coords)
-    centroid = list(poly.centroid.coords)
-    return is_winding_ccw(centroid[0], coords[0], coords[1])
-
-
-def get_best(lst):
-    maxitem = max(lst)
-    best_lst = []
-    for i in range(0, len(lst)):
-        if lst[i] == maxitem:
-            best_lst.append(i)
-    return best_lst

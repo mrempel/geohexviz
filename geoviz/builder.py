@@ -898,7 +898,7 @@ class PlotBuilder:
         the dataset.
         """
 
-        cen = gcg.find_center(self._hone_geometry)
+        cen = gcg.find_center_simple(self._hone_geometry)
         rng = gcg.find_ranges_simple(self._hone_geometry)
 
         buffer_lat = self._plot_settings['range_buffer_lat']
