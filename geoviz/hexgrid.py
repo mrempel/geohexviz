@@ -644,6 +644,7 @@ def clip_hexes_to_polygons(hexes: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFr
             geodf.set_index('hex', inplace=True)
         except KeyError:
             pass
+        print('GEODF', geodf)
         return geodf
     return hexes
 

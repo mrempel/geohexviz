@@ -4,13 +4,19 @@ from shapely.geometry import Point, Polygon
 from testingstructures import TestingShape
 from geopandas import GeoDataFrame
 from pandas import DataFrame
+from os.path import join as pjoin
+import os
+
+DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
+CSV_PATH = pjoin(DATA_PATH, 'csv-data')
+SHAPE_PATH = pjoin(DATA_PATH, 'shapefiles')
 
 testpoints1 = TestingShape(Point(45, 12), Point(60, 12), Point(60, 30), condense=False)
 
 class BuilderTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.builder = builder.PlotBuilder()
+        self.builder = builder.PlotBuilder(default_grids=True)
 
     def test_add_main_dataset(self):
         maindf = DataFrame({
@@ -28,11 +34,34 @@ class BuilderTestCase(unittest.TestCase):
         }
 
         ds = self.builder.main_dataset
-        #testbuilder.build_plot(show=True)
+        self.builder.build_plot(show=True, scale_mode='logarithmic')
         print(self.builder.main_dataset)
 
-    def test_add_region(self):
-        self.builder.add_region()
+    def test_c(self):
+        self.builder.main_dataset = {
+            'data': pjoin(CSV_PATH, 'sample3-sarincidents.csv'),
+            'latitude_field': 'incpos_latitude',
+            'longitude_field': 'incpos_longitude'
+        }
+        self.builder.add_point('SAR_BASES', {
+            'data': pjoin(CSV_PATH, 'sample4-sarbases.csv'),
+            'latitude_field': 'latitude',
+            'longitude_field': 'longitude'
+        })
+
+        self.builder.add_region('CCA', {
+            'data': 'FRANCE'
+        })
+
+        self.builder.add_outline('NEW1', {
+            'data': 'SOUTH AMERICA',
+            'to_boundary': True
+        })
+
+        self.builder.print_datasets()
+
+        self.builder.build_plot(show=True, clip_mode='outlines', plot_points=True, clip_points=True)
+
 
 if __name__ == '__main__':
     unittest.main()

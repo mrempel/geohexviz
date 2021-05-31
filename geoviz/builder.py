@@ -22,9 +22,9 @@ import sys
 from typing import List, Dict, Any, Optional, ClassVar, Union, Tuple
 from shapely.geometry import Polygon, Point, MultiPolygon
 
-import plotly.io as pio
 import logging
 from copy import deepcopy
+
 
 pd.options.mode.chained_assignment = None
 
@@ -67,6 +67,20 @@ GeoDataFrame = gpd.GeoDataFrame
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
+
+'''
+with warnings.catch_warnings(record=True) as w:
+    # Cause all warnings to always be triggered.
+    warnings.simplefilter("default")
+
+
+
+    for wi in w:
+        if wi.line is None:
+            wi.line = linecache.getline(wi.filename, wi.lineno)
+        print('line number {}:'.format(wi.lineno))
+        print('line: {}'.format(wi.line))
+'''
 
 
 class FocusMode(Enum):
@@ -378,7 +392,7 @@ class PlotBuilder:
         zmax=1, zmin=0,
         marker=dict(
             line=dict(
-                color='white'
+                color='black'
             ),
             opacity=0.2
         ),
@@ -1107,14 +1121,10 @@ class PlotBuilder:
         """
 
         lats, lons = butil.to_plotly_points_format(gdf, disjoint=disjoint)
-        print(lats, lons)
         scatt = Scattergeo(
             lat=lats,
             lon=lons
         ).update(initial_properties).update(final_properties if final_properties else {})
-        print(initial_properties)
-        print(final_properties)
-        print(scatt)
         logger.debug('scattergeo trace generated.')
         return scatt
 
@@ -1273,6 +1283,31 @@ class PlotBuilder:
         except KeyError:
             pass
 
+    def _clip_to_outlines(self):
+        try:
+            ods = self._outlines['*COMBINED*']
+            if self._plot_settings['clip_mode'] == 'outlines':
+                try:
+                    ds = self._datasets['*ALTERED*']
+                    ds['data'] = gcg.clip_hexes_to_polygons(ds['data'], ods['data'])
+                except (KeyError, AttributeError):
+                    pass
+
+                try:
+                    gds = self._grids['*COMBINED*']
+                    gds['data'] = gcg.clip_hexes_to_polygons(gds['data'], ods['data'])
+                except (KeyError, AttributeError):
+                    pass
+
+                if self._plot_settings['clip_points']:
+                    try:
+                        pds = self._points['*COMBINED*']
+                        pds['data'] = gcg.clip_points_to_polygons(pds['data'], ods['data'])
+                    except (KeyError, AttributeError):
+                        pass
+        except KeyError:
+            pass
+
     def _clip_to_grids(self):
         try:
             gds = self._grids['*COMBINED*']
@@ -1292,7 +1327,7 @@ class PlotBuilder:
         except KeyError:
             pass
 
-    def _clip_datasets(self, ds: DataSet, rds: DataSet, gds: DataSet, ods: DataSet, pds: DataSet):
+    def _clip_datasets(self):
         """Clips the geometries of each merged dataset.
 
         :param ds: The main dataset
@@ -1306,20 +1341,10 @@ class PlotBuilder:
         """
 
         clip_mode = self._plot_settings['clip_mode']
-        clip_points = self._plot_settings['clip_points']
-        regions_clipped, grids_clipped, outlines_clipped = False, False, False
 
         self._clip_to_regions()
         self._clip_to_grids()
-        combreg = self._regions.get('*COMBINED*')
-        try:
-            self._regions['*COMBINED*'] = self._outlines['*COMBINED*']
-            self._clip_to_regions()
-            self._regions.pop('*COMBINED*')
-            if combreg:
-                self._regions['*COMBINED*'] = combreg
-        except KeyError:
-            pass
+        self._clip_to_outlines()
 
         '''
                 if clip_mode == 'regions' and isvalid_dataset(rds):
@@ -1530,15 +1555,14 @@ class PlotBuilder:
 
             for i, (typer, plot_df, prop) in enumerate(plot_dfs):
 
-                if not plot_df.empty:
-                    self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
-                    choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
+                self._output_stats['main-dataset'][typer].update({i: get_stats(plot_df, hexed=True)}, )
+                choro = self._make_general_trace(plot_df, self._default_dataset_manager, final_properties=prop)
 
-                    if conform_alpha:
-                        choro.colorscale = configureScaleWithAlpha(list(choro.colorscale), float(choro.marker.opacity))
+                if conform_alpha:
+                    choro.colorscale = configureScaleWithAlpha(list(choro.colorscale), float(choro.marker.opacity))
 
-                    self._figure.add_trace(choro)
-                    logger.debug(f'{typer} dataset trace added.')
+                self._figure.add_trace(choro)
+                logger.debug(f'{typer} dataset trace added.')
 
             self._output_stats['main-dataset'] = dict(self._output_stats['main-dataset'])
             dgeoms = list(df.geometry)
@@ -1611,15 +1635,23 @@ class PlotBuilder:
             logger.debug('adding grids to plot.')
             try:
                 gds = self._grids['*COMBINED*']
-                self._output_stats['grids'] = {}
-                initial_prop = deepcopy(self._default_outline_manager)
-                for gdname, gdds in dissolve_multi_dataset(gds, self._grids).items():
-                    self._output_stats['grids'][gdname] = get_stats(gdds['data'])
-                    initial_prop['name'] = gdname
-                    initial_prop['text'] = f'{gdname}-grid'
-                    self._figure.add_trace(
-                        self._make_general_scatter_trace(gdds['data'], initial_prop, final_properties=gdds['manager']))
-            except KeyError:
+                logger.debug('adding grids to plot.')
+                try:
+                    self._remove_underlying_grid(self._datasets['*ALTERED*'], gds)
+                except KeyError:
+                    pass
+
+                gds['data']['text_field'] = 'GRID'
+                self._output_stats['grids'] = get_stats(gds['data'], hexed=True)
+                initial_prop = deepcopy(self._default_grid_manager)
+                initial_prop['text'] = 'GRID'
+                print(gds['data'])
+                self._figure.add_trace(
+                    x:=self._make_general_trace(gds['data'], initial_prop, final_properties=self._grid_manager))
+                print(x)
+                ggeoms = list(gds['data'].geometry)
+            except KeyError as e:
+                raise e
                 pass
         return ggeoms
 
@@ -1632,7 +1664,6 @@ class PlotBuilder:
                 self._output_stats['points'] = {}
                 initial_prop = deepcopy(self._default_point_manager)
                 for poiname, poids in dissolve_multi_dataset(pds, self._points).items():
-                    print('TFTFTF', poiname, poids)
                     self._output_stats['points'][poiname] = get_stats(poids['data'])
                     initial_prop['name'] = poiname
                     initial_prop['hovertext'] = _get_hover_field(poids['data'], poids['hover_fields'])
@@ -1645,7 +1676,7 @@ class PlotBuilder:
                 pass
         return pgeoms
 
-    def _plot_traces(self, ds, rds, gds, ods, pds):
+    def _plot_traces(self):
         """Plots each of the merged dataset collections.
 
         This must be performed
@@ -1754,7 +1785,10 @@ class PlotBuilder:
     def _make_multi_region_dataset(self):
 
         if self._plot_settings['plot_regions'] or self._plot_settings['clip_mode'] == 'regions':
-            self._regions['*COMBINED*'] = make_multi_dataset(self._regions)
+            try:
+                self._regions['*COMBINED*'] = make_multi_dataset(self._regions)
+            except ValueError:
+                self._regions['*COMBINED*'] = GeoDataFrame()
 
     def _make_multi_outline_dataset(self):
 
@@ -1773,6 +1807,8 @@ class PlotBuilder:
         :param kwargs: Plot settings
         :type kwargs: **kwargs
         """
+
+        # TODO: make combined dataframes contain empty geodataframes, Plotly doesn't care if it is given empty data
 
         self.update_plot_settings(**kwargs)
 
@@ -1811,14 +1847,10 @@ class PlotBuilder:
         except IndexError:
             logger.warning('No grid-type datasets were detected. Ignoring and returning figure...')
 
-        ds = self._datasets.get('*ALTERED*')
-        rds = self._regions.get('*COMBINED*')
-        ods = self._outlines.get('*COMBINED*')
-        pds = self._points.get('*COMBINED*')
-        gds = self._grids.get('*COMBINED*')
 
-        self._clip_datasets(ds, rds, gds, ods, pds)
-        self._plot_traces(ds, rds, gds, ods, pds)
+        self._clip_datasets()
+        self._plot_traces()
+        #self._plot_traces()
 
         update_figure_plotly(self._figure, self._default_figure_manager)
         update_figure_plotly(self._figure, self._figure_manager)
