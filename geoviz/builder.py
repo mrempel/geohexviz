@@ -1533,7 +1533,6 @@ class PlotBuilder:
 
         ogeoms = []
         if self._plot_settings['plot_outlines']:
-            print('adding outlines to plot')
             logger.debug('adding outlines to plot.')
             try:
                 ods = self._outlines['*COMBINED*']
