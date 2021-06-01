@@ -66,9 +66,11 @@ class BuilderTestCase(unittest.TestCase):
             'data': 'CANADA'
         })
 
-        self.builder.add_grid('CCA', {
+        self.builder.add_grid('CCA2', {
             'data': 'FRANCE'
         })
+
+
 
         self.builder.add_point('SAR_BASES', {
             'data': pjoin(CSV_PATH, 'sample4-sarbases.csv'),

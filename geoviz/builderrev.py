@@ -556,14 +556,11 @@ class PlotBuilder:
         self._recombine()
 
         dsclip = self._main_dataset
-        alterations = {'dsalter': [], 'gsalter': defaultdict(list), 'psalter': defaultdict(list)}
+        alterations = {'dsalter': [], 'gsalter': [], 'psalter': defaultdict(list)}
         if 'outlines' in clip_args:
 
             alterations['dsalter'].append(gcg.clip_hexes_to_polygons(dsclip['adata'], self._comout))
-
-            for k, v in self._grids.items():
-                alterations['gsalter'][k].append(gcg.clip_hexes_to_polygons(v['adata'], self._comout))
-
+            alterations['gsalter'].append(gcg.clip_hexes_to_polygons(self._comgrids, self._comout))
 
             for k, v in self._points.items():
                 alterations['psalter'][k].append(gcg.clip_hexes_to_polygons(v['adata'], self._comout))
@@ -580,21 +577,27 @@ class PlotBuilder:
             # alterations['psalter'].append(
             #   gcg.clip_points_to_polygons(self._compoi, self._comgrids))
         if 'regions' in clip_args:
+            print(self._comregs)
             alterations['dsalter'].append(gcg.clip_hexes_to_polygons(dsclip['adata'], self._comregs))
 
-            for k, v in self._grids.items():
-                print(v['adata'])
-                print(gcg.clip(v['adata'], self._comregs))
-                alterations['gsalter'][k].append(gcg.clip_hexes_to_polygons(v['adata'], self._comregs))
-                print('GRALTER', alterations['gsalter'][k])
+            # for k, v in self._grids.items():
+            #    print('GS',v['adata'])
+            #    alterations['gsalter'][k].append(gcg.clip(v['adata'], self._comregs, operation='within'))
+            #    print('GRALTER', alterations['gsalter'][k])
+            print(self._comgrids.geometry)
+            #import matplotlib.pyplot as plt
+
+            #self._comgrids.plot()
+            #plt.show()
+            print(self._grids, self._comgrids)
+            print(y:=gcg.clip(self._comgrids, self._comregs, operation='within'))
+            print('cliplen',len(y))
+            alterations['gsalter'].append(
+                x := gcg.clip_hexes_to_polygons(self._comgrids, self._comregs))
+            print('regionsclip', len(x))
 
             for k, v in self._points.items():
                 alterations['psalter'][k].append(gcg.clip_hexes_to_polygons(v['adata'], self._comregs))
-
-            # alterations['gsalter'].append(
-            #   gcg.clip_hexes_to_polygons(self._comgrids, self._comregs))
-            # alterations['psalter'].append(
-            #   gcg.clip_points_to_polygons(self._compoi, self._comregs))
 
         dsalter = alterations['dsalter']
         self._main_dataset['adata'] = gcg.repeater_merge(*dsalter, how='outer', on=['hex', 'value_field', 'geometry'])
@@ -604,11 +607,8 @@ class PlotBuilder:
         for k, v in self._points.items():
             v['adata'] = gcg.repeater_merge(*psalter[k], how='outer')
 
-        gsalter = alterations['gsalter']
-        for k, v in self._grids.items():
-            v['adata'] = gcg.repeater_merge(*gsalter[k], how='outer', on=['hex', 'value_field', 'geometry'])
-            print('GSS',v['adata'])
-        print(gsalter)
+        self._comgrids = gcg.repeater_merge(*alterations['gsalter'], how='outer', on=['hex', 'value_field', 'geometry'])
+        print(len(self._comgrids))
         # self._recombine()
 
     def _reset_adatas(self):
@@ -970,9 +970,10 @@ class PlotBuilder:
 
     def _combine_grids(self):
         try:
-            self._comgrids = gcg.repeater_merge(*[ds['adata'] for ds in list(self._grids.values())], on=['hex', 'geometry'])
-            #self._comgrids = gcg.merge_datasets_simple(*[ds['adata'] for ds in list(self._grids.values())],
-                                                       #result_name='value_field')
+            self._comgrids = gcg.repeater_merge(*[ds['adata'] for ds in list(self._grids.values())],
+                                                on=['hex', 'geometry'])
+            # self._comgrids = gcg.merge_datasets_simple(*[ds['adata'] for ds in list(self._grids.values())],
+            # result_name='value_field')
         except IndexError:
             pass
 
@@ -1421,7 +1422,7 @@ class PlotBuilder:
                 df_prop = deepcopy(self._dataset_manager)
                 print(df)
                 logger.debug(
-                        f'quantitative dataset trace added, (min,max)={str(tuple([min(df["value_field"]), max(df["value_field"])]))}.')
+                    f'quantitative dataset trace added, (min,max)={str(tuple([min(df["value_field"]), max(df["value_field"])]))}.')
                 df_prop['text'] = df['text'] = 'VALUE: ' + df['value_field'].astype(str)
 
                 discrete = self._plot_settings.pop('discrete_scale', cs.pop('discrete', False))
@@ -1712,7 +1713,7 @@ class PlotBuilder:
         '''
         self._plot_regions()
         self._plot_dataset_traces()
-        # self._plot_grids()
+        self._plot_grids()
         self._plot_outlines()
         self._plot_points()
 
