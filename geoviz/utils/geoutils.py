@@ -15,6 +15,7 @@ from pandas import DataFrame
 from shapely.geometry import Polygon, Point, polygon, LineString, MultiLineString, GeometryCollection, \
     MultiPoint
 from .util import get_occurrences
+from functools import reduce
 
 '''
 Notes:
@@ -250,7 +251,7 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoData
         """
 
         if isinstance(shape, Point):
-            return [Point(shape.x, shape.y)]
+            return [shape]
         elif isinstance(shape, Polygon):
             return [Point(s) for s in shape.exterior.coords]
         elif isinstance(shape, LineString):
@@ -260,8 +261,10 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoData
 
     cdf['points'] = cdf.geometry.apply(shape_to_points)
     cdf['pointslen'] = cdf['points'].apply(len)
-    cdf = GeoDataFrame(pd.DataFrame.explode(cdf[cdf['pointslen'] != 0].drop(columns='pointslen'), 'points'),
-                       crs=cdf.crs)
+    cdf = cdf[cdf['pointslen'] != 0]
+    cdf = GeoDataFrame(pd.DataFrame.explode(cdf, 'points'),
+                       crs=cdf.crs).drop(columns='pointslen')
+
     if keep_geoms:
         cdf['old-geometry'] = cdf.geometry
     cdf.geometry = cdf['points']
@@ -372,14 +375,19 @@ def get_area(poly: Polygon):
     return abs(geod.geometry_area_perimeter(poly)[0])
 
 
-def merge_datasets_simple(datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataFrame]]],
+def repeater_merge(*args, **kwargs):
+    return reduce(lambda left, right: pd.merge(left, right, **kwargs), list(args))
+
+
+def merge_datasets_simple(*args,
                           merge_op: Callable = operator.add,
                           common_columns: Optional[List[str]] = None, keep_columns: Optional[List[str]] = None,
-                          drop: bool = True, crs: Optional[str] = None) -> GeoDataFrame:
+                          drop: bool = True, crs: Optional[str] = None,
+                          result_name: Optional[str] = None, errors: str = 'ignore') -> GeoDataFrame:
     """Merges the datasets with the given merge operation.
 
-    :param datasets: The datasets to merge
-    :type datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataFrame]]]
+    :param args: The datasets to merge
+    :type args: *args: List[Union[GeoDataFrame, Tuple[str, GeoDataFrame]]]
     :param merge_op: The merge operation to perform on the datasets
     :type merge_op: Callable
     :param keep_columns: Additional columns to keep
@@ -390,20 +398,26 @@ def merge_datasets_simple(datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataF
     :type drop: bool
     :param crs: The crs of the new dataframe
     :type crs: Optional[str]
+    :param result_name: The name of the resulting column within the dataframe
+    :type result_name: Optional[str]
+    :param errors: The parameter determining errors to be thrown
+    :type errors: str
     :return: A merged dataframe
     :rtype: GeoDataFrame
     """
     merged_frame = GeoDataFrame(geometry=[])
-    first = datasets[0]
+
+    first = args[0]
+
     if isinstance(first, tuple):
         if not isinstance(first[1], GeoDataFrame):
             raise AttributeError(f"If you input a tuple, the first item must be the datasets name and the second a "
                                  f"GeoDataFrame object. The function got an incorrect tuple: {first}")
         merged_frame.index.set_names(first[1].index.name, inplace=True)
-        merged_frame.set_crs(crs=first[1].crs, inplace=True)
+        merged_frame.crs = first[1].crs
     else:
         merged_frame.index.set_names(first.index.name, inplace=True)
-        merged_frame.set_crs(crs=first.crs, inplace=True)
+        merged_frame.crs = first.crs
 
     col_name = lambda i: 'vf-' + str(i)
     col_names = []
@@ -412,7 +426,7 @@ def merge_datasets_simple(datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataF
     common_columns = common_columns if common_columns else []
     keep_columns = keep_columns if keep_columns else []
 
-    for item in datasets:
+    for item in args:
 
         if isinstance(item, tuple):
             if not isinstance(item[1], GeoDataFrame):
@@ -437,12 +451,14 @@ def merge_datasets_simple(datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataF
         crs1, crs2 = ds_frame.crs, merged_frame.crs
 
         if id_name1 != id_name2:
-            raise AttributeError(f"To use this particular merge, all datasets must have the same name. The function "
-                                 f"received indices with names {id_name1}, and {id_name2}.")
+            raise AttributeError(
+                f"To use this particular merge, all datasets must have the same index name. The function "
+                f"received indices with names {id_name1}, and {id_name2}.")
 
         if id_type1 != id_type2:
-            raise AttributeError(f"To use this particular merge, all datasets must have the same name. The function "
-                                 f"received indices with names {id_type1}, and {id_type2}.")
+            raise AttributeError(
+                f"To use this particular merge, all datasets must have the same index type. The function "
+                f"received indices with names {id_type1}, and {id_type2}.")
 
         if crs1 != crs2:
             warnings.warn(f"The datasets passed into this function should have the same crs. "
@@ -458,27 +474,29 @@ def merge_datasets_simple(datasets: List[Union[GeoDataFrame, Tuple[str, GeoDataF
                                                   on=on_list)
             else:
                 merged_frame = merged_frame.merge(ds_frame[keep_list], how='outer', on=on_list)
-            col_names.append(col_name(ds_name))
+                col_names.append(col_name(ds_name))
 
             for col in col_names:
                 merged_frame[col] = merged_frame[col].fillna(0)
         else:
-            raise AttributeError("One of the dataframes that was passed is empty.")
+            if errors == 'raise':
+                raise AttributeError("One of the dataframes that was passed is empty.")
 
-    merged_frame['merge-op'] = 0
-    for i, row in merged_frame.iterrows():
+    result_name = result_name if result_name is not None else 'merge-op'
+    merged_frame[result_name] = 0
+
+    print('COLNAMES', col_names)
+
+    def result_helper(row):
         try:
             result = row[col_names[0]]
             for j in range(1, len(col_names)):
                 result = float(merge_op(result, float(row[col_names[j]])))
+            return result
+        except (IndexError, TypeError, ValueError):
+            return 0
 
-            merged_frame.at[i, 'merge-op'] = result
-        except IndexError:
-            break
-        except TypeError:
-            break
-        except ValueError:
-            break
+    merged_frame[result_name] = merged_frame.apply(result_helper, axis=1)
 
     if drop:
         merged_frame = merged_frame.drop(columns=col_names)
@@ -554,7 +572,8 @@ def clip_hexes_to_hexes(hexes: GeoDataFrame, clip: GeoDataFrame):
 def clip_hexes_to_polygons(hexes: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFrame:
     if not hexes.empty and not clip.empty:
         clip = GeoDataFrame(clip['geometry'], geometry='geometry', crs=clip.crs)
-        geodf = gpd.sjoin(hexes, clip, op='intersects', how='inner')
+        geodf = gpd.sjoin(hexes.copy(deep=True), clip, op='intersects', how='inner')
+        print('CALLED', len(geodf))
         try:
             geodf.set_index('hex', inplace=True)
         except KeyError:
@@ -573,6 +592,11 @@ def clip_points_to_polygons(points: GeoDataFrame, clip: GeoDataFrame) -> GeoData
             pass
         return geodf
     return points
+
+
+def clip(gdf: GeoDataFrame, clip: GeoDataFrame, operation: str = 'within'):
+    clip = clip[['geometry']]
+    return gpd.sjoin(gdf, clip, op=operation)
 
 
 def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None):

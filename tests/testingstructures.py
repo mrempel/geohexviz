@@ -1,4 +1,5 @@
-from shapely.geometry import Point, Polygon, LineString, MultiPoint, MultiPolygon, MultiLineString
+from shapely.geometry import Point, Polygon, LineString, MultiPoint, MultiPolygon, MultiLineString, GeometryCollection
+
 
 class TestingShape:
     multitype = {
