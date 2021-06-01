@@ -19,6 +19,7 @@ DataSet = Dict[str, Any]
 GeometryContainer = Union[MultiPolygon, MultiPoint, MultiLineString, GeometryCollection]
 AnyGeom = Union[Polygon, Point, LineString, GeometryContainer]
 
+
 def fix_filepath(filepath: str, add_filename: str = '', add_ext: str = '') -> str:
     """Converts a directorypath, or filepath into a valid filepath.
 
@@ -41,7 +42,7 @@ def fix_filepath(filepath: str, add_filename: str = '', add_ext: str = '') -> st
         return filepath
 
 
-def dict_deep_update(d: dict, u: dict):
+def dict_deep_update(d: dict, u: dict) -> object:
     """Updates a dict without changing nested dicts that may be present.
 
     :param d: The dict to update
@@ -118,6 +119,21 @@ def make_multi_dataset(dss, errors: str = 'raise'):
     vals = []
     for dsname, ds in dss.items():
         ds['data']['*DS_NAME*'] = dsname
+        vals.append(ds['adata'])
+    try:
+        return GeoDataFrame(concat(vals, ignore_index=True), geometry='geometry', crs='EPSG:4326')
+    except ValueError as e:
+        if errors == 'raise':
+            raise e
+        data = GeoDataFrame()
+        data['*DS_NAME*'] = ''
+        return data
+
+
+def make_multi_dataset2(dss, errors: str = 'raise'):
+    vals = []
+    for dsname, ds in dss.items():
+        ds['data']['*DS_NAME*'] = dsname
         vals.append(ds['data'])
     try:
         return {'data': GeoDataFrame(concat(vals, ignore_index=True), geometry='geometry', crs='EPSG:4326')}
@@ -129,7 +145,16 @@ def make_multi_dataset(dss, errors: str = 'raise'):
         return {'data': data}
 
 
-def dissolve_multi_dataset(mds, properties, dropmds: bool = True, mdsname: str = '*COMBINED*', errors: str = 'raise'):
+def dissolve_multi_dataset(mds, ds_col: str = '*DS_NAME*', errors: str = 'ignore'):
+    try:
+        return {x: mds[mds[ds_col] == x] for x in mds[ds_col].unique()}
+    except KeyError as e:
+        if errors == 'raise':
+            raise e
+        return mds
+
+
+def dissolve_multi_dataset2(mds, properties, dropmds: bool = True, mdsname: str = '*COMBINED*', errors: str = 'raise'):
     mds = mds['data']
     dss = {}
     for un in mds['*DS_NAME*'].unique():
@@ -169,7 +194,10 @@ def get_total_hex_area(gdf: GeoDataFrame, assume: bool = True):
 
 
 def get_stats(gdf: GeoDataFrame, hexed: bool = False):
-    eq_area = gdf.to_crs('EPSG:8857', inplace=False)
+    try:
+        eq_area = gdf.to_crs('EPSG:8857', inplace=False)
+    except ValueError:
+        return {}
     if hexed:
         estimated_area = get_total_hex_area(gdf)
     else:

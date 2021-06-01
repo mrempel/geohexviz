@@ -171,6 +171,9 @@ def logify_scale(df: DataFrame, **kwargs) -> Dict[str, Any]:
     return {'colorbar': {'tickvals': scale_info['scale-vals'], 'ticktext': scale_info['scale-text']},
             'zmin': scale_info['scale-vals'][0], 'zmax': scale_info['scale-vals'][-1]}
 
+def delogify_scale(df: DataFrame):
+    df['value_field'] = df['value_field'].apply(lambda v: 10**v)
+
 
 def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
     """Conforms the opacity of a colorscale to match the opacity of the plotly marker.
@@ -191,21 +194,14 @@ def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
 
 
 def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
-    gdf['gtype'] = gdf.geom_type.astype(str)
-    notpoints = gdf[gdf['gtype'] != 'Point']
-    notpoints = pointify_geodataframe(notpoints)
-    notpoints = notpoints.append(gdf[gdf['gtype'] == 'Point'], ignore_index=False)
-
-    notpoints.index.set_names('POLY_NUM', inplace=True)
-    notpoints.drop(columns='gtype', inplace=True)
 
     lats = []
     lons = []
 
-    for i in notpoints.index.unique():
-        poly = notpoints[notpoints.index == i]
-        lats.extend(list(poly.geometry.y))
-        lons.extend(list(poly.geometry.x))
+    for i in gdf.index.unique():
+        points = gdf[gdf.index == i]
+        lats.extend(list(points.geometry.y))
+        lons.extend(list(points.geometry.x))
         if disjoint:
             lats.append(np.nan)
             lons.append(np.nan)
