@@ -596,7 +596,7 @@ def clip_points_to_polygons(points: GeoDataFrame, clip: GeoDataFrame) -> GeoData
 
 def clip(gdf: GeoDataFrame, clip: GeoDataFrame, operation: str = 'within'):
     clip = clip[['geometry']]
-    return gpd.sjoin(gdf, clip, op=operation)
+    return gpd.sjoin(gdf, clip, how='inner', op=operation)
 
 
 def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None):
