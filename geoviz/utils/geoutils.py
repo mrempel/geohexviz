@@ -325,7 +325,18 @@ def conform_geogeometry(gdf: GeoDataFrame, d3_geo: bool = True, fix_polys: bool 
             return fn(shape)
         except AttributeError:
             try:
-                return MultiPolygon([fn(s) for s in shape])
+                lst = []
+                for item in shape:
+                    try:
+                        lst.append(fn(item))
+                    except AttributeError:
+                        lst.append(item)
+                if isinstance(shape, MultiPolygon):
+                    return MultiPolygon(lst)
+                elif isinstance(shape, GeometryCollection):
+                    return GeometryCollection(lst)
+                else:
+                    return shape
             except (TypeError, ValueError):
                 return shape
         except TypeError:
