@@ -84,8 +84,11 @@ def alphaScale(scale: list, starting_alpha=0.3, decreasing: bool = False):
         scale[i] = configureColorWithAlpha(scale[i], starting_alpha + increment * i)
 
 
-def configureColorWithAlpha(color, alpha: float = 0.4):
-    if 'rgb' in color:
+def configureColorWithAlpha(color: str, alpha: float):
+    if 'rgba' in color:
+        r, g, b = cli.unlabel_rgb(color)
+        return f'rgba({r},{g},{b},{alpha})'
+    elif 'rgb' in color:
         return f'{color[:-1].replace("rgb", "rgba")}, {alpha})'
     else:
         return color
@@ -106,10 +109,31 @@ def configureScaleWithAlpha(scale, alpha: float = 0.4):
     return cli.make_colorscale(colors, scale=sscale)
 
 
-def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float, high: float, **kwargs):
+def getScaleFormat(colorscale):
+    if isinstance(colorscale, dict):
+        return 'dict'
+    else:
+        if isinstance(colorscale, str):
+            return 'string'
+        try:
+            if any(isinstance(i, list) or isinstance(i, tuple) for i in iter(colorscale)):
+                return 'nested-iterable'
+            else:
+                return 'iterable'
+        except TypeError:
+            return 'unknown'
+
+
+def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float, high: float, discrete_size: float = 1, **kwargs):
     if isinstance(scale_value, str):
-        scale_value = getScale(scale_value, scale_type)
-    scale_value = cli.convert_colors_to_same_type(scale_value, 'rgb')[0]
+        try:
+            scale_value = tryGetScale(scale_value)
+        except AttributeError:
+            if getScaleFormat(scale_value) not in ['nested-iterable', 'iterable']:
+                raise ValueError("The scale is in an invalid format.")
+
+    scale_value = cli.convert_colors_to_same_type(scale_value, colortype="rgb")[0]
+
     if scale_type == 'diverging':
         return discretize_diverging(scale_value, low, high, **kwargs)
     else:

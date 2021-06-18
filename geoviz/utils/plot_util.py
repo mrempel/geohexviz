@@ -191,6 +191,18 @@ def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
 
         properties['colorscale'] = cli.configureScaleWithAlpha(properties['colorscale'], alpha=alpha)
 
+def conformAlpha(properties: Dict[str, Any]):
+    try:
+        alpha = properties['marker']['opacity']
+    except KeyError:
+        alpha = 1.0
+
+    colorscale = properties.get('colorscale')
+
+    try:
+        colorscale = cli.tryGetScale(colorscale)
+    except ValueError:
+        pass
 
 
 def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):

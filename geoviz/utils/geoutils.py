@@ -168,6 +168,7 @@ def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None) -> GeoData
         gdf.geometry = gdf[hex_col].apply(lambda r: Polygon(h3.h3_to_geo_boundary(r, True)))
     else:
         gdf['hexv'] = gdf.index.values
+        print(gdf)
         gdf.geometry = gdf['hexv'].apply(lambda r: Polygon(h3.h3_to_geo_boundary(r, True)))
         gdf.drop(columns='hexv', inplace=True)
 
@@ -212,7 +213,7 @@ def bin_by_hex(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_f
     # group by ids aggregate into list
     hex_gdf_g = (hex_gdf
                  .groupby(hex_field)[binning_field]
-                 .agg(list)
+                 .agg(tuple)
                  .to_frame(binned_name))
 
     hex_gdf_g[result_name] = (hex_gdf_g[binned_name].apply(binning_fn, args=binning_args, **binning_kw))
@@ -222,6 +223,11 @@ def bin_by_hex(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_f
         hex_gdf_g.crs = "EPSG:4326"
 
     return hex_gdf_g
+
+
+def unify_geodataframe(gdf: GeoDataFrame):
+    geom = gdf.unary_union.boundary
+    return GeoDataFrame(geometry=[geom], crs='ESPG:4326')
 
 
 def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoDataFrame:
@@ -268,7 +274,7 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoData
     if keep_geoms:
         cdf['old-geometry'] = cdf.geometry
     cdf.geometry = cdf['points']
-    return cdf.drop(columns='points')
+    return cdf.drop(columns='points', errors='ignore')
 
 
 def convert_dataframe_geometry_to_geodataframe(df: DataFrame, geometry_field: str = 'geometry') -> GeoDataFrame:
@@ -605,19 +611,46 @@ def clip_points_to_polygons(points: GeoDataFrame, clip: GeoDataFrame) -> GeoData
     return points
 
 
-def clip(gdf: GeoDataFrame, clip: GeoDataFrame, operation: str = 'within'):
+def clip(gdf: GeoDataFrame, clip: GeoDataFrame, operation: str = 'within', errors: str = 'raise'):
+    gdf.crs = 'EPSG:4326'
+
+    if clip.empty:
+        if errors == 'raise':
+            raise ValueError("The dataframe that is acting as the clip can not be empty.")
+        else:
+            return gdf
+
+    clip.crs = 'EPSG:4326'
     clip = clip[['geometry']]
     return gpd.sjoin(gdf, clip, how='inner', op=operation)
 
 
-def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None):
-    if hex_column is None:
-        gdf['hex_resolution_col'] = gdf.index
-        hex_resolution_col = gdf['hex_resolution_col'].astype(str).apply(h3.h3_get_resolution)
-    else:
-        hex_resolution_col = gdf[hex_column].apply(h3.h3_get_resolution)
-    hex_resolutiones = get_occurrences(list(hex_resolution_col))
-    hes_res = int(max(hex_resolutiones.items(), key=operator.itemgetter(1))[0])
+def gpdclip(gdf: GeoDataFrame, clip: GeoDataFrame, errors: str = 'raise', enforce_crs: Any = 'EPSG:4326',
+            keep_geom_type: bool = True):
+    if gdf.crs is None:
+        gdf.crs = enforce_crs
+
+    if clip.empty:
+        if errors == 'raise':
+            raise ValueError("The dataframe that is acting as the clip can not be empty.")
+        else:
+            return gdf
+
+    if clip.crs is None:
+        clip.crs = gdf.crs
+
+    return gpd.clip(gdf, clip.to_crs(crs=gdf.crs), keep_geom_type=keep_geom_type)
+
+
+def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None, hex_resolution: int = None):
+    if hex_resolution is None:
+        if hex_column is None:
+            gdf['hex_resolution_col'] = gdf.index
+            hex_resolution_col = gdf['hex_resolution_col'].astype(str).apply(h3.h3_get_resolution)
+        else:
+            hex_resolution_col = gdf[hex_column].apply(h3.h3_get_resolution)
+        hex_resolutions = get_occurrences(list(hex_resolution_col))
+        hex_resolution = int(max(hex_resolutions.items(), key=operator.itemgetter(1))[0])
 
     range_lon, range_lat = find_ranges_simple(gdf.geometry)
     range_lat, range_lon = list(range_lat), list(range_lon)
@@ -630,9 +663,16 @@ def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None
     # TODO: Polygon must be in lat/lng format
 
     poly = Polygon([bl, tl, tr, br, bl])
+    print(poly)
 
     gdf = GeoDataFrame(geometry=[poly], crs="EPSG:4326")
-    hexed_gdf = hexify_geodataframe(gdf, hex_resolution=hes_res)
+
+    print('WORKEDHERE\n', gdf)
+
+    hexed_gdf = hexify_geodataframe(gdf, hex_resolution=hex_resolution)
+    hexed_gdf = hexify_geometry(hexed_gdf)
+
+    print('HEXED\n', hexed_gdf)
     return conform_geogeometry(hexed_gdf, fix_polys=True)
 
 
