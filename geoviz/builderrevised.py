@@ -12,7 +12,7 @@ from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, 
 from shapely.geometry import Point, Polygon
 
 from geoviz.utils.util import fix_filepath, get_sorted_occurrences, generate_dataframe_random_ids, get_column_type, \
-    simplify_dicts, dict_deep_update
+    simplify_dicts, dict_deep_update, get_percdiff
 from geoviz.utils import geoutils as gcg
 from geoviz.utils import plot_util as butil
 
@@ -22,6 +22,7 @@ from geoviz.utils.colorscales import solid_scale, configureColorWithAlpha, confi
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from collections import defaultdict
+plotly.io.kaleido.scope.default_format = 'pdf'
 
 _extension_mapping = {
     '.csv': pd.read_csv,
@@ -117,6 +118,17 @@ clip() tends to fail when clipping to a weird geometry type such as points.
 We should also optimize how parameters are passed into the reading functions.
 
 Our custom functions main functionality should be put into a separate module and imported, maybe?
+
+Notes for Monday:
+
+- Help Nicholi produce his visualization
+- Optimize imports, functions, etc...
+- Test edge cases with clipping, then plotting or invoking other functions.
+
+Notes for Tuesday:
+
+- Meet with Mark and discuss progress track and such
+- Alter query functions, for both internal and external usage
 """
 
 
@@ -174,8 +186,8 @@ def _read_dataset(name: str, dataset: dict, default_manager: dict = None, allow_
                         "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
                         "and longitude_field entries. Missing longitude_field member.")
 
-            dataset['data'] = data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
-                                                                                    crs='EPSG:4326'))
+            dataset['data'] = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
+                                                                             crs='EPSG:4326'))
     else:
         raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
 
@@ -271,10 +283,6 @@ def _update_helper(dataset: dict, updates: dict, override: bool = False):
         dataset['manager'] = updates
     else:
         dataset['manager'].update(updates)  # change to dict deep update
-
-
-def _prepare_general_datasetv2(data, fields: dict = None, allow_manager_updates: bool = False, **kwargs):
-    print()
 
 
 # this function should standalone.
@@ -724,30 +732,53 @@ class PlotBuilder:
     DATA ALTERING FUNCTIONS
     """
 
-    def apply_to_query(self, name: str, fn, big_query: bool = True):
+    # TODO: this function needs to be altered
+    def apply_to_query(self, name: str, fn, *args, big_query: bool = True, allow_empty: bool = True, **kwargs):
+        """Applies a function to the datasets within a query.
+
+        For advanced users and not to be used carelessly.
+
+        :param name: The query of the datasets to apply the function to
+        :type name: str
+        :param fn: The function to apply
+        :type fn: Callable
+        :param big_query: Whether to allow container like queries or not
+        :type big_query: bool
+        :param allow_empty: Whether to allow query arguments that retrieved empty results or not
+        :type allow_empty: bool
+        """
 
         datasets = self.search(name, big_query=big_query)
 
         lst = []
 
+        if not datasets and not allow_empty:
+            raise ValueError("The query submitted returned an empty result.")
         if 'data' in datasets:
-            lst.append(fn(datasets))
+            lst.append(fn(datasets, *args, **kwargs))
         else:
             for _, v in datasets.items():
+                if not v and not allow_empty:
+                    raise ValueError("The query submitted returned an empty result.")
                 if 'data' in v:
-                    lst.append(fn(v))
+                    lst.append(fn(v, *args, **kwargs))
                 else:
                     for _, vv in v.items():
+                        if not vv and not allow_empty:
+                            raise ValueError("The query submitted returned an empty result.")
                         if 'data' in vv:
-                            lst.append(fn(vv))
+                            lst.append(fn(vv, *args, **kwargs))
                         else:
                             for _, vvv in vv.items():
+                                if not vvv and not allow_empty:
+                                    raise ValueError("The query submitted returned an empty result.")
                                 if 'data' in vvv:
-                                    lst.append(fn(vvv))
+                                    lst.append(fn(vvv, *args, **kwargs))
                                 else:
-                                    raise ValueError("Error when applying function.")
+                                    raise ValueError("Error when applying function to query.")
         return lst
 
+    # TODO: this function should or should not be here, if it should be it should apply to main only
     def remove_empties(self, name: str = 'main', empty_symbol: Any = 0, add_to_plot: bool = False):
 
         if add_to_plot and name != 'main':
@@ -762,21 +793,44 @@ class PlotBuilder:
         self.apply_to_query(name, helper)
 
     # this is both a data altering, and plot altering function
+    # TODO: this function should only apply to the main dataset
     def logify_scale(self, name: str = 'main', **kwargs):
+        """Makes the scale of datasets logarithmic.
+
+        :param name: The query of datasets that are to be logified (usually just main)
+        :type name: str
+        :param kwargs: Keyword arguments to be passed into logify functions
+        :type kwargs: **kwargs
+        """
 
         helper = lambda dataset: _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
         self.apply_to_query(name, helper, big_query=True)
 
-    def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = None):
+    # TODO: this function should be able to take any two big or small queries.
+    def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = 'intersects'):
+        """Clips a query of datasets to another dataset.
 
-        datas = self.apply_to_query(to, lambda ds: ds, big_query=True)
+        :param clip: The query for the datasets that are to be clipped to another
+        :type clip: GeoDataFrame
+        :param to: The query for the datasets that are to be used as the boundary
+        :type to: GeoDataFrame
+        :param method: The method to use when clipping, one of 'sjoin', 'gpd'
+        :type method: str
+        :param operation: The operation to apply when using sjoin (spatial join operation)
+        :type operation: str
+        """
+
+        datas = self.apply_to_query(to, lambda dataset: dataset, big_query=True)
 
         def helpersjoin(dataset):
 
-            result = pd.concat(
-                [gcg.clip(dataset['data'], item['data'], operation=operation, errors='raise') for item in datas])
-            result.drop_duplicates(inplace=True)
-            dataset['data'] = result
+            try:
+                result = pd.concat(
+                    [gcg.clip(dataset['data'], item['data'], operation=operation, errors='raise') for item in datas])
+                result.drop_duplicates(inplace=True)
+                dataset['data'] = result
+            except ValueError:
+                raise ValueError("There are no datasets to clip to.")
 
         def helpergpd(dataset):
 
@@ -791,9 +845,12 @@ class PlotBuilder:
 
                 alterations.append(gcg.gpdclip(dataset['data'], item['data']))
 
-            result = pd.concat(alterations)
-            result.drop_duplicates(inplace=True)
-            dataset['data'] = result
+            try:
+                result = pd.concat(alterations)
+                result.drop_duplicates(inplace=True)
+                dataset['data'] = result
+            except ValueError:
+                raise ValueError("There are no datasets to clip to.")
 
         if method == 'gpd':
             self.apply_to_query(clip, helpergpd, big_query=True)
@@ -803,17 +860,23 @@ class PlotBuilder:
             raise ValueError("The selected method must be one of ['gpd', 'sjoin'].")
 
     # check methods of clipping
-    def simple_clip(self, to: str = 'regions+outlines', method: str = 'sjoin'):
-        self.clip_datasets('main+grids', to, method=method, operation='intersects')
-        self.clip_datasets('points', to, method=method, operation='within')
+    def simple_clip(self, method: str = 'sjoin'):
+        """Clips the main dataset and grids to regions and outlines.
+
+        :param method: The method to use when clipping, one of 'sjoin' or 'gpd'
+        :type method: str
+        """
+
+        self.clip_datasets('main+grids', 'regions+outlines', method=method, operation='intersects')
+        self.clip_datasets('points', 'regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
-        """Removes the grid from underneath the data (lower file size).
+        """Removes the pieces of a GeoDataFrame that lie under another.
 
-        :param ds: The main dataset (after altreration)
-        :type ds: DataSet
-        :param gds: The merged grid dataset (after alteration)
-        :type gds: DataSet
+        :param df: The overlayed dataframe (after alteration)
+        :type df: GeoDataFrame
+        :param gdf: The merged underlying dataframe (after alteration)
+        :type gdf: GeoDataFrame
         """
 
         if not df.empty and not gdf.empty:
@@ -826,9 +889,20 @@ class PlotBuilder:
     PLOT ALTERING FUNCTIONS
     """
 
-    def opacify_colorscale(self, name: str = 'main'):
+    # TODO: This function should only apply to the main dataset (maybe, think more)
+    def opacify_colorscale(self, name: str = 'main', alpha: float = None):
+        """Conforms the opacity of the colorbar of dataset(s) to an alpha value.
 
-        def helper(dataset):
+        The alpha value can be passed in as a parameter, otherwise it is taken
+        from the marker.opacity property within the dataset's manager.
+
+        :param name: The query data sets to opacify the colorscales of
+        :type name: str
+        :param alpha: The alpha value to conform the colorscale to
+        :type alpha: float
+        """
+
+        def helper(dataset, alpha = None):
             colorscale = dataset['manager'].get('colorscale')
 
             try:
@@ -836,10 +910,11 @@ class PlotBuilder:
             except AttributeError:
                 pass
 
-            alpha = dataset['manager'].get('marker', {}).get('opacity', 1)
+            opacity = dataset['manager'].get('marker', {}).pop('opacity', 1)
+            alpha = alpha if alpha is not None else opacity
 
             if isinstance(colorscale, dict):
-                colorscale = {k: configureColorWithAlpha(v) for k, v in colorscale.items()}
+                colorscale = {k: configureColorWithAlpha(v, alpha) for k, v in colorscale.items()}
 
             if isinstance(colorscale, tuple):
                 colorscale = list(colorscale)
@@ -854,62 +929,89 @@ class PlotBuilder:
 
             dataset['manager']['colorscale'] = configureScaleWithAlpha(colorscale, alpha)
 
-        self.apply_to_query(name, helper)
+        self.apply_to_query(name, helper, alpha=alpha)
 
-    def auto_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True):
+    # TODO: This function should be able to take any query of datasets
+    def auto_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
+                   buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = True):
+        """Focuses on dataset(s) within the plot.
 
-        if not any((center_on, rotation_on, ranges_on)):
-            raise ValueError("One of 'center_on', 'roatation_on', 'ranges_on' must be set to True.")
+        Collects the geometries of the queried datasets in order to
+        obtain a boundary to focus on.
+
+        In the future using a GeoSeries may be looked into for cleaner code.
+
+        :param on: The query for the dataset(s) to be focused on
+        :type on: str
+        :param center_on: Whether or not to add a center component to the focus
+        :type center_on: bool
+        :param rotation_on: Whether or not to add a projection rotation to the focus
+        :type rotation_on: bool
+        :param ranges_on: Whether or not to add a lat axis, lon axis ranges to the focus
+        :type ranges_on: bool
+        :param buffer_lat: A low and high bound to add and subtract from the lataxis range
+        :type buffer_lat: Tuple[float, float]
+        :param buffer_lon: A low and high bound to add and subtract from the lonaxis range
+        :type buffer_lon: Tuple[float, float]
+        :param validate: Whether or not to validate the ranges
+        :type validate: bool
+        """
 
         geoms = []
+        self.apply_to_query(on, lambda ds: geoms.extend(list(ds['data'].geometry)))
 
-        def helper(dataset):
-            geoms.extend(list(dataset['data'].geometry))
-
-        self.apply_to_query(on, helper)
-
-        if geoms:
-            cen: Point = gcg.find_center_simple(geoms)
-            rng = gcg.find_ranges_simple(geoms)
-
-            buffer_lat = self._plot_settings['range_buffer_lat']
-            buffer_lon = self._plot_settings['range_buffer_lon']
-
-            cd_lat, cd_lon, projection_rotation, center = None, None, None, None
-
-            if rng is not None:
-                lat_r = list(rng[1])
-                cd_lat = lat_r[0] - buffer_lat[0], lat_r[1] + buffer_lat[1]
-
-                lon_r = list(rng[0])
-                cd_lon = lon_r[0] - buffer_lon[0], lon_r[1] + buffer_lon[1]
-
-            if cen is not None:
-                projection_rotation = dict(lon=cen.x, lat=cen.y)
-                center = dict(lon=cen.x, lat=cen.y)
-
-            geos = {}
-            if center_on:
-                geos['center'] = center
-            if rotation_on:
-                geos['projection_rotation'] = projection_rotation
-            if ranges_on:
-                geos['lataxis_range'] = cd_lat
-                geos['lonaxis_range'] = cd_lon
-
-            self._figure.update_geos(**geos)
-        else:
+        if not geoms:
             raise ValueError("There are no geometries in your query to focus on.")
 
-    def auto_grid(self, name: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
+        geos = {}
+        if ranges_on:
+            lonrng, latrng = gcg.find_ranges_simple(geoms)
+            geos['lataxis_range'] = (latrng[0] - buffer_lat[0], latrng[1] + buffer_lat[1])
+            geos['lonaxis_range'] = (lonrng[0] - buffer_lon[0], lonrng[1] + buffer_lon[1])
+
+            if validate:
+                latlow, lathigh = geos['lataxis_range']
+                lonlow, lonhigh = geos['lonaxis_range']
+                lonlowdiff, lonhighdiff = get_percdiff(lonlow, -180), get_percdiff(lonhigh, 180)
+                latlowdiff, lathighdiff = get_percdiff(latlow, -90), get_percdiff(lathigh, 90)
+
+                if lonlowdiff <= 5 and lonhighdiff <= 5:
+                    geos['lonaxis_range'] = (-180, 180)
+                if latlowdiff <= 5 and lathighdiff <= 5:
+                    geos['lataxis_range'] = (-90, 90)
+
+        center = gcg.find_center_simple(geoms)
+        center = dict(lon=center.x, lat=center.y)
+
+        if rotation_on:
+            geos['projection_rotation'] = center
+
+        if center_on:
+            geos['center'] = center
+
+        self._figure.update_geos(**geos)
+
+    # TODO: this function should be capable of taking any query of datasets.
+    def auto_grid(self, query: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
+        """Makes a grid over the queried datasets.
+
+        :param query: The query for the datasets to have a grid generated over them
+        :type query: str
+        :param by_bounds: Whether or not to treat the  geometries as a single boundary
+        :type by_bounds: bool
+        :param hex_resolution: The hexagonal resolution to use for the auto grid
+        :type hex_resolution: int
+        """
+
         fn = gcg.generate_grid_over_hexes if by_bounds else gcg.hexify_geodataframe
 
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
 
+        print('GOTHERE')
         try:
-            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(name, helper))), crs='EPSG:4326')
-
+            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(query, helper))), crs='EPSG:4326')
+            print('GOTHERE', grid)
             if not grid.empty:
                 grid['value_field'] = 0
                 self.get_grids()['|*AUTO*|'] = {'data': gcg.conform_geogeometry(grid), 'manager': self._grid_manager}
@@ -919,12 +1021,24 @@ class PlotBuilder:
                 import matplotlib.pyplot as plt
                 self.get_grids()['|*AUTO*|']['data'].plot()
                 plt.show()
+            else:
+                raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
+                                 "of an area.")
 
         except ValueError as e:
             raise e
 
-    # TODO: handle edge cases for discrete scales.
-    def discretize_scale(self, name: str = 'main', scale_type: str = 'sequential', **kwargs):
+    # TODO: this function should only apply to main dataset
+    def discretize_scale(self, query: str = 'main', scale_type: str = 'sequential', **kwargs):
+        """Converts the color scale of the dataset(s) to a discrete scale.
+
+        :param query: The query for the dataset(s) to be discretized
+        :type query: str
+        :param scale_type: One of 'sequential', 'discrete' for the type of color scale being used
+        :type scale_type: str
+        :param kwargs: Keyword arguments to be passed into the discretize functions
+        :type kwargs: **kwargs
+        """
 
         def helper(dataset):
             if dataset['VTYPE'] == 'str':
@@ -936,7 +1050,7 @@ class PlotBuilder:
                 dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
                                                                     low, high, **kwargs)
 
-        self.apply_to_query(name, helper)
+        self.apply_to_query(query, helper)
 
     """
     RETRIEVAL/SEARCHING FUNCTIONS
@@ -973,6 +1087,12 @@ class PlotBuilder:
                              "'outline', 'point']. "
                              f"Received {typer}.")
 
+    def _search(self, query: str):
+        print()
+
+    def _single_search(self, query: str):
+        print()
+
     def search(self, query: str, big_query: bool = True):
 
         sargs = query.split('+')
@@ -993,6 +1113,9 @@ class PlotBuilder:
         All of the regions are treated as separate plot traces.
         """
         # logger.debug('adding regions to plot.')
+
+        if not self.get_regions():
+            raise ValueError("There are no region-type datasets to plot.")
         for regname, regds in self.get_regions().items():
             choro = _prepare_choropleth_trace(regds['data'],
                                               mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
@@ -1004,6 +1127,9 @@ class PlotBuilder:
 
         Merges all of the datasets together, and plots it as a single plot trace.
         """
+        if not self.get_grids():
+            raise ValueError("There are no grid-type datasets to plot.")
+
         merged = pd.concat(self.get_query_data('grids'))
         merged.drop_duplicates(inplace=True)
 
@@ -1020,16 +1146,12 @@ class PlotBuilder:
 
         self._figure.add_trace(choro)
 
-    def plot_dataset(self):
+    def plot_main(self):
         """Plots the main dataset within the builder.
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
-
         dataset = self['main']
-
-        if dataset is None:
-            raise ValueError("There is no main dataset to plot.")
         df = dataset['data']
 
         # qualitative dataset
@@ -1079,18 +1201,20 @@ class PlotBuilder:
             choro.update(dataset['manager'])
             self._figure.add_trace(choro)
 
-    def plot_outlines(self):
+    def plot_outlines(self, raise_errors: bool = False):
         """Plots the outline datasets within the builder.
 
         All of the outlines are treated as separate plot traces.
         The datasets must first be converted into point-like geometries.
+
+        :param raise_errors: Whether or not to throw errors upon reaching empty dataframes
+        :type raise_errors: bool
         """
+        if not self.get_outlines():
+            raise ValueError("There are no outline-type datasets to plot.")
+
         for outname, outds in self.get_outlines().items():
-            try:
-                outds['data'] = gcg.pointify_geodataframe(outds['data'], keep_geoms=False)
-            except KeyError:
-                pass
-            print(outds['data'])
+            outds['data'] = gcg.pointify_geodataframe(outds['data'], keep_geoms=False, raise_errors=raise_errors)
             scatt = _prepare_scattergeo_trace(outds['data'], separate=True, disjoint=True,
                                               mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
             scatt.update(outds['manager'])
@@ -1101,6 +1225,8 @@ class PlotBuilder:
 
         All of the point are treated as separate plot traces.
         """
+        if not self.get_points():
+            raise ValueError("There are no point-type datasets to plot.")
         for poiname, poids in self.get_points().items():
             scatt = _prepare_scattergeo_trace(poids['data'], separate=False, disjoint=False,
                                               mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
@@ -1108,10 +1234,17 @@ class PlotBuilder:
             self._figure.add_trace(scatt)
 
     def set_mapbox(self, accesstoken: str):
+        """Prepares the builder for a mapbox output.
+
+        Sets figure.layout.mapbox_accesstoken, and plot_settings output service.
+
+        :param accesstoken: A mapbox access token for the plot
+        :type accesstoken: str
+        """
         self._plot_settings['plot_output_service'] = 'mapbox'
         self._figure.update_layout(mapbox_accesstoken=accesstoken)
 
-    def build_plot(self):
+    def build_plot(self, plot_regions: bool = True, plot_grids: bool = True, plot_main: bool = True, plot_outlines: bool = True, plot_points: bool = True):
         """Builds the final plot by adding traces in order.
 
         Invokes the functions in the following order:
@@ -1124,32 +1257,40 @@ class PlotBuilder:
         In the future we should alter these functions to
         allow trace order implementation.
         """
-        try:
-            self.plot_regions()
-        except ValueError:
-            pass
-        try:
-            self.plot_grids(remove_underlying=True)
-        except ValueError:
-            pass
-        try:
-            self.plot_dataset()
-        except ValueError:
-            pass
-        try:
-            self.plot_outlines()
-        except ValueError:
-            pass
-        try:
-            self.plot_points()
-        except ValueError:
-            pass
+        if plot_regions:
+            try:
+                self.plot_regions()
+            except ValueError:
+                pass
+        if plot_grids:
+            try:
+                self.plot_grids(remove_underlying=True)
+            except ValueError:
+                pass
+        if plot_main:
+            try:
+                self.plot_main()
+            except (ValueError, KeyError):
+                pass
+        if plot_outlines:
+            try:
+                self.plot_outlines()
+            except ValueError:
+                pass
+        if plot_points:
+            try:
+                self.plot_points()
+            except ValueError:
+                pass
 
     def output_figure(self, filepath: str, **kwargs):
-        print()
+        self._figure.write_image(filepath, **kwargs)
 
     def display_figure(self, **kwargs):
-        print()
+        self._figure.show(**kwargs)
+
+    def clear_figure(self):
+        self._figure.data = []
 
     def reset(self):
         print()
