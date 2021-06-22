@@ -22,6 +22,7 @@ from geoviz.utils.colorscales import solid_scale, configureColorWithAlpha, confi
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from collections import defaultdict
+
 plotly.io.kaleido.scope.default_format = 'pdf'
 
 _extension_mapping = {
@@ -43,6 +44,7 @@ _group_functions = {
 
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
     geojson = gcg.simple_geojson(gdf, 'value_field')
+
 
     if mapbox:
         return Choroplethmapbox(
@@ -118,6 +120,10 @@ clip() tends to fail when clipping to a weird geometry type such as points.
 We should also optimize how parameters are passed into the reading functions.
 
 Our custom functions main functionality should be put into a separate module and imported, maybe?
+
+Assumptions:
+
+Some of the functions will be limited to only the main dataset, and others will have to use query functions.
 
 Notes for Monday:
 
@@ -282,7 +288,7 @@ def _update_helper(dataset: dict, updates: dict, override: bool = False):
     if override:
         dataset['manager'] = updates
     else:
-        dataset['manager'].update(updates)  # change to dict deep update
+        dict_deep_update(dataset['manager'], updates)  # change to dict deep update
 
 
 # this function should standalone.
@@ -305,7 +311,7 @@ def _prepare_general_dataset(name: str, dataset: dict, **kwargs):
 
 class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
-        """
+    """
 
     # default choropleth manager (includes properties for choropleth only)
     _default_dataset_manager: ClassVar[Dict[str, Any]] = dict(
@@ -412,7 +418,7 @@ class PlotBuilder:
                 x=0.5
             ),
             margin=dict(
-                r=0, l=0, t=0, b=0
+                r=0, l=0, t=50, b=50
             )
         )
     )
@@ -425,21 +431,11 @@ class PlotBuilder:
         data='CANADA'
     ))
 
-    _default_plot_settings: ClassVar[Dict[str, Any]] = {
-        'hex_resolution': 3,
-        'plot_regions': True,
-        'plot_grids': True,
-        'plot_points': True,
-        'plot_outlines': True,
-        'range_buffer_lat': (0.0, 0.0),
-        'range_buffer_lon': (0.0, 0.0),
-        'plot_output_service': 'plotly'
-    }
-
     def __init__(self, main=None, regions=None, grids=None, outlines=None, points=None):
 
         self._figure = Figure()
         self.update_figure_manager(**self._default_figure_manager)
+        self._figure.update_layout(width=800, height=600, autosize=False)
 
         self._container = {
             'regions': {},
@@ -451,7 +447,8 @@ class PlotBuilder:
         # grids will all reference this manager
         self._grid_manager = deepcopy(self._default_grid_manager)
 
-        self._plot_settings = deepcopy(self._default_plot_settings)
+        self._output_service = 'plotly'
+        self.default_hex_resolution = 3
 
         if main is not None:
             self.set_main(**main)
@@ -471,6 +468,16 @@ class PlotBuilder:
         if points is not None:
             for k, v in points.items():
                 self.add_point(k, **v)
+
+    @property
+    def plot_output_service(self):
+        return self._output_service
+
+    @plot_output_service.setter
+    def plot_output_service(self, service: str):
+        if service not in ['plotly', 'mapbox']:
+            raise ValueError("The output service must be one of ['plotly', 'mapbox'].")
+        self._output_service = service
 
     # may not be necessary
     def __setitem__(self, key, value):
@@ -534,13 +541,13 @@ class PlotBuilder:
         try:
             return self._container['main']
         except KeyError:
-            raise KeyError(f"The main dataset could not be found.")
+            raise ValueError(f"The main dataset could not be found.")
 
     def remove_main(self):
         try:
             del self._container['main']
         except KeyError:
-            raise KeyError("The main dataset could not be found.")
+            raise ValueError("The main dataset could not be found.")
 
     def update_main_manager(self, updates: dict = None, override: bool = False, **kwargs):
         updates = simplify_dicts(fields=updates, **kwargs)
@@ -748,7 +755,7 @@ class PlotBuilder:
         :type allow_empty: bool
         """
 
-        datasets = self.search(name, big_query=big_query)
+        datasets = self._search(name, big_query=big_query)
 
         lst = []
 
@@ -806,6 +813,9 @@ class PlotBuilder:
         helper = lambda dataset: _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
         self.apply_to_query(name, helper, big_query=True)
 
+    def logify_main_scale(self, **kwargs):
+        dataset = self.get_main()
+
     # TODO: this function should be able to take any two big or small queries.
     def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = 'intersects'):
         """Clips a query of datasets to another dataset.
@@ -820,42 +830,18 @@ class PlotBuilder:
         :type operation: str
         """
 
-        datas = self.apply_to_query(to, lambda dataset: dataset, big_query=True)
+        datas = self.apply_to_query(to, lambda dataset: dataset['data'], big_query=True)
 
-        def helpersjoin(dataset):
+        def gpdhelp(dataset: dict):
+            dataset['data'] = butil.gpd_clip(dataset['data'], datas)
 
-            try:
-                result = pd.concat(
-                    [gcg.clip(dataset['data'], item['data'], operation=operation, errors='raise') for item in datas])
-                result.drop_duplicates(inplace=True)
-                dataset['data'] = result
-            except ValueError:
-                raise ValueError("There are no datasets to clip to.")
-
-        def helpergpd(dataset):
-
-            alterations = []
-
-            for i, item in enumerate(datas):
-                if item['DSTYPE'] == 'PNT' and dataset['DSTYPE'] != 'PNT':
-                    raise NotImplementedError(
-                        "Cannot clip a non-point dataset to a point dataset. May be implemented in the future.")
-                if 'Point' in item['data'].geom_type.values:
-                    raise NotImplementedError("Cannot clip to a dataset with point-like geometry.")
-
-                alterations.append(gcg.gpdclip(dataset['data'], item['data']))
-
-            try:
-                result = pd.concat(alterations)
-                result.drop_duplicates(inplace=True)
-                dataset['data'] = result
-            except ValueError:
-                raise ValueError("There are no datasets to clip to.")
+        def sjoinhelp(dataset: dict):
+            dataset['data'] = butil.sjoin_clip(dataset['data'], datas, operation=operation)
 
         if method == 'gpd':
-            self.apply_to_query(clip, helpergpd, big_query=True)
+            self.apply_to_query(clip, gpdhelp, big_query=True)
         elif method == 'sjoin':
-            self.apply_to_query(clip, helpersjoin, big_query=True)
+            self.apply_to_query(clip, sjoinhelp, big_query=True)
         else:
             raise ValueError("The selected method must be one of ['gpd', 'sjoin'].")
 
@@ -890,7 +876,7 @@ class PlotBuilder:
     """
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
-    def opacify_colorscale(self, name: str = 'main', alpha: float = None):
+    def opacify_colorscale(self, alpha: float = None):
         """Conforms the opacity of the colorbar of dataset(s) to an alpha value.
 
         The alpha value can be passed in as a parameter, otherwise it is taken
@@ -902,34 +888,8 @@ class PlotBuilder:
         :type alpha: float
         """
 
-        def helper(dataset, alpha = None):
-            colorscale = dataset['manager'].get('colorscale')
-
-            try:
-                colorscale = tryGetScale(colorscale)
-            except AttributeError:
-                pass
-
-            opacity = dataset['manager'].get('marker', {}).pop('opacity', 1)
-            alpha = alpha if alpha is not None else opacity
-
-            if isinstance(colorscale, dict):
-                colorscale = {k: configureColorWithAlpha(v, alpha) for k, v in colorscale.items()}
-
-            if isinstance(colorscale, tuple):
-                colorscale = list(colorscale)
-            if isinstance(colorscale, list):
-                for i in range(len(colorscale)):
-                    if isinstance(colorscale[i], tuple):
-                        colorscale[i] = list(colorscale[i])
-                    if isinstance(colorscale[i], list):
-                        colorscale[i][1] = configureColorWithAlpha(colorscale[i][1], alpha)
-                    else:
-                        colorscale[i] = configureColorWithAlpha(colorscale[i], alpha)
-
-            dataset['manager']['colorscale'] = configureScaleWithAlpha(colorscale, alpha)
-
-        self.apply_to_query(name, helper, alpha=alpha)
+        dataset = self.get_main()
+        butil.opacify_colorscale(dataset, alpha=alpha)
 
     # TODO: This function should be able to take any query of datasets
     def auto_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
@@ -972,6 +932,7 @@ class PlotBuilder:
             if validate:
                 latlow, lathigh = geos['lataxis_range']
                 lonlow, lonhigh = geos['lonaxis_range']
+
                 lonlowdiff, lonhighdiff = get_percdiff(lonlow, -180), get_percdiff(lonhigh, 180)
                 latlowdiff, lathighdiff = get_percdiff(latlow, -90), get_percdiff(lathigh, 90)
 
@@ -988,6 +949,8 @@ class PlotBuilder:
 
         if center_on:
             geos['center'] = center
+
+        print(geos)
 
         self._figure.update_geos(**geos)
 
@@ -1087,21 +1050,61 @@ class PlotBuilder:
                              "'outline', 'point']. "
                              f"Received {typer}.")
 
-    def _search(self, query: str):
-        print()
+    def search(self, query: str):
+        return deepcopy(self._search(query))
 
-    def _single_search(self, query: str):
-        print()
-
-    def search(self, query: str, big_query: bool = True):
+    def _search(self, query: str, big_query: bool = True, multi_query: bool = True):
 
         sargs = query.split('+')
+
+        if not multi_query:
+            return self._single_search(query, big_query=big_query)
+
         if len(sargs) == 1:
             return self.single_search(sargs[0], big_query=big_query)
         else:
             return {k: self.single_search(k, big_query=big_query) for k in sargs}
 
+    def _single_search(self, query: str, big_query: bool = True):
+
+        if query == 'main':
+            return self.get_main()
+        elif query in ['regions', 'grids', 'outlines', 'points', 'all']:
+            if big_query:
+                return self._container if query == 'all' else self._container[query]
+            else:
+                raise ValueError("The given query should not refer to a collection of datasets.")
+
+        try:
+            typer, name = _split_name(query)
+        except ValueError:
+            raise ValueError("The given query should be one of ['regions', 'grids', 'outlines', 'points', "
+                             f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
+
+        if typer == 'region':
+            return self.get_region(name)
+        elif typer == 'grid':
+            return self.get_grid(name)
+        elif typer == 'outline':
+            return self.get_outline(name)
+        elif typer == 'point':
+            return self.get_point(name)
+        else:
+            raise ValueError("The given dataset type does not exist. Must be one of ['region', 'grid', "
+                             "'outline', 'point']. "
+                             f"Received {typer}.")
+
     get_query_data = lambda self, name: self.apply_to_query(name, lambda ds: ds['data'])
+
+    def change_colorbar_sizes(self):
+        bottompx = self._figure.layout.margin.b
+        toppx = self._figure.layout.margin.t
+        heightpx = self._figure.layout.height
+
+        print(bottompx, toppx, heightpx)
+
+        self._figure.update_coloraxes(colorbar_lenmode='pixels', colorbar_yanchor='bottom', colorbar_len=heightpx)
+        print(self._figure.layout)
 
     """
     PLOTTING FUNCTIONS
@@ -1113,12 +1116,12 @@ class PlotBuilder:
         All of the regions are treated as separate plot traces.
         """
         # logger.debug('adding regions to plot.')
-
+        mapbox = self.plot_output_service == 'mapbox'
         if not self.get_regions():
             raise ValueError("There are no region-type datasets to plot.")
         for regname, regds in self.get_regions().items():
             choro = _prepare_choropleth_trace(regds['data'],
-                                              mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
+                                              mapbox=mapbox)
             choro.update(regds['manager'])
             self._figure.add_trace(choro)
 
@@ -1140,9 +1143,11 @@ class PlotBuilder:
                 raise ValueError("Can not remove underlying grid when there is no main dataset.")
 
         merged['text'] = 'GRID'
-        choro = _prepare_choropleth_trace(merged, mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
+        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox')
         choro.update(text=merged['text'])
         choro.update(self._grid_manager)
+
+        # self._figure.layout.coloraxis.colorbar.title = 'TONY'
 
         self._figure.add_trace(choro)
 
@@ -1151,13 +1156,18 @@ class PlotBuilder:
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
-        dataset = self['main']
+        dataset = self.get_main()
         df = dataset['data']
+        #print('MAPBOX', self._figure.layout.)
+        #dataset['manager']['colorbar']['lenmode'] = 'pixels'
+        #dataset['manager']['colorbar']['len'] = 600
+        #dataset['manager']['colorbar']['y'] = 0.0
+        #dataset['manager']['colorbar']['yanchor'] = 'bottom'
 
         # qualitative dataset
         if dataset['VTYPE'] == 'str':
             df['text'] = 'BEST OPTION: ' + df['value_field']
-            colorscale = dataset['manager'].get('colorscale')
+            colorscale = dataset['manager'].pop('colorscale')
             try:
                 colorscale = tryGetScale(colorscale)
             except AttributeError:
@@ -1165,7 +1175,7 @@ class PlotBuilder:
 
             # we need to get the colorscale information somehow.
             sep = {}
-            mapbox = self._plot_settings['plot_output_service'] == 'mapbox'
+            mapbox = self.plot_output_service == 'mapbox'
 
             df['temp_value'] = df['value_field']
             df['value_field'] = 0
@@ -1177,29 +1187,36 @@ class PlotBuilder:
             manager = deepcopy(dataset['manager'])
             if isinstance(colorscale, dict):
                 for k, v in sep.items():
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox)
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
                         raise ValueError("If the colorscale is a map, you must provide hues for each option.")
-                    choro.update(manager)
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(showscale=False, showlegend=True).update(manager)
                     self._figure.add_trace(choro)
+
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
-                for i, v in enumerate(sep.values()):
+                for i, (k, v) in enumerate(sep.items()):
                     print('ITEM', i)
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(colorscale=solid_scale(colorscale[i]))
+
+                    if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple):
+                        manager['colorscale'] = solid_scale(colorscale[i][1])
+                    else:
+                        manager['colorscale'] = solid_scale(colorscale[i])
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True).update(manager)
                     self._figure.add_trace(choro)
             else:
                 raise ValueError("There was an error reading the colorscale.")
-
         # quantitative dataset
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             choro = _prepare_choropleth_trace(df,
-                                              mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
+                                              mapbox=self.plot_output_service == 'mapbox')
             choro.update(text=df['text'])
             choro.update(dataset['manager'])
+            print(choro.colorbar)
             self._figure.add_trace(choro)
+
+        # self.change_colorbar_sizes()
 
     def plot_outlines(self, raise_errors: bool = False):
         """Plots the outline datasets within the builder.
@@ -1216,7 +1233,7 @@ class PlotBuilder:
         for outname, outds in self.get_outlines().items():
             outds['data'] = gcg.pointify_geodataframe(outds['data'], keep_geoms=False, raise_errors=raise_errors)
             scatt = _prepare_scattergeo_trace(outds['data'], separate=True, disjoint=True,
-                                              mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
+                                              mapbox=self.plot_output_service == 'mapbox')
             scatt.update(outds['manager'])
             self._figure.add_trace(scatt)
 
@@ -1229,7 +1246,7 @@ class PlotBuilder:
             raise ValueError("There are no point-type datasets to plot.")
         for poiname, poids in self.get_points().items():
             scatt = _prepare_scattergeo_trace(poids['data'], separate=False, disjoint=False,
-                                              mapbox=self._plot_settings['plot_output_service'] == 'mapbox')
+                                              mapbox=self.plot_output_service == 'mapbox')
             scatt.update(poids['manager'])
             self._figure.add_trace(scatt)
 
@@ -1241,10 +1258,11 @@ class PlotBuilder:
         :param accesstoken: A mapbox access token for the plot
         :type accesstoken: str
         """
-        self._plot_settings['plot_output_service'] = 'mapbox'
+        self.plot_output_service = 'mapbox'
         self._figure.update_layout(mapbox_accesstoken=accesstoken)
 
-    def build_plot(self, plot_regions: bool = True, plot_grids: bool = True, plot_main: bool = True, plot_outlines: bool = True, plot_points: bool = True):
+    def build_plot(self, plot_regions: bool = True, plot_grids: bool = True, plot_main: bool = True,
+                   plot_outlines: bool = True, plot_points: bool = True, raise_errors: bool = True):
         """Builds the final plot by adding traces in order.
 
         Invokes the functions in the following order:
@@ -1260,34 +1278,43 @@ class PlotBuilder:
         if plot_regions:
             try:
                 self.plot_regions()
-            except ValueError:
-                pass
+            except ValueError as e:
+                if raise_errors:
+                    raise e
         if plot_grids:
             try:
                 self.plot_grids(remove_underlying=True)
-            except ValueError:
-                pass
+            except ValueError as e:
+                if raise_errors:
+                    raise e
         if plot_main:
             try:
                 self.plot_main()
-            except (ValueError, KeyError):
-                pass
+            except ValueError as e:
+                if raise_errors:
+                    raise e
         if plot_outlines:
             try:
                 self.plot_outlines()
-            except ValueError:
-                pass
+            except ValueError as e:
+                if raise_errors:
+                    raise e
         if plot_points:
             try:
                 self.plot_points()
-            except ValueError:
-                pass
+            except ValueError as e:
+                if raise_errors:
+                    raise e
 
-    def output_figure(self, filepath: str, **kwargs):
+    def output_figure(self, filepath: str, clear_figure: bool = False, **kwargs):
         self._figure.write_image(filepath, **kwargs)
+        if clear_figure:
+            self.clear_figure()
 
-    def display_figure(self, **kwargs):
+    def display_figure(self, clear_figure: bool = False, **kwargs):
         self._figure.show(**kwargs)
+        if clear_figure:
+            self.clear_figure()
 
     def clear_figure(self):
         self._figure.data = []
