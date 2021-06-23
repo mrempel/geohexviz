@@ -189,23 +189,38 @@ def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manag
 
         data = data.copy(deep=True)
 
+        info_fields = dataset.get("info_fields")
+
         if 'geometry' not in data.columns:
 
             try:
-                latitude_field = data[dataset.pop('latitude_field')]
+                if info_fields is not None and 'latitude_field' in info_fields:
+                    if 'latitude_field' in dataset:
+                        raise ValueError("Received multiple arguments for 'latitude_field' in dataset dict.")
+                    else:
+                        latitude_field = data[info_fields['latitude_field']]
+                else:
+                    latitude_field = data[dataset.pop('latitude_field')]
+
             except KeyError:
-                if 'latitude_field' in data.columns:
-                    latitude_field = data['latitude_field']
+                if 'latitude' in data.columns:
+                    latitude_field = data['latitude']
                 else:
                     raise ValueError(
                         "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
                         "and longitude_field entries. Missing latitude_field member.")
 
             try:
-                longitude_field = data[dataset.pop('longitude_field')]
+                if info_fields is not None and 'longitude_field' in info_fields:
+                    if 'longitude_field' in dataset:
+                        raise ValueError("Received multiple arguments for 'longitude_field' in dataset dict.")
+                    else:
+                        longitude_field = data[info_fields['longitude_field']]
+                else:
+                    longitude_field = data[dataset.pop('longitude_field')]
             except KeyError:
-                if 'longitude_field' in data.columns:
-                    longitude_field = data['longitude_field']
+                if 'longitude' in data.columns:
+                    longitude_field = data['longitude']
                 else:
                     raise ValueError(
                         "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
@@ -258,7 +273,16 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwarg
 
 
 def _hexify_dataset(dataset: StrDict, hex_resolution: int):
-    dataset['data'] = _hexify_data(dataset['data'], dataset.pop('hex_resolution', hex_resolution))
+
+    hres = dataset.pop('hex_resolution', None)
+    hexbin_info = dataset.get('hexbin_info')
+    if hexbin_info:
+        if 'resolution' in hexbin_info:
+            if hres:
+                raise ValueError("Received multiple arguments for hex resolution.")
+            hres=hexbin_info['resolution']
+    hres = hres if hres is not None else hex_resolution
+    dataset['data'] = _hexify_data(dataset['data'], hres)
 
 
 def _bin_dataset_by_hex(dataset: StrDict):
@@ -1586,22 +1610,28 @@ class PlotBuilder:
             manager = deepcopy(dataset['manager'])
             if isinstance(colorscale, dict):
                 for k, v in sep.items():
+                    print(colorscale[k])
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise TypeError("If the colorscale is a map, you must provide hues for each option.")   # TODO: figure out how to change this error
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(showscale=False, showlegend=True).update(
+                        raise TypeError(
+                            "If the colorscale is a map, you must provide hues for each option.")  # TODO: figure out how to change this error
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True).update(
                         manager)
                     self._figure.add_trace(choro)
 
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
+
                 for i, (k, v) in enumerate(sep.items()):
                     print('ITEM', i)
 
-                    if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple):
-                        manager['colorscale'] = solid_scale(colorscale[i][1])
-                    else:
-                        manager['colorscale'] = solid_scale(colorscale[i])
+                    try:
+                        if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple):
+                            manager['colorscale'] = solid_scale(colorscale[i][1])
+                        else:
+                            manager['colorscale'] = solid_scale(colorscale[i])
+                    except IndexError:
+                        raise IndexError("There were not enough hues for all of the unique options in the dataset.")
                     choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False,
                                                                                showlegend=True).update(manager)
                     self._figure.add_trace(choro)
