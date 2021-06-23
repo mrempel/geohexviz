@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Tuple, ClassVar, Dict
+from typing import Any, Tuple, ClassVar, Dict, Union
 
 import geopandas as gpd
 import numpy as np
@@ -41,10 +41,10 @@ _group_functions = {
     'bestworst': get_sorted_occurrences
 }
 
+StrDict = Dict[str, Any]
 
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
     geojson = gcg.simple_geojson(gdf, 'value_field')
-
 
     if mapbox:
         return Choroplethmapbox(
@@ -138,16 +138,13 @@ Notes for Tuesday:
 """
 
 
-def _validate_dataset(name: str, dataset: dict):
-    if '+' in name:
-        raise ValueError("There must not be a '+' in the name of a dataset.")
-
+def _validate_dataset(dataset: StrDict):
     if 'data' not in dataset:
         raise ValueError("There must be a 'data' member present in the dataset.")
 
 
-def _read_dataset(name: str, dataset: dict, default_manager: dict = None, allow_manager_updates: bool = True):
-    _validate_dataset(name, dataset)
+def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
+    _validate_dataset(dataset)
     data = dataset['data']
 
     if default_manager is None:
@@ -206,13 +203,12 @@ def _read_dataset(name: str, dataset: dict, default_manager: dict = None, allow_
         raise ValueError("This dataset may not have a custom manager.")
 
 
-def _update_manager(dataset: dict, updates: dict = None, override: bool = False, **kwargs):
+def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
     updates = simplify_dicts(fields=updates, **kwargs)
-    if override:
+    if overwrite:
         dataset['manager'] = updates
     else:
         dict_deep_update(dataset['manager'], updates)
-
 
 def _hexify_data(data, hex_resolution: int):
     return gcg.hexify_geodataframe(data, hex_resolution=hex_resolution)
@@ -235,11 +231,11 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwarg
                        add_geoms=True, **kwargs)), vtype
 
 
-def _hexify_dataset(dataset: dict, hex_resolution: int):
+def _hexify_dataset(dataset: StrDict, hex_resolution: int):
     dataset['data'] = _hexify_data(dataset['data'], dataset.pop('hex_resolution', hex_resolution))
 
 
-def _bin_dataset_by_hex(dataset: dict):
+def _bin_dataset_by_hex(dataset: StrDict):
     binning_fn = dataset.pop('binning_fn', None)
     binning_args = dataset.pop('binning_args', ())
     binning_kw = dataset.pop('binning_kwargs', {})
@@ -267,12 +263,12 @@ def _hexbinify_data(data, hex_resolution: int, *args, binning_field: str = None,
     return _bin_by_hex(data, *args, binning_field=binning_field, binning_fn=binning_fn, **kwargs)
 
 
-def _hexbinify_dataset(dataset: dict, hex_resolution: int):
+def _hexbinify_dataset(dataset: StrDict, hex_resolution: int):
     _hexify_dataset(dataset, hex_resolution)
     _bin_dataset_by_hex(dataset)
 
 
-def _create_dataset(data, fields: dict = None, **kwargs) -> dict:
+def _create_dataset(data, fields: StrDict = None, **kwargs) -> StrDict:
     if fields is None:
         fields = {}
     fields.update(dict(data=data, **kwargs))
@@ -284,22 +280,18 @@ def _split_name(name: str) -> Tuple[str, str]:
     return name[:lind], name[lind + 1:]
 
 
-def _update_helper(dataset: dict, updates: dict, override: bool = False):
-    if override:
-        dataset['manager'] = updates
-    else:
-        dict_deep_update(dataset['manager'], updates)  # change to dict deep update
+
 
 
 # this function should standalone.
-def _prepare_general_dataset(name: str, dataset: dict, **kwargs):
+def _prepare_general_dataset(dataset: StrDict, **kwargs):
     try:
         dataset['data'] = butil.get_shapes_from_world(dataset['data'])
     except (KeyError, ValueError, TypeError):
         # logger.debug("If name was a country or continent, the process failed.")
         pass
 
-    _read_dataset(name, dataset, **kwargs)
+    _read_dataset(dataset, **kwargs)
     dataset['data'] = gcg.conform_geogeometry(dataset['data'], fix_polys=True)[['geometry']]
     # logger.debug('dataframe geometry conformed to GeoJSON standard.')
 
@@ -309,12 +301,17 @@ def _prepare_general_dataset(name: str, dataset: dict, **kwargs):
     dataset['VTYPE'] = 'num'
 
 
+def _check_name(name: str):
+    if any(not i.isalnum() and i != '_' for i in name):
+        raise ValueError("The name can not have any non alphanumeric characters in it besides the underscore.")
+
+
 class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
     """
 
     # default choropleth manager (includes properties for choropleth only)
-    _default_dataset_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_dataset_manager: ClassVar[StrDict] = dict(
         colorscale='Viridis',
         colorbar=dict(
             title='COUNT'
@@ -330,7 +327,7 @@ class PlotBuilder:
     )
 
     # default scatter plot manager (includes properties for scatter plots only)
-    _default_point_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_point_manager: ClassVar[StrDict] = dict(
         mode='markers+text',
         marker=dict(
             line=dict(
@@ -349,7 +346,7 @@ class PlotBuilder:
         )
     )
 
-    _default_grid_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_grid_manager: ClassVar[StrDict] = dict(
         colorscale=[[0, 'white'], [1, 'white']],
         zmax=1, zmin=0,
         marker=dict(
@@ -363,7 +360,7 @@ class PlotBuilder:
         hoverinfo='text'
     )
 
-    _default_region_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_region_manager: ClassVar[StrDict] = dict(
         colorscale=[[0, 'rgba(255,255,255,0.525)'], [1, 'rgba(255,255,255,0.525)']],
         marker=dict(
             line=dict(
@@ -379,7 +376,7 @@ class PlotBuilder:
         hoverinfo='text'
     )
 
-    _default_outline_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_outline_manager: ClassVar[StrDict] = dict(
         mode='lines',
         line=dict(
             color="black",
@@ -392,7 +389,7 @@ class PlotBuilder:
     )
 
     # contains the default properties for the figure
-    _default_figure_manager: ClassVar[Dict[str, Any]] = dict(
+    _default_figure_manager: ClassVar[StrDict] = dict(
         geos=dict(
             projection=dict(
                 type='orthographic'
@@ -423,18 +420,33 @@ class PlotBuilder:
         )
     )
 
-    _default_regions: ClassVar[Dict[str, Dict]] = dict(canada=dict(
-        data='CANADA'
-    ))
+    def __init__(
+            self,
+            main: StrDict = None,
+            regions: Dict[str, StrDict] = None,
+            grids: Dict[str, StrDict] = None,
+            outlines: Dict[str, StrDict] = None,
+            points: Dict[str, StrDict] = None
+    ):
+        """Initializer for instances of PlotBuilder.
 
-    _default_grids: ClassVar[Dict[str, Dict]] = dict(canada=dict(
-        data='CANADA'
-    ))
+        Initializes a new PlotBuilder with the given main dataset
+        alongside any region, grid, outline, point type datasets.
 
-    def __init__(self, main=None, regions=None, grids=None, outlines=None, points=None):
+        :param main: The main dataset for this builder
+        :type main: StrDict
+        :param regions: A set of region-type datasets for this builder
+        :type regions: Dict[str, StrDict]
+        :param grids: A sed of grid-type datasets for this builder
+        :type grids: Dict[str, StrDict]
+        :param outlines: A set of outline-type datasets for this builder
+        :type outlines: Dict[str, StrDict]
+        :param points: A set of point-type datasets for this builder
+        :type points: Dict[str, StrDict]
+        """
 
         self._figure = Figure()
-        self.update_figure_manager(**self._default_figure_manager)
+        self.update_figure(**self._default_figure_manager)
         self._figure.update_layout(width=800, height=600, autosize=False)
 
         self._container = {
@@ -470,17 +482,66 @@ class PlotBuilder:
                 self.add_point(k, **v)
 
     @property
-    def plot_output_service(self):
-        return self._output_service
+    def plot_output_service(self) -> str:
+        """Retrieves the current plot output service for the builder.
+
+        :return: The current plot output service
+        :rtype: str
+        """
+        return self.get_plot_output_service()
 
     @plot_output_service.setter
     def plot_output_service(self, service: str):
+        """Sets the plot output service for this builder.
+
+        :param service: The output service (one of 'plotly', 'mapbox')
+        :type service: str
+        """
+        self.set_plot_output_service(service)
+
+    def get_plot_output_service(self) -> str:
+        """Retrieves the current plot output service for the builder.
+
+        :return: The current plot output service
+        :rtype: str
+        """
+        return self._output_service
+
+    def set_plot_output_service(self, service: str):
+        """Sets the plot output service for this builder.
+
+        :param service: The output service (one of 'plotly', 'mapbox')
+        :type service: str
+        """
         if service not in ['plotly', 'mapbox']:
             raise ValueError("The output service must be one of ['plotly', 'mapbox'].")
         self._output_service = service
 
-    # may not be necessary
-    def __setitem__(self, key, value):
+    def __setitem__(self, key: str, value: StrDict):
+        """Overwritten setitem method.
+
+        Does one of the following:
+        1) Sets the main dataset
+        2) Adds a region dataset
+        3) Adds a grid dataset
+        4) Adds an outline dataset
+        5) Adds a point dataset
+
+        The key must be in the form:
+        <main> or <region|grid|outline|point>:<name>
+
+        :param key: The key as shown above
+        :type key: str
+        :param value: A dict representing a valid dataset
+        :type value: StrDict
+        """
+
+        if not isinstance(key, str):
+            raise KeyError("You may not use a non-string key.")
+
+        if not isinstance(value, dict):
+            raise ValueError("The value must be a string dictionary (Dict[str, Any])")
+
         if key == 'main':
             self.set_main(**value)
         else:
@@ -503,6 +564,10 @@ class PlotBuilder:
 
     # may not be necessary (needs to be fixed)
     def __delitem__(self, key):
+
+        if key == 'main':
+            self.remove_main()
+
         if key in ['regions', 'grids', 'outlines', 'points', 'main']:
             self._container[key] = {}
         else:
@@ -531,17 +596,20 @@ class PlotBuilder:
     """
 
     def set_main(self, data, fields: dict = None, **kwargs):
-        _read_dataset('MAIN', dataset := _create_dataset(data, fields=fields, **kwargs),
+        _read_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                       default_manager=deepcopy(self._default_dataset_manager))
         _hexbinify_dataset(dataset, 3)
         dataset['DSTYPE'] = 'MN'
         self._container['main'] = dataset
 
-    def get_main(self):
+    def _get_main(self):
         try:
             return self._container['main']
         except KeyError:
             raise ValueError(f"The main dataset could not be found.")
+
+    def get_main(self):
+        return deepcopy(self._get_main())
 
     def remove_main(self):
         try:
@@ -549,15 +617,14 @@ class PlotBuilder:
         except KeyError:
             raise ValueError("The main dataset could not be found.")
 
-    def update_main_manager(self, updates: dict = None, override: bool = False, **kwargs):
-        updates = simplify_dicts(fields=updates, **kwargs)
-        _update_helper(self._container['main'], updates, override)
+    def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        _update_manager(self._get_main(), updates=updates, overwrite=overwrite, **kwargs)
 
     """
     REGION FUNCTIONS
     """
 
-    def add_region(self, name: str, data, fields: dict = None, **kwargs):
+    def add_region(self, name: str, data, fields: StrDict = None, **kwargs):
         """Adds a region-type dataset to the builder.
 
         Region-type datasets should consist of Polygon-like geometries.
@@ -572,75 +639,217 @@ class PlotBuilder:
         :param kwargs: Additional fields for this dataset
         :type kwargs: **kwargs
         """
-        _prepare_general_dataset(name, dataset := _create_dataset(data, fields=fields, **kwargs),
+        _check_name(name)
+        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=deepcopy(self._default_region_manager),
                                  allow_manager_updates=True)
         if 'Point' in dataset['data'].geom_type.values:
             raise NotImplementedError("Can not have region geometry type as points.")
         dataset['DSTYPE'] = 'RGN'
-        self.get_regions()[name] = dataset
+        self._get_regions()[name] = dataset
 
-    def get_region(self, name: str):
+    def _get_region(self, name: str) -> StrDict:
+        """Retrieves a region dataset from the builder.
+
+        Internal version.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
         try:
-            return self.get_regions()[name]
+            return self._get_regions()[name]
         except KeyError:
             raise KeyError(f"The region-type dataset with the name '{name}' could not be found.")
 
-    def get_regions(self):
+    def get_region(self, name: str) -> StrDict:
+        """Retrieves a region dataset from the builder.
+
+        External version, returns a deepcopy.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
+        return deepcopy(self._get_region(name))
+
+    def _get_regions(self) -> Dict[str, StrDict]:
+        """Retrieves the region datasets from the builder.
+
+        Internal version.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
         return self._container['regions']
 
-    def remove_region(self, name: str):
+    def get_regions(self) -> Dict[str, StrDict]:
+        """Retrieves the region datasets from the builder.
+
+        External version, returns a deepcopy.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
+        return deepcopy(self._get_regions())
+
+    def remove_region(self, name: str, pop: bool = False) -> StrDict:
+        """Removes a region dataset from the builder.
+
+        :param name: The name of the dataset to remove
+        :type name: str
+        :param pop: Whether to return the removed dataset or not
+        :type pop: bool
+        :return: The removed dataset (pop=True)
+        :rtype: StrDict
+        """
         try:
-            del self.get_regions()[name]
+            region = self._get_regions().pop(name)
+            if pop:
+                return region
         except KeyError:
             raise ValueError(f"The region-type dataset with the name '{name}' could not be found.")
 
-    def update_region_manager(self, name: str = None, updates: dict = None, override: bool = False, **kwargs):
-        updates = simplify_dicts(fields=updates, **kwargs)
+    def update_region_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager of a region or regions.
+
+        The manager consists of Plotly properties.
+        If the given name is none, all region datasets will be updated.
+
+        :param name: The name of the dataset to update
+        :type name: str
+        :param updates: A dict containing updates for the dataset(s)
+        :type updates: StrDict
+        :param overwrite: Whether to override the current properties with the new ones or not
+        :type overwrite: bool
+        :param kwargs: Other updates for the dataset(s)
+        :type kwargs: **kwargs
+        """
 
         if name is None:
-            for _, v in self.get_regions().items():
-                _update_helper(v, updates, override)
+            for _, v in self._get_regions().items():
+                _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
-            _update_helper(self.get_region(name), updates, override)
+            _update_manager(self._get_region(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def reset_regions(self):
+        """Resets the regions within the builder to empty.
+        """
         self._container['regions'] = {}
 
     """
     GRID FUNCTIONS
     """
 
-    def add_grid(self, name: str, data, **kwargs):
-        _prepare_general_dataset(name, dataset := _create_dataset(data, **kwargs), default_manager=self._grid_manager,
-                                 allow_manager_updates=False)
+    def add_grid(self, name: str, data, fields: StrDict = None, **kwargs):
+        """Adds a grid-type dataset to the builder.
+
+        Grid-type datasets should consist of Polygon-like or Point-like geometries.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+        _check_name(name)
+        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
+                                 default_manager=self._grid_manager, allow_manager_updates=False)
         _hexbinify_dataset(dataset, 3)  # change to default hex res
         dataset['DSTYPE'] = 'GRD'
-        self.get_grids()[name] = dataset
+        self._get_grids()[name] = dataset
 
-    def get_grid(self, name: str):
+    def _get_grid(self, name: str) -> StrDict:
+        """Retrieves a grid dataset from the builder.
+
+        Internal version.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
         try:
-            return self.get_grids()[name]
+            return self._get_grids()[name]
         except KeyError:
             raise KeyError(f"The grid-type dataset with the name '{name}' could not be found.")
 
-    def get_grids(self):
+    def get_grid(self, name: str) -> StrDict:
+        """Retrieves a grid dataset from the builder.
+
+        External version, returns a deepcopy.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
+        return deepcopy(self._get_grid(name))
+
+    def _get_grids(self) -> Dict[str, StrDict]:
+        """Retrieves the grid datasets from the builder.
+
+        Internal version.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
         return self._container['grids']
 
-    def remove_grid(self, name: str):
+    def get_grids(self) -> Dict[str, StrDict]:
+        """Retrieves the grid datasets from the builder.
+
+        External version, returns a deepcopy.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
+        return deepcopy(self._get_grids())
+
+    def remove_grid(self, name: str, pop: bool = False) -> StrDict:
+        """Removes a grid dataset from the builder.
+
+        :param name: The name of the dataset to remove
+        :type name:
+        :param pop: Whether to return the removed dataset or not
+        :type pop: bool
+        :return: The removed dataset (pop=True)
+        :rtype: StrDict
+        """
         try:
-            grids = self.get_grids()
-            del grids[name]
+            grids = self._get_grids()
+            grid = grids.pop(name)
+
             if len(grids) == 0:
                 self.reset_grids()
+
+            if pop:
+                return grid
         except KeyError:
             raise ValueError(f"The grid-type dataset with the name '{name}' could not be found.")
 
-    def update_grid_manager(self, updates: dict = None, override: bool = False, **kwargs):
-        updates = simplify_dicts(fields=updates, **kwargs)
-        _update_helper(self._grid_manager, updates, override)
+    def update_grid_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the general grid manager.
+
+        :param updates: A dict of updates for the manager
+        :type updates: StrDict
+        :param overwrite: Whether or not to override existing manager properties
+        :type overwrite: bool
+        :param kwargs: Any additional updates for the manager
+        :type kwargs: **kwargs
+        """
+        dct = {'manager': self._grid_manager}
+        _update_manager(dct, updates=updates, overwrite=overwrite, **kwargs)
+        self._grid_manager = dct['manager']
 
     def reset_grids(self):
+        """Resets the grid dataset container to it's original state.
+        """
         self._container['grids'] = {}
         self._grid_manager = deepcopy(self._default_grid_manager)  # reset to default
 
@@ -648,89 +857,251 @@ class PlotBuilder:
     OUTLINE FUNCTIONS
     """
 
-    def add_outline(self, name: str, data, **kwargs):
-        _prepare_general_dataset(name, dataset := _create_dataset(data, **kwargs),
+    def add_outline(self, name: str, data, fields: StrDict = None, **kwargs):
+        """Adds a outline-type dataset to the builder.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+        _check_name(name)
+        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=deepcopy(self._default_outline_manager),
                                  allow_manager_updates=True)
         # consider the pros and cons to converting the dataset to points here
         dataset['DSTYPE'] = 'OUT'
         self.get_outlines()[name] = dataset
 
-    def get_outline(self, name: str):
+    def _get_outline(self, name: str) -> StrDict:
+        """Retrieves a outline dataset from the builder.
+
+        Internal version.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
         try:
-            return self.get_outlines()[name]
+            return self._get_outlines()[name]
         except KeyError:
             raise KeyError(f"The outline-type dataset with the name '{name}' could not be found.")
 
-    def get_outlines(self):
+    def get_outline(self, name: str) -> StrDict:
+        """Retrieves a outline dataset from the builder.
+
+        External version, returns a deepcopy.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
+        return deepcopy(self._get_outline(name))
+
+    def _get_outlines(self) -> Dict[str, StrDict]:
+        """Retrieves the outline datasets from the builder.
+
+        Internal version.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
         return self._container['outlines']
 
-    def remove_outline(self, name: str):
+    def get_outlines(self) -> Dict[str, StrDict]:
+        """Retrieves the outline datasets from the builder.
+
+        External version, returns a deepcopy.
+
+        :return: The retrieved datasets
+        :rtype: Dict[str, StrDict]
+        """
+        return deepcopy(self._get_outlines())
+
+    def remove_outline(self, name: str, pop: bool = False) -> StrDict:
+        """Removes an outline dataset from the builder.
+
+        :param name: The name of the dataset to remove
+        :type name:
+        :param pop: Whether to return the removed dataset or not
+        :type pop: bool
+        :return: The removed dataset (pop=True)
+        :rtype: StrDict
+        """
         try:
-            del self.get_outlines()[name]
+            outline = self._get_outlines().pop(name)
+            if pop:
+                return outline
         except KeyError:
             raise ValueError(f"The outline-type dataset with the name '{name}' could not be found.")
 
-    def update_outline_manager(self, name: str = None, updates: dict = None, override: bool = False, **kwargs):
-        if updates is None:
-            updates = {}
-        updates.update(kwargs)
+    def update_outline_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager of a outline or outlines.
+
+        The manager consists of Plotly properties.
+        If the given name is none, all outline datasets will be updated.
+
+        :param name: The name of the dataset to update
+        :type name: str
+        :param updates: A dict containing updates for the dataset(s)
+        :type updates: StrDict
+        :param overwrite: Whether to override the current properties with the new ones or not
+        :type overwrite: bool
+        :param kwargs: Other updates for the dataset(s)
+        :type kwargs: **kwargs
+        """
 
         if name is None:
-            for _, v in self.get_outlines().items():
-                _update_helper(v, updates, override)
+            for _, v in self._get_outlines().items():
+                _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
-            _update_helper(self.get_outline(name), updates, override)
+            _update_manager(self._get_outline(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def reset_outlines(self):
+        """Resets the outlines within the builder to empty.
+        """
         self._container['outlines'] = {}
 
     """
     POINT FUNCTIONS
     """
 
-    def add_point(self, name: str, data, **kwargs):
-        _prepare_general_dataset(name, dataset := _create_dataset(data, **kwargs),
+    def add_point(self, name: str, data, fields: StrDict = None, **kwargs):
+        """Adds a outline-type dataset to the builder.
+
+        Ideally the dataset's 'data' member should contain
+        lat/long columns or point like geometry column. If the geometry column
+        is present and contains no point like geometry, the geometry will be converted
+        into a bunch of points.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+
+        _check_name(name)
+        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=deepcopy(self._default_point_manager),
                                  allow_manager_updates=True)
-        dataset['data'] = butil.pointify_geodataframe(dataset['data'])
+        dataset['data'] = gcg.pointify_geodataframe(dataset['data'])
         dataset['DSTYPE'] = 'PNT'
-        self.get_points()[name] = dataset
+        self._get_points()[name] = dataset
 
-    def get_point(self, name: str):
+    def _get_point(self, name: str) -> StrDict:
+        """Retrieves a point dataset from the builder.
+
+        Internal version.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
         try:
             return self.get_points()[name]
         except KeyError:
             raise KeyError(f"The point-type dataset with the name '{name}' could not be found.")
 
-    def get_points(self):
+    def get_point(self, name: str) -> StrDict:
+        """Retrieves a point dataset from the builder.
+
+        External version, returns a deepcopy.
+
+        :param name: The name of the dataset
+        :type name: str
+        :return: The retrieved dataset
+        :rtype: StrDict
+        """
+        return deepcopy(self._get_point(name))
+
+    def _get_points(self) -> Dict[str, StrDict]:
+        """Retrieves the collection of point datasets in the builder.
+
+        Internal version.
+
+        :return: The point datasets within the builder
+        :rtype: Dict[str, StrDict]
+        """
         return self._container['points']
 
-    def remove_point(self, name: str):
+    def get_points(self) -> Dict[str, StrDict]:
+        """Retrieves the collection of point datasets in the builder.
+
+        External version, returns a deepcopy.
+
+        :return: The point datasets within the builder
+        :rtype: Dict[str, StrDict]
+        """
+        return deepcopy(self._get_points())
+
+    def remove_point(self, name: str, pop: bool = False) -> StrDict:
+        """Removes a point dataset from the builder.
+
+        :param name: The name of the dataset to remove
+        :type name: str
+        :param pop: Whether to return the removed dataset or not
+        :type pop: bool
+        :return: The removed dataset (pop=True)
+        :rtype: StrDict
+        """
         try:
-            del self.get_points()[name]
+            point = self._get_points().pop(name)
+            if pop:
+                return point
         except KeyError:
             raise ValueError(f"The point-type dataset with the name '{name}' could not be found.")
 
-    def update_point_manager(self, name: str = None, updates: dict = None, override: bool = False, **kwargs):
-        if updates is None:
-            updates = {}
-        updates.update(kwargs)
+    def update_point_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager of a point or points.
 
+        The manager consists of Plotly properties.
+        If the given name is none, all point datasets will be updated.
+
+        :param name: The name of the dataset to update
+        :type name: str
+        :param updates: A dict containing updates for the dataset(s)
+        :type updates: StrDict
+        :param overwrite: Whether to override the current properties with the new ones or not
+        :type overwrite: bool
+        :param kwargs: Other updates for the dataset(s)
+        :type kwargs: **kwargs
+        """
         if name is None:
-            for _, v in self.get_points().items():
-                _update_helper(v, updates, override)
+            for _, v in self._get_points().items():
+                _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
-            _update_helper(self.get_point(name), updates, override)
+            _update_manager(self._get_point(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def reset_points(self):
+        """Resets the point dataset container to its original state.
+        """
         self._container['points'] = {}
 
     """
     FIGURE FUNCTIONS
     """
 
-    def update_figure_manager(self, updates: dict = None, overwrite: bool = False, **kwargs):
+    def update_figure(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the figure properties on the spot.
+
+        :param updates: A dict of properties to update the figure with
+        :type updates: StrDict
+        :param overwrite: Whether to overwrite existing figure properties or not
+        :type overwrite: bool
+        :param kwargs: Any other updates for the figure
+        :type kwargs: **kwargs
+        """
         updates = simplify_dicts(fields=updates, **kwargs)
         self._figure.update_geos(updates.pop('geos', {}), overwrite=overwrite)
         self._figure.update(overwrite=overwrite, **updates)
@@ -738,24 +1109,21 @@ class PlotBuilder:
     """
     DATA ALTERING FUNCTIONS
     """
-
-    # TODO: this function needs to be altered
-    def apply_to_query(self, name: str, fn, *args, big_query: bool = True, allow_empty: bool = True, **kwargs):
+    def apply_to_query(self, name: str, fn, *args, allow_empty: bool = True, **kwargs):
         """Applies a function to the datasets within a query.
 
         For advanced users and not to be used carelessly.
+        The functions first argument must be the dataset.
 
         :param name: The query of the datasets to apply the function to
         :type name: str
         :param fn: The function to apply
         :type fn: Callable
-        :param big_query: Whether to allow container like queries or not
-        :type big_query: bool
         :param allow_empty: Whether to allow query arguments that retrieved empty results or not
         :type allow_empty: bool
         """
 
-        datasets = self._search(name, big_query=big_query)
+        datasets = self._search(name)
 
         lst = []
 
@@ -785,40 +1153,62 @@ class PlotBuilder:
                                     raise ValueError("Error when applying function to query.")
         return lst
 
-    # TODO: this function should or should not be here, if it should be it should apply to main only
-    def remove_empties(self, name: str = 'main', empty_symbol: Any = 0, add_to_plot: bool = False):
+    def remove_empties(self, empty_symbol: Any = 0, add_to_plot: bool = False):
+        """Removes empty entries from the main dataset.
 
-        if add_to_plot and name != 'main':
-            raise ValueError('Empties can only be added to plot if it is the main dataset.')
+        The empty entries may then be added to the plot as a grid.
 
-        def helper(dataset):
-            if add_to_plot:
-                dataset['empties'] = dataset['empties'].append(
-                    dataset['data'][dataset['data']['value_field'] == empty_symbol])
-            dataset['data'] = dataset['data'][dataset['data']['value_field'] != empty_symbol]
+        :param empty_symbol: The symbol that constitutes an empty value in the dataset
+        :type empty_symbol: Any
+        :param add_to_plot: Whether to add the empty cells to the plot or not
+        :type add_to_plot: bool
+        """
 
-        self.apply_to_query(name, helper)
+        try:
+            dataset = self.get_main()
+        except ValueError:
+            raise ValueError("There is no main dataset to remove empty entries from.")
+
+        if add_to_plot:
+            empties = dataset['data'][dataset['data']['value_field'] == empty_symbol]
+            if not empties.empty:
+                empties['value_field'] = 0
+                self.get_grids()['|*EMPTY*|'] = empties
+        dataset['data'] = dataset['data'][dataset['data']['value_field'] != empty_symbol]
 
     # this is both a data altering, and plot altering function
     # TODO: this function should only apply to the main dataset
-    def logify_scale(self, name: str = 'main', **kwargs):
-        """Makes the scale of datasets logarithmic.
+    def logify_scale(self, **kwargs):
+        """Makes the scale of the main datasets logarithmic.
 
-        :param name: The query of datasets that are to be logified (usually just main)
-        :type name: str
+        This function changes the tick values and tick text of the scale.
+        The numerical values on the scale are the exponent of the tick text,
+        i.e the text of 1 on the scale actually represents the value of zero,
+        and the text of 1000 on the scale actually represents the value of 3.
+
         :param kwargs: Keyword arguments to be passed into logify functions
         :type kwargs: **kwargs
         """
 
-        helper = lambda dataset: _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
-        self.apply_to_query(name, helper, big_query=True)
+        try:
+            dataset = self.get_main()
+        except ValueError:
+            raise ValueError("There is no main dataset to convert to a logarithmic scale.")
 
-    def logify_main_scale(self, **kwargs):
-        dataset = self.get_main()
+        if dataset['VTYPE'] == 'str':
+            raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
+        _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
 
     # TODO: this function should be able to take any two big or small queries.
     def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = 'intersects'):
         """Clips a query of datasets to another dataset.
+
+        There are two methods for this clipping:
+        1) sjoin -> Uses GeoPandas spatial join in order to clip geometries
+                    that (intersect, are within, contain, etc.) the geometries
+                    acting as the clip.
+        2) gpd  ->  Uses GeoPandas clip function in order to clip geometries
+                    to the boundary of the geometries acting as the clip.
 
         :param clip: The query for the datasets that are to be clipped to another
         :type clip: GeoDataFrame
@@ -847,14 +1237,17 @@ class PlotBuilder:
 
     # check methods of clipping
     def simple_clip(self, method: str = 'sjoin'):
-        """Clips the main dataset and grids to regions and outlines.
+        """Quick general clipping.
+
+        This function clips the main dataset and grid datasets to the region and outline datasets.
+        The function also clips the point datasets to the main, region, grid, and outline datasets.
 
         :param method: The method to use when clipping, one of 'sjoin' or 'gpd'
         :type method: str
         """
 
         self.clip_datasets('main+grids', 'regions+outlines', method=method, operation='intersects')
-        self.clip_datasets('points', 'regions+outlines+grids', method=method, operation='within')
+        self.clip_datasets('points', 'main+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
         """Removes the pieces of a GeoDataFrame that lie under another.
@@ -877,13 +1270,11 @@ class PlotBuilder:
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def opacify_colorscale(self, alpha: float = None):
-        """Conforms the opacity of the colorbar of dataset(s) to an alpha value.
+        """Conforms the opacity of the colorbar of the main dataset to an alpha value.
 
         The alpha value can be passed in as a parameter, otherwise it is taken
         from the marker.opacity property within the dataset's manager.
 
-        :param name: The query data sets to opacify the colorscales of
-        :type name: str
         :param alpha: The alpha value to conform the colorscale to
         :type alpha: float
         """
@@ -891,7 +1282,6 @@ class PlotBuilder:
         dataset = self.get_main()
         butil.opacify_colorscale(dataset, alpha=alpha)
 
-    # TODO: This function should be able to take any query of datasets
     def auto_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
                    buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = True):
         """Focuses on dataset(s) within the plot.
@@ -950,11 +1340,8 @@ class PlotBuilder:
         if center_on:
             geos['center'] = center
 
-        print(geos)
-
         self._figure.update_geos(**geos)
 
-    # TODO: this function should be capable of taking any query of datasets.
     def auto_grid(self, query: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
         """Makes a grid over the queried datasets.
 
@@ -971,19 +1358,12 @@ class PlotBuilder:
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
 
-        print('GOTHERE')
         try:
             grid = GeoDataFrame(pd.concat(list(self.apply_to_query(query, helper))), crs='EPSG:4326')
-            print('GOTHERE', grid)
             if not grid.empty:
                 grid['value_field'] = 0
                 self.get_grids()['|*AUTO*|'] = {'data': gcg.conform_geogeometry(grid), 'manager': self._grid_manager}
-                print(self.get_grids())
-                print(fn)
-
-                import matplotlib.pyplot as plt
                 self.get_grids()['|*AUTO*|']['data'].plot()
-                plt.show()
             else:
                 raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
                                  "of an area.")
@@ -991,29 +1371,28 @@ class PlotBuilder:
         except ValueError as e:
             raise e
 
-    # TODO: this function should only apply to main dataset
-    def discretize_scale(self, query: str = 'main', scale_type: str = 'sequential', **kwargs):
+    def discretize_scale(self, scale_type: str = 'sequential', **kwargs):
         """Converts the color scale of the dataset(s) to a discrete scale.
 
-        :param query: The query for the dataset(s) to be discretized
-        :type query: str
         :param scale_type: One of 'sequential', 'discrete' for the type of color scale being used
         :type scale_type: str
         :param kwargs: Keyword arguments to be passed into the discretize functions
         :type kwargs: **kwargs
         """
 
-        def helper(dataset):
-            if dataset['VTYPE'] == 'str':
-                raise ValueError(f"You can not discretize a qualitative dataset.")
-            else:
-                low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
-                high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
-                print(dataset['manager'].get('colorscale'))
-                dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
-                                                                    low, high, **kwargs)
+        try:
+            dataset = self.get_main()
+        except ValueError:
+            raise ValueError("There is no main dataset to discretize the scale of.")
 
-        self.apply_to_query(query, helper)
+        if dataset['VTYPE'] == 'str':
+            raise ValueError(f"You can not discretize a qualitative dataset.")
+        else:
+            low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
+            high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
+            print(dataset['manager'].get('colorscale'))
+            dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
+                                                                low, high, **kwargs)
 
     """
     RETRIEVAL/SEARCHING FUNCTIONS
@@ -1021,51 +1400,57 @@ class PlotBuilder:
     get_regions(), etc... could also fall under here.
     """
 
-    def single_search(self, query: str, big_query: bool = True):
+    def search(self, query: str) -> StrDict:
+        """Query the builder for specific dataset(s).
 
-        if query == 'main':
-            return self.get_main()
-        elif query in ['regions', 'grids', 'outlines', 'points', 'all']:
-            if big_query:
-                return self._container if query == 'all' else self._container[query]
-            else:
-                raise ValueError("The given query should not refer to a collection of datasets.")
+        Each query argument should be formatted like:
+        <regions|grids|outlines|points|main|all>
+        OR
+        <region|grid|outline|point>:<name>
 
-        try:
-            typer, name = _split_name(query)
-        except ValueError:
-            raise ValueError("The given query should be one of ['regions', 'grids', 'outlines', 'points', "
-                             f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
+        And each query argument can be separated by the '+' character.
 
-        if typer == 'region':
-            return self.get_region(name)
-        elif typer == 'grid':
-            return self.get_grid(name)
-        elif typer == 'outline':
-            return self.get_outline(name)
-        elif typer == 'point':
-            return self.get_point(name)
-        else:
-            raise ValueError("The given dataset type does not exist. Must be one of ['region', 'grid', "
-                             "'outline', 'point']. "
-                             f"Received {typer}.")
+        External version.
 
-    def search(self, query: str):
+        :param query: The identifiers for the datasets being searched for
+        :type query: str
+        :return: The result of the query
+        :rtype: StrDict
+        """
         return deepcopy(self._search(query))
 
-    def _search(self, query: str, big_query: bool = True, multi_query: bool = True):
+    def _search(self, query: str, big_query: bool = True, multi_query: bool = True) -> StrDict:
+        """Query the builder for specific dataset(s).
 
+        Internal version, see search().
+
+        :param query: The identifiers for the datasets being searched for
+        :type query: str
+        :return: The result of the query
+        :rtype: StrDict
+        """
         sargs = query.split('+')
 
         if not multi_query:
             return self._single_search(query, big_query=big_query)
 
         if len(sargs) == 1:
-            return self.single_search(sargs[0], big_query=big_query)
+            return self._single_search(sargs[0], big_query=big_query)
         else:
-            return {k: self.single_search(k, big_query=big_query) for k in sargs}
+            return {k: self._single_search(k, big_query=big_query) for k in sargs}
 
-    def _single_search(self, query: str, big_query: bool = True):
+    def _single_search(self, query: str, big_query: bool = True) -> StrDict:
+        """Query the builder for specific datasets()
+
+        Retrieves a query of a single argument only, see _search().
+
+        :param query: The identifier for the dataset(s) being searched for
+        :type query: str
+        :param big_query: Whether to allow the query argument to represent a collection of datasets or not
+        :type big_query: bool
+        :return: The result of the query
+        :rtype: StrDict
+        """
 
         if query == 'main':
             return self.get_main()
@@ -1082,13 +1467,13 @@ class PlotBuilder:
                              f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
 
         if typer == 'region':
-            return self.get_region(name)
+            return self._get_region(name)
         elif typer == 'grid':
-            return self.get_grid(name)
+            return self._get_grid(name)
         elif typer == 'outline':
-            return self.get_outline(name)
+            return self._get_outline(name)
         elif typer == 'point':
-            return self.get_point(name)
+            return self._get_point(name)
         else:
             raise ValueError("The given dataset type does not exist. Must be one of ['region', 'grid', "
                              "'outline', 'point']. "
@@ -1117,9 +1502,9 @@ class PlotBuilder:
         """
         # logger.debug('adding regions to plot.')
         mapbox = self.plot_output_service == 'mapbox'
-        if not self.get_regions():
+        if not self._get_regions():
             raise ValueError("There are no region-type datasets to plot.")
-        for regname, regds in self.get_regions().items():
+        for regname, regds in self._get_regions().items():
             choro = _prepare_choropleth_trace(regds['data'],
                                               mapbox=mapbox)
             choro.update(regds['manager'])
@@ -1130,25 +1515,19 @@ class PlotBuilder:
 
         Merges all of the datasets together, and plots it as a single plot trace.
         """
-        if not self.get_grids():
+        if not self._get_grids():
             raise ValueError("There are no grid-type datasets to plot.")
 
-        merged = pd.concat(self.get_query_data('grids'))
-        merged.drop_duplicates(inplace=True)
+        merged = pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates()
 
         if remove_underlying:
             try:
-                merged = self._remove_underlying_grid(self.get_main()['data'], merged)
+                merged = self._remove_underlying_grid(self._get_main()['data'], merged)
             except KeyError:
                 raise ValueError("Can not remove underlying grid when there is no main dataset.")
 
         merged['text'] = 'GRID'
-        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox')
-        choro.update(text=merged['text'])
-        choro.update(self._grid_manager)
-
-        # self._figure.layout.coloraxis.colorbar.title = 'TONY'
-
+        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox').update(text=merged['text']).update(self._grid_manager)
         self._figure.add_trace(choro)
 
     def plot_main(self):
@@ -1158,11 +1537,6 @@ class PlotBuilder:
         """
         dataset = self.get_main()
         df = dataset['data']
-        #print('MAPBOX', self._figure.layout.)
-        #dataset['manager']['colorbar']['lenmode'] = 'pixels'
-        #dataset['manager']['colorbar']['len'] = 600
-        #dataset['manager']['colorbar']['y'] = 0.0
-        #dataset['manager']['colorbar']['yanchor'] = 'bottom'
 
         # qualitative dataset
         if dataset['VTYPE'] == 'str':
@@ -1191,7 +1565,8 @@ class PlotBuilder:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
                         raise ValueError("If the colorscale is a map, you must provide hues for each option.")
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(showscale=False, showlegend=True).update(manager)
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(showscale=False, showlegend=True).update(
+                        manager)
                     self._figure.add_trace(choro)
 
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
@@ -1202,7 +1577,8 @@ class PlotBuilder:
                         manager['colorscale'] = solid_scale(colorscale[i][1])
                     else:
                         manager['colorscale'] = solid_scale(colorscale[i])
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True).update(manager)
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False,
+                                                                               showlegend=True).update(manager)
                     self._figure.add_trace(choro)
             else:
                 raise ValueError("There was an error reading the colorscale.")
