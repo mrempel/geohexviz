@@ -43,6 +43,7 @@ _group_functions = {
 
 StrDict = Dict[str, Any]
 
+
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
     geojson = gcg.simple_geojson(gdf, 'value_field')
 
@@ -135,15 +136,36 @@ Notes for Tuesday:
 
 - Meet with Mark and discuss progress track and such
 - Alter query functions, for both internal and external usage
+
+Notes for Thursday:
+- Continue with testing, documentation
+- Write in the reference document
 """
 
 
 def _validate_dataset(dataset: StrDict):
+    """Validates a dataset.
+
+    :param dataset: The dataset to validate
+    :type dataset: StrDict
+    """
     if 'data' not in dataset:
         raise ValueError("There must be a 'data' member present in the dataset.")
 
 
 def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
+    """Converts a dataset into a usable dataset for the builder.
+
+    Converts the dataset into a proper type.
+
+    :param dataset: The dataset to convert
+    :type dataset: StrDict
+    :param default_manager: The default manager to give to the dataset
+    :type default_manager: StrDict
+    :param allow_manager_updates: Whether or not to allow overwriting of the default manager
+    :type allow_manager_updates: bool
+    """
+
     _validate_dataset(dataset)
     data = dataset['data']
 
@@ -210,6 +232,7 @@ def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool =
     else:
         dict_deep_update(dataset['manager'], updates)
 
+
 def _hexify_data(data, hex_resolution: int):
     return gcg.hexify_geodataframe(data, hex_resolution=hex_resolution)
 
@@ -222,6 +245,9 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwarg
         vtype = 'num'
     else:
         vtype = get_column_type(data, binning_field)
+
+    if vtype == 'unk':
+        raise TypeError("The binning field is not a valid type, must be string or numerical column.")
 
     if binning_fn is None:
         binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
@@ -280,9 +306,6 @@ def _split_name(name: str) -> Tuple[str, str]:
     return name[:lind], name[lind + 1:]
 
 
-
-
-
 # this function should standalone.
 def _prepare_general_dataset(dataset: StrDict, **kwargs):
     try:
@@ -323,7 +346,7 @@ class PlotBuilder:
             ),
             opacity=0.8
         ),
-        hoverinfo='location+text'
+        hoverinfo='location+z+text'
     )
 
     # default scatter plot manager (includes properties for scatter plots only)
@@ -1109,6 +1132,7 @@ class PlotBuilder:
     """
     DATA ALTERING FUNCTIONS
     """
+
     def apply_to_query(self, name: str, fn, *args, allow_empty: bool = True, **kwargs):
         """Applies a function to the datasets within a query.
 
@@ -1527,7 +1551,8 @@ class PlotBuilder:
                 raise ValueError("Can not remove underlying grid when there is no main dataset.")
 
         merged['text'] = 'GRID'
-        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox').update(text=merged['text']).update(self._grid_manager)
+        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox').update(
+            text=merged['text']).update(self._grid_manager)
         self._figure.add_trace(choro)
 
     def plot_main(self):
@@ -1564,7 +1589,7 @@ class PlotBuilder:
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise ValueError("If the colorscale is a map, you must provide hues for each option.")
+                        raise TypeError("If the colorscale is a map, you must provide hues for each option.")   # TODO: figure out how to change this error
                     choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(showscale=False, showlegend=True).update(
                         manager)
                     self._figure.add_trace(choro)
@@ -1581,7 +1606,7 @@ class PlotBuilder:
                                                                                showlegend=True).update(manager)
                     self._figure.add_trace(choro)
             else:
-                raise ValueError("There was an error reading the colorscale.")
+                raise TypeError("The colorscale must be a map, iterable, or nested iterables.")
         # quantitative dataset
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
