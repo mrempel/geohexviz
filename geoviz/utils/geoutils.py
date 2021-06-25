@@ -87,7 +87,7 @@ def _wraps_lat(poly: Polygon):
     for x in range(1, len(coordinates)):
         p0 = coordinates[x - 1]
         p1 = coordinates[x]
-        if _check_antimeridian(p0[0], p1[0]):
+        if check_crossing(p0[0], p1[0], validate=False):
             return True
     return False
 
@@ -114,7 +114,8 @@ def check_crossing(lon1: float, lon2: float, validate: bool = True):
     return abs(lon2 - lon1) > 180.0
 
 
-def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3) -> GeoDataFrame:
+def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3, add_geoms: bool = False, keep_geoms: bool = False,
+                        raise_errors: bool = True) -> GeoDataFrame:
     """Makes a new GeoDataFrame, with the index set as the hex cell ids that each geometry in the geometry column
     corresponds to.
 
@@ -148,13 +149,33 @@ def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3) -> GeoDataFr
         else:
             return get_multi_shape_hex(shape, shape_to_hex_ids)
 
-    cdf['hex'] = cdf.geometry.apply(shape_to_hex_ids)
+    try:
+        cdf['hex'] = cdf.geometry.apply(shape_to_hex_ids)
+    except AttributeError:
+        if raise_errors:
+            raise AttributeError("There was no geometry in the dataframe.")
+        return cdf
+
     cdf['hexlen'] = cdf['hex'].apply(len)
-    return pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='hexlen').reset_index(drop=True),
-                                'hex', ignore_index=True).set_index('hex', drop=True)
+    try:
+        cdf = pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='hexlen').reset_index(drop=True),
+                                   'hex', ignore_index=True).set_index('hex', drop=True)
+    except KeyError:
+        if raise_errors:
+            raise AttributeError("There was no geometry in the dataframe.")
+        return cdf
+
+    if keep_geoms and add_geoms:
+        cdf['*OLD GEOMETRY*'] = cdf.geometry
+
+    if add_geoms:
+        cdf.drop(columns='geometry', inplace=True)
+        cdf = hexify_geometry(cdf)
+
+    return cdf
 
 
-def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None) -> GeoDataFrame:
+def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None, to_crs: Any = None) -> GeoDataFrame:
     """Adds the geometry of the hex ids in the given column or index.
 
     :param gdf: The GeoDataFrame containing the hex ids
@@ -168,9 +189,12 @@ def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None) -> GeoData
         gdf.geometry = gdf[hex_col].apply(lambda r: Polygon(h3.h3_to_geo_boundary(r, True)))
     else:
         gdf['hexv'] = gdf.index.values
-        print(gdf)
         gdf.geometry = gdf['hexv'].apply(lambda r: Polygon(h3.h3_to_geo_boundary(r, True)))
-        gdf.drop(columns='hexv', inplace=True)
+        gdf.drop(columns='hexv', inplace=True, errors='raise')
+
+    gdf.crs = 'EPSG:4326'
+    if to_crs:
+        gdf.to_crs(to_crs, inplace=True)
 
     return gdf
 
@@ -183,7 +207,6 @@ def bin_by_hex(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_f
 
     This function assumes the dataframe has a VALID hex and geometry columns.
     Using these columns the data is grouped into what hexagon on the grid they fall into.
-
 
     :param hex_gdf: A dataframe representing any kind of hex data
     :type hex_gdf: GeoDataFrame
@@ -225,20 +248,174 @@ def bin_by_hex(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_f
     return hex_gdf_g
 
 
-def unify_geodataframe(gdf: GeoDataFrame):
+def hexify_geodataframe2(gdf: GeoDataFrame, hex_resolution: int = 3) -> GeoDataFrame:
+    """Makes a new GeoDataFrame, with the index set as the hex cell ids that each geometry in the geometry column
+    corresponds to.
+
+    :param gdf: The GeoDataFrame to place a hex cell id overlay on
+    :type gdf: GeoDataFrame
+    :param hex_resolution: The resolution of the hexes to be generated
+    :type hex_resolution: int
+    :return: A GeoDataFrame with a hex id index
+    :rtype: GeoDataFrame
+    """
+    cdf = gdf.copy(deep=True)
+
+    def get_multi_shape_hex(shape: GeometryContainer, fn: Callable) -> List[str]:
+        """A function to retrieve a list of hex ids for container-like geometries.
+        """
+        lst = []
+        for s in shape:
+            lst.extend(fn(s))
+        return lst
+
+    def shape_to_hex_ids(shape: AnyGeom) -> List[str]:
+        """A semi-recursive function for the retrieving of hex ids.
+        """
+
+        if isinstance(shape, Point):
+            return [h3.geo_to_h3(lat=shape.y, lng=shape.x, resolution=hex_resolution)]
+        elif isinstance(shape, Polygon):
+            return list(h3.polyfill(shape.__geo_interface__, hex_resolution, geo_json_conformant=True))
+        elif isinstance(shape, LineString):
+            return [shape_to_hex_ids(Point(x))[0] for x in shape.coords]
+        else:
+            return get_multi_shape_hex(shape, shape_to_hex_ids)
+
+    cdf['hex'] = cdf.geometry.apply(shape_to_hex_ids)
+    cdf['hexlen'] = cdf['hex'].apply(len)
+    return pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='hexlen').reset_index(drop=True),
+                                'hex', ignore_index=True).set_index('hex', drop=True)
+
+
+def bin_by_hex2(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_field: Optional[str] = None,
+                binning_field: Optional[str] = None, add_geoms: bool = False,
+                loss_method: bool = False, geom_selector: Any = 'first',
+                **binning_kw):
+    if not binning_field:
+        hex_gdf['binby'] = list(range(0, len(hex_gdf)))
+        binning_field = 'binby'
+
+    if hex_field:
+        hex_field = hex_gdf[hex_field]
+    else:
+        hex_field = hex_gdf.index
+
+    # group by ids aggregate into list
+    if loss_method:
+        hex_gdf_g = (hex_gdf
+                     .groupby(hex_field)[binning_field]
+                     .agg(tuple)
+                     .to_frame('*COLLECTED*'))
+
+    else:
+        hex_gdf_g = (hex_gdf.groupby(hex_field).agg(tuple))
+
+        try:
+            if geom_selector == 'first':
+                hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: r[0])
+            elif geom_selector == 'collection':
+                hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: GeometryCollection(r))
+            elif geom_selector == 'last':
+                hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: r[-1])
+            elif callable(geom_selector):
+                hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(geom_selector)
+            elif geom_selector is not None:
+                raise ValueError(
+                    "The geometry selector was invalid. Must be one of ['first', 'collection', 'last', None] "
+                    "or a callable function to be performed on the collected tuple.")
+        except KeyError:
+            pass
+        hex_gdf_g = GeoDataFrame(hex_gdf_g).rename({binning_field: '*COLLECTED*'}, axis=1)
+
+    hex_gdf_g['*COLLECTED VALUE*'] = (hex_gdf_g['*COLLECTED*'].apply(binning_fn, args=binning_args, **binning_kw))
+
+    if add_geoms:
+        hex_gdf_g = hexify_geometry(GeoDataFrame(hex_gdf_g))
+
+    return hex_gdf_g
+
+
+def bin_by_hex_noloss(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, hex_field: Optional[str] = None,
+                      binning_field: Optional[str] = None, add_geoms: bool = False, geom_selector: Any = None,
+                      **binning_kw):
+    if not binning_field:
+        hex_gdf['binby'] = list(range(0, len(hex_gdf)))
+        binning_field = 'binby'
+
+    if hex_field:
+        hex_field = hex_gdf[hex_field]
+    else:
+        hex_field = hex_gdf.index
+
+    if geom_selector is None:
+        hex_gdf.drop(columns='geometry', inplace=True)
+
+    hex_gdf_g = (hex_gdf.groupby(hex_field).agg(tuple))
+
+    try:
+        if geom_selector == 'first':
+            hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: r[0])
+        elif geom_selector == 'collection':
+            hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: GeometryCollection(r))
+        elif geom_selector == 'last':
+            hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(lambda r: r[-1])
+        elif callable(geom_selector):
+            hex_gdf_g['geometry'] = hex_gdf_g['geometry'].apply(geom_selector)
+        elif geom_selector is not None:
+            raise ValueError("The geometry selector was invalid. Must be one of ['first', 'collection', 'last', None] "
+                             "or a callable function to be performed on the collected tuple.")
+    except KeyError:
+        pass
+
+    hex_gdf_g = GeoDataFrame(hex_gdf_g).rename({binning_field: '*COLLECTED*'}, axis=1)
+    hex_gdf_g['*COLLECTED VALUE*'] = (hex_gdf_g['*COLLECTED*'].apply(binning_fn, args=binning_args, **binning_kw))
+
+    if add_geoms:
+        hex_gdf_g = hexify_geometry(GeoDataFrame(hex_gdf_g))
+
+    return hex_gdf_g
+
+
+def apply_bin_function(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, binning_field: Optional[str] = None,
+                       **binning_kw):
+    hex_gdf['value_field'] = (hex_gdf[binning_field].apply(binning_fn, args=binning_args, **binning_kw))
+
+
+def bin_by_hex_withgeoms(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args,
+                         binning_field: Optional[str] = None, **binning_kw):
+    hex_gdf.drop(columns='geometry', inplace=True, errors='ignore')
+
+    # assumes hex ids are in index column
+    if not binning_field:
+        hex_gdf['binby'] = list(range(0, len(hex_gdf)))
+        binning_field = 'binby'
+
+    apply_bin_function(hex_gdf, binning_fn, *binning_args, binning_field=binning_field, **binning_kw)
+    return hexify_geometry(GeoDataFrame(hex_gdf))
+
+
+def unify_geodataframe(gdf: GeoDataFrame) -> GeoDataFrame:
+    """Unifies the geometries in a GeoDataFrame into a new GeoDataFrame.
+
+    :param gdf: The input dataframe
+    :type gdf: GeoDataFrame
+    """
+
     geom = gdf.unary_union.boundary
     return GeoDataFrame(geometry=[geom], crs='ESPG:4326')
 
 
-def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoDataFrame:
+def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True, raise_errors: bool = True) -> GeoDataFrame:
     """Makes a new GeoDataFrame, with the geometry all being of Point type, and the index
     representing the original row in the dataframe.
-
 
     :param gdf: The GeoDataFrame to convert the geometries of
     :type gdf: GeoDataFrame
     :param keep_geoms: Whether to keep the original geometries in the dataframe or not
     :type keep_geoms: bool
+    :param raise_errors: Errors are raised by pandas when the dataframe has no geometry, throw or not
+    :type raise_errors: bool
     :return: A GeoDataFrame with a point-only geometry
     :rtype: GeoDataFrame
     """
@@ -266,15 +443,22 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True) -> GeoData
             return get_multi_shape_points(shape)
 
     cdf['points'] = cdf.geometry.apply(shape_to_points)
-    cdf['pointslen'] = cdf['points'].apply(len)
-    cdf = cdf[cdf['pointslen'] != 0]
-    cdf = GeoDataFrame(pd.DataFrame.explode(cdf, 'points'),
-                       crs=cdf.crs).drop(columns='pointslen')
 
-    if keep_geoms:
-        cdf['old-geometry'] = cdf.geometry
-    cdf.geometry = cdf['points']
-    return cdf.drop(columns='points', errors='ignore')
+    try:
+        cdf['pointslen'] = cdf['points'].apply(len)
+        cdf = cdf[cdf['pointslen'] != 0]
+        cdf = GeoDataFrame(pd.DataFrame.explode(cdf, 'points'),
+                           crs=cdf.crs).drop(columns='pointslen')
+
+        if keep_geoms:
+            cdf['old-geometry'] = cdf.geometry
+        cdf.geometry = cdf['points']
+        return cdf.drop(columns='points', errors='ignore')
+    except KeyError:
+        if raise_errors:
+            raise ValueError("There was an error when converting the dataframe, most likely no geometry present.")
+        else:
+            return cdf
 
 
 def convert_dataframe_geometry_to_geodataframe(df: DataFrame, geometry_field: str = 'geometry') -> GeoDataFrame:
@@ -295,11 +479,13 @@ def convert_dataframe_geometry_to_geodataframe(df: DataFrame, geometry_field: st
 
 
 def convert_dataframe_coordinates_to_geodataframe(df: DataFrame, latitude_field: str = 'latitude',
-                                                  longitude_field: str = 'longitude') -> GeoDataFrame:
+                                                  longitude_field: str = 'longitude', drop: bool = False,
+                                                  longlat_order: bool = True) -> GeoDataFrame:
     """Converts a pandas dataframe to a GeoDataFrame based on pre-existing lat/lon fields.
 
     This function takes a pandas dataframe and converts it by returning a GeoDataFrame
     with its geometry attribute pointing at a new geometry column of the given dataframe.
+
 
     :param df: The dataframe to convert
     :type df: DataFrame
@@ -307,10 +493,20 @@ def convert_dataframe_coordinates_to_geodataframe(df: DataFrame, latitude_field:
     :type latitude_field: str
     :param longitude_field: The name of the column containing lon values
     :type longitude_field: str
+    :param drop: Whether or not to drop the latitude and longitude columns after converting
+    :type drop: bool
+    :param longlat_order: Whether to use longitude latitude order or latitude longitude order
+    :type longlat_order: bool
     :return: The converted dataframe (now GeoDataFrame)
     :rtype: GeoDataFrame
     """
-    return GeoDataFrame(df, geometry=gpd.points_from_xy(df[longitude_field], df[latitude_field], crs='EPSG:4326'))
+    if longlat_order:
+        geodf = GeoDataFrame(df, geometry=gpd.points_from_xy(df[longitude_field], df[latitude_field], crs='EPSG:4326'))
+    else:
+        geodf = GeoDataFrame(df, geometry=gpd.points_from_xy(df[latitude_field], df[longitude_field], crs='EPSG:4326'))
+    if drop:
+        geodf.drop(columns=[longitude_field, latitude_field], errors='raise', inplace=True)
+    return geodf
 
 
 def conform_geogeometry(gdf: GeoDataFrame, d3_geo: bool = True, fix_polys: bool = True) -> GeoDataFrame:
@@ -354,7 +550,7 @@ def conform_geogeometry(gdf: GeoDataFrame, d3_geo: bool = True, fix_polys: bool 
     else:
         perform = (lambda s: polygon.orient(s, sign=-1)) if d3_geo else (lambda s: polygon.orient(s, sign=1))
 
-    gdf['valid'] = gdf.is_valid
+    # gdf['valid'] = gdf.is_valid
     geoms = gdf.geometry.apply(conform_geoshape, args=[perform])
 
     gdf.geometry = list(geoms.values)
@@ -536,9 +732,7 @@ def remove_other_geometries(gdf: GeoDataFrame, geom_type: str) -> GeoDataFrame:
     """
 
     gdf['gtype'] = gdf.geom_type
-    gdf = gdf[gdf['gtype'] == geom_type]
-    gdf.drop(columns='gtype', inplace=True)
-    return gdf
+    return gdf[gdf['gtype'] == geom_type].drop(columns='gtype')
 
 
 def simple_geojson(gdf: GeoDataFrame, value_field: Optional[str] = None, id_field: Optional[str] = None,
@@ -611,35 +805,72 @@ def clip_points_to_polygons(points: GeoDataFrame, clip: GeoDataFrame) -> GeoData
     return points
 
 
-def clip(gdf: GeoDataFrame, clip: GeoDataFrame, operation: str = 'within', errors: str = 'raise'):
-    gdf.crs = 'EPSG:4326'
+def convert_crs(left: GeoDataFrame, right: GeoDataFrame, crs: Any = 'EPSG:4326'):
+    """Converts two GeoDataFrames to the same crs.
 
-    if clip.empty:
-        if errors == 'raise':
-            raise ValueError("The dataframe that is acting as the clip can not be empty.")
-        else:
-            return gdf
+    :param left: The left dataframe
+    :type left: GeoDataFrame
+    :param right: The right dataframe
+    :type right: GeoDataFrame
+    :param crs: The crs that the two dataframes will be converted to
+    :type crs: Any
+    """
+    if left.crs is None:
+        left = left.set_crs(crs)
+    else:
+        left = left.to_crs(crs=crs)
 
-    clip.crs = 'EPSG:4326'
-    clip = clip[['geometry']]
-    return gpd.sjoin(gdf, clip, how='inner', op=operation)
+    if right.crs is None:
+        right = right.set_crs(crs)
+    else:
+        right = right.to_crs(crs=crs)
+
+    return left, right
 
 
-def gpdclip(gdf: GeoDataFrame, clip: GeoDataFrame, errors: str = 'raise', enforce_crs: Any = 'EPSG:4326',
+def sjoinclip(clip: GeoDataFrame, to: GeoDataFrame,
+              operation: str = 'intersects',
+              enforce_crs: Any = 'EPSG:4326') -> GeoDataFrame:
+    """Clips a GeoDataFrame to another via GeoPandas spatial join operations.
+
+    The operation first converts the two GeoDataFrames to the same crs.
+
+    :param clip: The dataframe that is being clipped to the other dataframes boundary
+    :type clip: GeoDataFrame
+    :param to: The dataframe that is acting like the boundary for the clipping
+    :type to: GeoDataFrame
+    :param operation: The operation to be performed in the spatial join
+    :type operation: str
+    :param enforce_crs: The crs to enforce before clipping
+    :type enforce_crs: Any
+    :return: The clipped dataframe
+    :rtype: GeoDataFrame
+    """
+
+    clip, to = convert_crs(clip, to, crs=enforce_crs)
+    return gpd.sjoin(clip, to[['geometry']], how='inner', op=operation)
+
+
+def gpdclip(clip: GeoDataFrame, to: GeoDataFrame, enforce_crs: Any = 'EPSG:4326',
             keep_geom_type: bool = True):
-    if gdf.crs is None:
-        gdf.crs = enforce_crs
+    """Clips a GeoDataFrame to another via GeoPandas clip function.
 
-    if clip.empty:
-        if errors == 'raise':
-            raise ValueError("The dataframe that is acting as the clip can not be empty.")
-        else:
-            return gdf
+    The operation first converts the two dataframes to the same crs.
 
-    if clip.crs is None:
-        clip.crs = gdf.crs
+    :param clip: The dataframe that is being clipped to the other dataframes boundary
+    :type clip: GeoDataFrame
+    :param to: The dataframe that is acting like the boundary for the clipping
+    :type to: GeoDataFrame
+    :param enforce_crs: The crs to enforce before clipping
+    :type enforce_crs: Any
+    :param keep_geom_type: Passed into geopandas clip function
+    :type keep_geom_type: bool
+    :return: The clipped dataframe
+    :rtype: GeoDataFrame
+    """
 
-    return gpd.clip(gdf, clip.to_crs(crs=gdf.crs), keep_geom_type=keep_geom_type)
+    clip, to = convert_crs(clip, to, crs=enforce_crs)
+    return gpd.clip(clip, to, keep_geom_type=keep_geom_type)
 
 
 def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None, hex_resolution: int = None):
@@ -660,19 +891,12 @@ def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None
     tl = [range_lon[0], range_lat[1]]
     tr = [range_lon[1], range_lat[1]]
 
-    # TODO: Polygon must be in lat/lng format
-
-    poly = Polygon([bl, tl, tr, br, bl])
-    print(poly)
+    poly = (Polygon([bl, tl, tr, br, bl]))
 
     gdf = GeoDataFrame(geometry=[poly], crs="EPSG:4326")
 
-    print('WORKEDHERE\n', gdf)
-
     hexed_gdf = hexify_geodataframe(gdf, hex_resolution=hex_resolution)
-    hexed_gdf = hexify_geometry(hexed_gdf)
-
-    print('HEXED\n', hexed_gdf)
+    hexed_gdf = bin_by_hex(hexed_gdf, binning_fn=lambda lst: 0, add_geoms=True)
     return conform_geogeometry(hexed_gdf, fix_polys=True)
 
 
