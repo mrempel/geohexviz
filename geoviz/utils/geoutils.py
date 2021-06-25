@@ -8,12 +8,12 @@ import geopandas as gpd
 import numpy as np
 import pandas as pd
 from pyproj import Geod
-from geojson import Feature, FeatureCollection, MultiPolygon
+from geojson import Feature, FeatureCollection
 from geopandas import GeoDataFrame, GeoSeries
 from h3 import h3
 from pandas import DataFrame
-from shapely.geometry import Polygon, Point, polygon, LineString, MultiLineString, GeometryCollection, \
-    MultiPoint
+from shapely.geometry import Polygon, Point, polygon, LineString, LinearRing, \
+    MultiPoint, MultiPolygon, MultiLineString, GeometryCollection
 from .util import get_occurrences
 from functools import reduce
 
@@ -114,7 +114,111 @@ def check_crossing(lon1: float, lon2: float, validate: bool = True):
     return abs(lon2 - lon1) > 180.0
 
 
+def ultimate_hexify(gdf: GeoDataFrame, resolution: int, add_geom: bool = False, keep_geom: bool = False,
+                    old_geom_name: str = None, raise_errors: bool = False) -> GeoDataFrame:
+    """Makes a new GeoDataFrame, with the index set as the hex cell ids that each geometry in the geometry column
+    corresponds to.
+
+    :param gdf: The GeoDataFrame to place a hex cell id overlay on
+    :type gdf: GeoDataFrame
+    :param resolution: The resolution of the hexes to be generated
+    :type resolution: int
+    :return: A GeoDataFrame with a hex id index
+    :rtype: GeoDataFrame
+    """
+    if old_geom_name is None:
+        old_geom_name = '*OLD GEOMS*'
+
+    cdf = gdf.copy(deep=True)
+
+    def get_multi_shape_hex(shape: GeometryContainer, fn: Callable) -> List[str]:
+        """A function to retrieve a list of hex ids for container-like geometries.
+        """
+        lst = []
+        for s in shape:
+            lst.extend(fn(s))
+        return lst
+
+    def shape_to_hex_ids(shape: AnyGeom) -> List[str]:
+        """A semi-recursive function for the retrieving of hex ids.
+        """
+
+        if isinstance(shape, Point):
+            return [h3.geo_to_h3(lat=shape.y, lng=shape.x, resolution=resolution)]
+        elif isinstance(shape, Polygon):
+            return list(h3.polyfill(shape.__geo_interface__, resolution, geo_json_conformant=True))
+        elif isinstance(shape, LineString) or isinstance(shape, LinearRing):
+            return [shape_to_hex_ids(Point(x))[0] for x in shape.coords]
+        else:
+            return get_multi_shape_hex(shape, shape_to_hex_ids)
+
+    try:
+        cdf['hex'] = cdf.geometry.apply(shape_to_hex_ids)
+    except AttributeError:
+        if raise_errors:
+            raise AttributeError("There was no geometry in the dataframe.")
+        return cdf
+
+    # attempt to explode while removing empty cells
+    cdf['hexlen'] = cdf['hex'].apply(len)
+    try:
+        cdf = pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='hexlen').reset_index(drop=True),
+                                   'hex', ignore_index=True).set_index('hex', drop=True)
+    except KeyError:
+        if raise_errors:
+            raise AttributeError("There was no geometry in the dataframe.")
+        return cdf
+
+    # add the hex geometries and keep the old ones if specified
+    if add_geom:
+        if keep_geom:
+            cdf[old_geom_name] = cdf.geometry
+        cdf = hexify_geometry(cdf.drop(columns='geometry'))
+
+    return cdf
+
+
+def apply_bin_function(hex_gdf: Union[DataFrame, GeoDataFrame], binning_field: str, binning_fn: Callable, *binning_args,
+                       result_name: str = None,
+                       **binning_kw):
+    if result_name is None:
+        result_name = '*COLLECTED VALUE*'
+    hex_gdf[result_name] = (hex_gdf[binning_field].apply(binning_fn, args=binning_args, **binning_kw))
+
+
+def ultimate_hexbin(hex_gdf: GeoDataFrame, binning_fn: Callable = None, *binning_args, hex_field: Optional[str] = None,
+                    binning_field: Optional[str] = None,
+                    result_name: str = 'value_field', add_geoms: bool = False, loss_method: bool = True,
+                    **binning_kw):
+
+
+    if binning_fn is None:
+        binning_fn = lambda lst: len(lst)
+
+    hex_gdf = hex_gdf.groupby(hex_field)
+
+    if binning_field is None:
+        hex_gdf['binby'] = list(range(0, len(hex_gdf)))
+        binning_field = 'binby'
+
+    # group by ids aggregate into list
+    if loss_method:
+        hex_gdf_g = (hex_gdf[binning_field].agg(tuple))
+    else:
+        # the no loss method could be sped up (no geometry column)
+        hex_gdf_g = (hex_gdf.agg(tuple))
+
+    apply_bin_function(hex_gdf_g, binning_field, binning_fn, *binning_args, result_name=result_name, **binning_kw)
+
+    if add_geoms:
+        hex_gdf_g = hexify_geometry(GeoDataFrame(hex_gdf_g))
+        hex_gdf_g.crs = "EPSG:4326"
+
+    return hex_gdf_g
+
+
 def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3, add_geoms: bool = False, keep_geoms: bool = False,
+                        as_index: bool = True,
                         raise_errors: bool = True) -> GeoDataFrame:
     """Makes a new GeoDataFrame, with the index set as the hex cell ids that each geometry in the geometry column
     corresponds to.
@@ -150,16 +254,18 @@ def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3, add_geoms: b
             return get_multi_shape_hex(shape, shape_to_hex_ids)
 
     try:
-        cdf['hex'] = cdf.geometry.apply(shape_to_hex_ids)
+        cdf['HEX'] = cdf.geometry.apply(shape_to_hex_ids)
     except AttributeError:
         if raise_errors:
             raise AttributeError("There was no geometry in the dataframe.")
         return cdf
 
-    cdf['hexlen'] = cdf['hex'].apply(len)
+    cdf['*HEXLEN*'] = cdf['HEX'].apply(len)
     try:
-        cdf = pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='hexlen').reset_index(drop=True),
-                                   'hex', ignore_index=True).set_index('hex', drop=True)
+        cdf = pd.DataFrame.explode(cdf[cdf['hexlen'] != 0].drop(columns='*HEXLEN*').reset_index(drop=True),
+                                   'HEX', ignore_index=True)
+        if as_index:
+            cdf.set_index('hex', inplace=True)
     except KeyError:
         if raise_errors:
             raise AttributeError("There was no geometry in the dataframe.")
@@ -170,21 +276,32 @@ def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3, add_geoms: b
 
     if add_geoms:
         cdf.drop(columns='geometry', inplace=True)
-        cdf = hexify_geometry(cdf)
+        cdf = hexify_geometry(cdf, hex_col=None if as_index else 'HEX')
 
     return cdf
 
 
-def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None, to_crs: Any = None) -> GeoDataFrame:
+def hexify_geometry(gdf: GeoDataFrame, hex_col: str = None, keep_geoms: bool = False,
+                    old_geom_name: str = None) -> GeoDataFrame:
     """Adds the geometry of the hex ids in the given column or index.
 
     :param gdf: The GeoDataFrame containing the hex ids
     :type gdf: GeoDataFrame
     :param hex_col: The column containing hex ids
-    :type hex_col: Optional[str]
+    :type hex_col: str
+    :param keep_geoms: Whether or not to keep old geometry
+    :type keep_geoms: bool
+    :param old_geom_name: The name for the column containing old geometry (keep_geoms=True)
+    :type old_geom_name: str
     :return: A GeoDataFrame with hex ids and their geometries
     :rtype: GeoDataFrame
     """
+    if old_geom_name is None:
+        old_geom_name = '*OLD GEOMS*'
+
+    if keep_geoms:
+        gdf[old_geom_name] = gdf.geometry
+
     if hex_col:
         gdf.geometry = gdf[hex_col].apply(lambda r: Polygon(h3.h3_to_geo_boundary(r, True)))
     else:
@@ -193,9 +310,6 @@ def hexify_geometry(gdf: GeoDataFrame, hex_col: Optional[str] = None, to_crs: An
         gdf.drop(columns='hexv', inplace=True, errors='raise')
 
     gdf.crs = 'EPSG:4326'
-    if to_crs:
-        gdf.to_crs(to_crs, inplace=True)
-
     return gdf
 
 
@@ -377,11 +491,6 @@ def bin_by_hex_noloss(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args
     return hex_gdf_g
 
 
-def apply_bin_function(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args, binning_field: Optional[str] = None,
-                       **binning_kw):
-    hex_gdf['value_field'] = (hex_gdf[binning_field].apply(binning_fn, args=binning_args, **binning_kw))
-
-
 def bin_by_hex_withgeoms(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_args,
                          binning_field: Optional[str] = None, **binning_kw):
     hex_gdf.drop(columns='geometry', inplace=True, errors='ignore')
@@ -390,6 +499,8 @@ def bin_by_hex_withgeoms(hex_gdf: GeoDataFrame, binning_fn: Callable, *binning_a
     if not binning_field:
         hex_gdf['binby'] = list(range(0, len(hex_gdf)))
         binning_field = 'binby'
+
+    hex_gdf = (hex_gdf.groupby(hex_gdf.index).agg(tuple))
 
     apply_bin_function(hex_gdf, binning_fn, *binning_args, binning_field=binning_field, **binning_kw)
     return hexify_geometry(GeoDataFrame(hex_gdf))
