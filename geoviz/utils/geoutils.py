@@ -281,7 +281,7 @@ def hexify_geodataframe(gdf: GeoDataFrame, hex_resolution: int = 3, add_geoms: b
     return cdf
 
 
-def hexify_geometry(gdf: GeoDataFrame, hex_col: str = None, keep_geoms: bool = False,
+def hexify_geometry(gdf: Union[DataFrame, GeoDataFrame], hex_col: str = None, keep_geoms: bool = False,
                     old_geom_name: str = None) -> GeoDataFrame:
     """Adds the geometry of the hex ids in the given column or index.
 
@@ -296,6 +296,9 @@ def hexify_geometry(gdf: GeoDataFrame, hex_col: str = None, keep_geoms: bool = F
     :return: A GeoDataFrame with hex ids and their geometries
     :rtype: GeoDataFrame
     """
+    if not isinstance(gdf, GeoDataFrame):
+        gdf = GeoDataFrame(gdf)
+
     if old_geom_name is None:
         old_geom_name = '*OLD GEOMS*'
 
