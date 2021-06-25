@@ -6,7 +6,9 @@ import geopandas as gpd
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from . import colorscales as cli
-from .geoutils import pointify_geodataframe
+from .colorscales import tryGetScale, configureScaleWithAlpha, configureColorWithAlpha
+import geoviz.utils.geoutils as gcg
+import pandas as pd
 
 world_shape_definitions = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
 world_shape_definitions['name'] = world_shape_definitions['name'].apply(lambda s: s.upper())
@@ -171,9 +173,6 @@ def logify_scale(df: DataFrame, **kwargs) -> Dict[str, Any]:
     return {'colorbar': {'tickvals': scale_info['scale-vals'], 'ticktext': scale_info['scale-text']},
             'zmin': scale_info['scale-vals'][0], 'zmax': scale_info['scale-vals'][-1]}
 
-def delogify_scale(df: DataFrame):
-    df['value_field'] = df['value_field'].apply(lambda v: 10**v)
-
 
 def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
     """Conforms the opacity of a colorscale to match the opacity of the plotly marker.
@@ -191,6 +190,7 @@ def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
 
         properties['colorscale'] = cli.configureScaleWithAlpha(properties['colorscale'], alpha=alpha)
 
+
 def conformAlpha(properties: Dict[str, Any]):
     try:
         alpha = properties['marker']['opacity']
@@ -205,8 +205,42 @@ def conformAlpha(properties: Dict[str, Any]):
         pass
 
 
-def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
+def opacify_colorscale(dataset: dict, alpha: float = None):
+    colorscale = dataset['manager'].get('colorscale')
 
+    try:
+        colorscale = tryGetScale(colorscale)
+    except AttributeError:
+        pass
+    opacity = dataset['manager'].get('marker', {}).pop('opacity', 1)
+    alpha = alpha if alpha is not None else opacity
+
+    if isinstance(colorscale, dict):
+        colorscale = {k: configureColorWithAlpha(v, alpha) for k, v in colorscale.items()}
+    if isinstance(colorscale, tuple):
+        colorscale = list(colorscale)
+    if isinstance(colorscale, list):
+        colorscale = configureScaleWithAlpha(colorscale, alpha=alpha)
+    dataset['manager']['colorscale'] = colorscale
+
+
+def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'intersects'):
+    if len(to) == 0:
+        raise ValueError("There are no datasets to clip to.")
+
+    return pd.concat(
+        [gcg.sjoinclip(clip, item, operation=operation) for item in to]).drop_duplicates()
+
+
+def gpd_clip(clip: GeoDataFrame, to: List[GeoDataFrame], validate: bool = False):
+    if len(to) == 0:
+        raise ValueError("There are no datasets to clip to.")
+
+    return pd.concat(
+        [gcg.gpdclip(clip, item) for item in to]).drop_duplicates()
+
+
+def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
     lats = []
     lons = []
 

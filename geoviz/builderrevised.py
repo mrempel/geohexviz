@@ -42,6 +42,7 @@ _group_functions = {
 }
 
 StrDict = Dict[str, Any]
+DFType = Union[str, DataFrame, GeoDataFrame]
 
 
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
@@ -108,6 +109,29 @@ def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint
         )
 
 
+def builder_from_dict(builder_dict: Dict[str, Any] = None, **kwargs):
+    settings = {}
+    if builder_dict:
+        settings.update(builder_dict)
+    settings.update(kwargs)
+
+    plotly_managers = settings.pop('builder_managers', {})
+
+    builder = PlotBuilder(**settings)
+    builder.update_main_manager(plotly_managers.get('main_dataset', {}))
+    builder.update_grid_manager(plotly_managers.get('grids', {}))
+    builder.update_figure(plotly_managers.get('figure', {}))
+
+    for k, v in plotly_managers.get('regions', {}):
+        builder.update_region_manager(v, name=k)
+    for k, v in plotly_managers.get('outlines', {}):
+        builder.update_outline_manager(v, name=k)
+    for k, v in plotly_managers.get('points', {}):
+        builder.update_point_manager(v, name=k)
+
+    return builder
+
+
 """
 Notes:
 
@@ -140,6 +164,11 @@ Notes for Tuesday:
 Notes for Thursday:
 - Continue with testing, documentation
 - Write in the reference document
+- Think out structure for JSON file
+- Review submission requirements for JOSS
+
+- Talk to Mark about working during school (part-time)
+- Think over using the more object oriented approach
 """
 
 
@@ -153,7 +182,19 @@ def _validate_dataset(dataset: StrDict):
         raise ValueError("There must be a 'data' member present in the dataset.")
 
 
-def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
+def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
+    if default_manager is None:
+        default_manager = {}
+    input_manager = dataset.pop('manager', {})
+    dataset['manager'] = {}
+    _update_manager(dataset, **default_manager)
+    if allow_manager_updates:
+        _update_manager(dataset, **input_manager)
+    elif input_manager:
+        raise ValueError("This dataset may not have a custom manager.")
+
+
+def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
     """Converts a dataset into a usable dataset for the builder.
 
     Converts the dataset into a proper type.
@@ -164,13 +205,14 @@ def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manag
     :type default_manager: StrDict
     :param allow_manager_updates: Whether or not to allow overwriting of the default manager
     :type allow_manager_updates: bool
+    :param set_manager: Whether to set the manager for this dataset or not
+    :type set_manager: bool
+    :param kwargs: Keyword arguments to pass into _set_manager()
+    :type kwargs: **kwargs
     """
 
     _validate_dataset(dataset)
     data = dataset['data']
-
-    if default_manager is None:
-        default_manager = {}
 
     if isinstance(data, str):
         filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
@@ -231,13 +273,8 @@ def _read_dataset(dataset: StrDict, default_manager: StrDict = None, allow_manag
     else:
         raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
 
-    input_manager = dataset.pop('manager', {})
-    dataset['manager'] = {}
-    _update_manager(dataset, **default_manager)
-    if allow_manager_updates:
-        _update_manager(dataset, **input_manager)
-    elif input_manager:
-        raise ValueError("This dataset may not have a custom manager.")
+    if set_manager:
+        _set_manager(dataset, **kwargs)
 
 
 def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
@@ -273,34 +310,26 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwarg
 
 
 def _hexify_dataset(dataset: StrDict, hex_resolution: int):
-
-    hres = dataset.pop('hex_resolution', None)
+    hres = dataset.get('hex_resolution', None)
     hexbin_info = dataset.get('hexbin_info')
     if hexbin_info:
         if 'resolution' in hexbin_info:
             if hres:
                 raise ValueError("Received multiple arguments for hex resolution.")
-            hres=hexbin_info['resolution']
+            hres = hexbin_info['resolution']
     hres = hres if hres is not None else hex_resolution
     dataset['data'] = _hexify_data(dataset['data'], hres)
 
 
 def _bin_dataset_by_hex(dataset: StrDict):
     binning_fn = dataset.pop('binning_fn', None)
-    binning_args = dataset.pop('binning_args', ())
-    binning_kw = dataset.pop('binning_kwargs', {})
+    binning_args = dataset.pop('binning_fn_args', ())
+    binning_kw = dataset.pop('binning_fn_kwargs', {})
 
     if isinstance(binning_fn, dict):
-        if ('args' in binning_fn and binning_args) or ('kwargs' in binning_fn and binning_kw):
-            raise ValueError("Only one set of binning arguments and keywords may be passed.")
-
         binning_args = binning_fn.get('args', binning_args)
         binning_kw = binning_fn.get('kwargs', binning_kw)
-        try:
-            binning_fn = binning_fn['fn']
-        except KeyError:
-            raise ValueError(
-                "If binning function is passed as a dict, there must be a valid 'fn' entry denoting function.")
+        binning_fn = binning_fn.get('fn', None)
 
     dataset['data'], dataset['VTYPE'] = _bin_by_hex(dataset['data'], *binning_args,
                                                     binning_field=dataset.pop('binning_field', None),
@@ -315,6 +344,7 @@ def _hexbinify_data(data, hex_resolution: int, *args, binning_field: str = None,
 
 def _hexbinify_dataset(dataset: StrDict, hex_resolution: int):
     _hexify_dataset(dataset, hex_resolution)
+    dataset['prebin'] = dataset['data'].copy(deep=True)
     _bin_dataset_by_hex(dataset)
 
 
@@ -358,8 +388,23 @@ class PlotBuilder:
     """
 
     # default choropleth manager (includes properties for choropleth only)
-    _default_dataset_manager: ClassVar[StrDict] = dict(
+    _default_quantitative_dataset_manager: ClassVar[StrDict] = dict(
         colorscale='Viridis',
+        colorbar=dict(
+            title='COUNT'
+        ),
+        marker=dict(
+            line=dict(
+                color='white',
+                width=0.60
+            ),
+            opacity=0.8
+        ),
+        hoverinfo='location+z+text'
+    )
+
+    _default_qualitative_dataset_manager: ClassVar[StrDict] = dict(
+        colorscale='Set3',
         colorbar=dict(
             title='COUNT'
         ),
@@ -404,7 +449,8 @@ class PlotBuilder:
         ),
         showlegend=False,
         showscale=False,
-        hoverinfo='text'
+        hoverinfo='text',
+        legendgroup='grids'
     )
 
     _default_region_manager: ClassVar[StrDict] = dict(
@@ -469,7 +515,7 @@ class PlotBuilder:
 
     def __init__(
             self,
-            main: StrDict = None,
+            main_dataset: StrDict = None,
             regions: Dict[str, StrDict] = None,
             grids: Dict[str, StrDict] = None,
             outlines: Dict[str, StrDict] = None,
@@ -509,8 +555,8 @@ class PlotBuilder:
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
 
-        if main is not None:
-            self.set_main(**main)
+        if main_dataset is not None:
+            self.set_main(**main_dataset)
 
         if regions is not None:
             for k, v in regions.items():
@@ -563,6 +609,11 @@ class PlotBuilder:
         if service not in ['plotly', 'mapbox']:
             raise ValueError("The output service must be one of ['plotly', 'mapbox'].")
         self._output_service = service
+
+    def rebin(self, *args, binning_field: str = None, binning_fn=None, **kwargs):
+        dataset = self._get_main()
+        dataset['data'], dataset['VTYPE'] = _bin_by_hex(dataset['prebin'], *args, binning_field=binning_field,
+                                                        binning_fn=binning_fn, **kwargs)
 
     def __setitem__(self, key: str, value: StrDict):
         """Overwritten setitem method.
@@ -642,11 +693,14 @@ class PlotBuilder:
     MAIN DATASET FUNCTIONS
     """
 
-    def set_main(self, data, fields: dict = None, **kwargs):
-        _read_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
-                      default_manager=deepcopy(self._default_dataset_manager))
+    def set_main(self, data: DFType, fields: dict = None, **kwargs):
+        _read_dataset(dataset := _create_dataset(data, fields=fields, **kwargs), set_manager=False)
         _hexbinify_dataset(dataset, 3)
+        _set_manager(dataset, default_manager=deepcopy(self._default_quantitative_dataset_manager) if dataset[
+                                                                                                          'VTYPE'] == 'num' else deepcopy(
+            self._default_qualitative_dataset_manager))
         dataset['DSTYPE'] = 'MN'
+        dataset['odata'] = dataset['data'].copy(deep=True)
         self._container['main'] = dataset
 
     def _get_main(self):
@@ -671,7 +725,7 @@ class PlotBuilder:
     REGION FUNCTIONS
     """
 
-    def add_region(self, name: str, data, fields: StrDict = None, **kwargs):
+    def add_region(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a region-type dataset to the builder.
 
         Region-type datasets should consist of Polygon-like geometries.
@@ -790,7 +844,7 @@ class PlotBuilder:
     GRID FUNCTIONS
     """
 
-    def add_grid(self, name: str, data, fields: StrDict = None, **kwargs):
+    def add_grid(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a grid-type dataset to the builder.
 
         Grid-type datasets should consist of Polygon-like or Point-like geometries.
@@ -904,7 +958,7 @@ class PlotBuilder:
     OUTLINE FUNCTIONS
     """
 
-    def add_outline(self, name: str, data, fields: StrDict = None, **kwargs):
+    def add_outline(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a outline-type dataset to the builder.
 
         :param name: The name this dataset is to be stored with
@@ -1019,7 +1073,7 @@ class PlotBuilder:
     POINT FUNCTIONS
     """
 
-    def add_point(self, name: str, data, fields: StrDict = None, **kwargs):
+    def add_point(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a outline-type dataset to the builder.
 
         Ideally the dataset's 'data' member should contain
@@ -1268,18 +1322,23 @@ class PlotBuilder:
         :type operation: str
         """
 
-        datas = self.apply_to_query(to, lambda dataset: dataset['data'], big_query=True)
+        datas = self.apply_to_query(to, lambda dataset: dataset['data'])
+
+        print(datas)
 
         def gpdhelp(dataset: dict):
             dataset['data'] = butil.gpd_clip(dataset['data'], datas)
 
         def sjoinhelp(dataset: dict):
+            print(len(dataset['data']))
+            print(self._get_main())
             dataset['data'] = butil.sjoin_clip(dataset['data'], datas, operation=operation)
+            print(len(dataset['data']))
 
         if method == 'gpd':
-            self.apply_to_query(clip, gpdhelp, big_query=True)
+            self.apply_to_query(clip, gpdhelp)
         elif method == 'sjoin':
-            self.apply_to_query(clip, sjoinhelp, big_query=True)
+            self.apply_to_query(clip, sjoinhelp)
         else:
             raise ValueError("The selected method must be one of ['gpd', 'sjoin'].")
 
@@ -1316,22 +1375,27 @@ class PlotBuilder:
     PLOT ALTERING FUNCTIONS
     """
 
+    def adjust_colorscale(self):
+        """Adjusts the color scale position of the color bar to match the plot area size.
+        """
+        print()
+
     # TODO: This function should only apply to the main dataset (maybe, think more)
-    def opacify_colorscale(self, alpha: float = None):
-        """Conforms the opacity of the colorbar of the main dataset to an alpha value.
+    def adjust_opacity(self, alpha: float = None):
+        """Conforms the opacity of the color bar of the main dataset to an alpha value.
 
         The alpha value can be passed in as a parameter, otherwise it is taken
         from the marker.opacity property within the dataset's manager.
 
-        :param alpha: The alpha value to conform the colorscale to
+        :param alpha: The alpha value to conform the color scale to
         :type alpha: float
         """
 
         dataset = self.get_main()
         butil.opacify_colorscale(dataset, alpha=alpha)
 
-    def auto_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
-                   buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = True):
+    def adjust_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
+                     buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
         """Focuses on dataset(s) within the plot.
 
         Collects the geometries of the queried datasets in order to
@@ -1388,6 +1452,7 @@ class PlotBuilder:
         if center_on:
             geos['center'] = center
 
+        print(geos)
         self._figure.update_geos(**geos)
 
     def auto_grid(self, query: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
@@ -1410,8 +1475,8 @@ class PlotBuilder:
             grid = GeoDataFrame(pd.concat(list(self.apply_to_query(query, helper))), crs='EPSG:4326')
             if not grid.empty:
                 grid['value_field'] = 0
-                self.get_grids()['|*AUTO*|'] = {'data': gcg.conform_geogeometry(grid), 'manager': self._grid_manager}
-                self.get_grids()['|*AUTO*|']['data'].plot()
+                self._get_grids()['|*AUTO*|'] = {'data': gcg.conform_geogeometry(grid), 'manager': self._grid_manager}
+                print(self._get_grids()['|*AUTO*|'])
             else:
                 raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
                                  "of an area.")
@@ -1501,7 +1566,7 @@ class PlotBuilder:
         """
 
         if query == 'main':
-            return self.get_main()
+            return self._get_main()
         elif query in ['regions', 'grids', 'outlines', 'points', 'all']:
             if big_query:
                 return self._container if query == 'all' else self._container[query]
@@ -1616,7 +1681,8 @@ class PlotBuilder:
                     except KeyError:
                         raise TypeError(
                             "If the colorscale is a map, you must provide hues for each option.")  # TODO: figure out how to change this error
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True).update(
+                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True,
+                                                                               text=v['text']).update(
                         manager)
                     self._figure.add_trace(choro)
 
@@ -1633,7 +1699,8 @@ class PlotBuilder:
                     except IndexError:
                         raise IndexError("There were not enough hues for all of the unique options in the dataset.")
                     choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False,
-                                                                               showlegend=True).update(manager)
+                                                                               showlegend=True, text=v['text']).update(
+                        manager)
                     self._figure.add_trace(choro)
             else:
                 raise TypeError("The colorscale must be a map, iterable, or nested iterables.")

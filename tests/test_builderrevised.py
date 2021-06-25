@@ -95,8 +95,8 @@ class BuilderTestCase(unittest.TestCase):
             binning_field='val',
             manager=dict(
                 colorscale={
-                    'Acceptable': 'red',
-                    'Failure': 'yellow'
+                    'EVENDS': 'red',
+                    'ODDDS': 'yellow'
                 }
             )
         )
@@ -131,8 +131,8 @@ class BuilderTestCase(unittest.TestCase):
             ),
             colorbar=dict(title='Arrival Diff')
         )
-        self.builder.auto_focus(validate=False)
-        self.builder.opacify_colorscale()
+        self.builder.adjust_focus(validate=False)
+        self.builder.adjust_opacity()
         # self.builder.simple_clip(method='sjoin')
         self.builder.build_plot(raise_errors=False)
         self.builder.display_figure()
@@ -155,8 +155,8 @@ class BuilderTestCase(unittest.TestCase):
             ),
             colorbar=dict(title='Max Loiter')
         )
-        self.builder.auto_focus(validate=False)
-        self.builder.opacify_colorscale()
+        self.builder.adjust_focus(validate=False)
+        self.builder.adjust_opacity()
         # self.builder.simple_clip(method='sjoin')
         self.builder.build_plot(raise_errors=False)
         self.builder.display_figure()
@@ -179,8 +179,8 @@ class BuilderTestCase(unittest.TestCase):
             ),
             colorbar=dict(title='Mission Time (Max)')
         )
-        self.builder.auto_focus(validate=False)
-        self.builder.opacify_colorscale()
+        self.builder.adjust_focus(validate=False)
+        self.builder.adjust_opacity()
         # self.builder.simple_clip(method='sjoin')
         self.builder.build_plot(raise_errors=False)
         self.builder.display_figure()
