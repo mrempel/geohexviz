@@ -1,5 +1,5 @@
 from copy import deepcopy
-from typing import Any, Tuple, ClassVar, Dict, Union
+from typing import Any, Tuple, ClassVar, Dict, Union, Callable
 
 import geopandas as gpd
 import numpy as np
@@ -221,6 +221,15 @@ def _validate_dataset(dataset: StrDict):
 
 
 def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
+    """Sets the manager of a dataset at the beginning.
+
+    :param dataset: The dataset whose manager to set
+    :type dataset: StrDict
+    :param default_manager: The default manager for this dataset
+    :type default_manager: StrDict
+    :param allow_manager_updates: Whether to allow the default manager to be updated for individual datasets or not
+    :type allow_manager_updates: bool
+    """
     if default_manager is None:
         default_manager = {}
     input_manager = dataset.pop('manager', {})
@@ -318,6 +327,17 @@ def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
 
 
 def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
+    """Updates the manager of a given dataset.
+
+    :param dataset: The dataset whose manager to update
+    :type dataset: StrDict
+    :param updates: A dict of updates for the manager
+    :type updates: StrDict
+    :param overwrite: Whether to overwrite the existing manager with the new one or not
+    :type overwrite: bool
+    :param kwargs: Extra updates for the manager
+    :type kwargs: **kwargs
+    """
     updates = simplify_dicts(fields=updates, **kwargs)
     if overwrite:
         dataset['manager'] = updates
@@ -325,11 +345,31 @@ def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool =
         dict_deep_update(dataset['manager'], updates)
 
 
-def _hexify_data(data, hex_resolution: int):
+def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> Union[DataFrame, GeoDataFrame]:
+    """Wrapper for hexifying a geodataframe
+
+    :param data: The geodataframe to hexify
+    :type data: Union[DataFrame, GeoDataFrame]
+    :param hex_resolution: The hexagonal resolution to use
+    :type hex_resolution: int
+    :return: The hexified geodataframe
+    :rtype: Union[DataFrame, GeoDataFrame]
+    """
     return gcg.ultimate_hexify(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
-def _bin_by_hex_helper(data: DFType, binning_field: str = None, binning_fn=None):
+def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[Callable, str]:
+    """Determines the binning function and preliminary value type for a dataframe which is to be binned.
+
+    :param data: The data which is to be binned
+    :type data: Union[DataFrame, GeoDataFrame]
+    :param binning_field: The binning field for the data
+    :type binning_field: str
+    :param binning_fn: The function which is to be performed on the data
+    :type binning_fn:
+    :return:
+    :rtype:
+    """
     if binning_fn in _group_functions:
         binning_fn = _group_functions[binning_fn]
 
@@ -347,14 +387,39 @@ def _bin_by_hex_helper(data: DFType, binning_field: str = None, binning_fn=None)
     return binning_fn, vtype
 
 
-def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwargs):
+def _bin_by_hex(data, *args, binning_field: str = None, binning_fn: Callable = None, **kwargs) -> Tuple[GeoDataFrame, str]:
+    """Wrapper for binning hexagonal data, and adding geometry to it.
+
+    :param data: The data to be hexagonally binned
+    :type data: Union[DataFrame, GeoDataFrame]
+    :param args: Binning function arguments
+    :type args: *args
+    :param binning_field: The binning field of the data
+    :type binning_field: str
+    :param binning_fn: The function to be performed on the data while binning
+    :type binning_fn: Callable
+    :param kwargs: Keyword arguments for the binning function
+    :type kwargs: **kwargs
+    :return: The resulting geodataframe and the value type
+    :rtype: Tuple[GeoDataFrame, str]
+    """
     binning_fn, vtype = _bin_by_hex_helper(data, binning_field=binning_field, binning_fn=binning_fn)
 
-    return gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
-                               **kwargs), vtype
+    result = gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
+                                 result_name='value_field',
+                                 **kwargs)
+    vtype = get_column_type(result, 'value_field')
+    return result, vtype
 
 
 def _hexify_dataset(dataset: StrDict, hex_resolution: int):
+    """Wrapper for hexaifying a dataset.
+
+    :param dataset: The dataset to be hexified
+    :type dataset: StrDict
+    :param hex_resolution: The hexagonal resolution to be used
+    :type hex_resolution: int
+    """
     hres = dataset.get('hex_resolution', None)
     hexbin_info = dataset.get('hexbin_info')
     if hexbin_info:
@@ -368,6 +433,11 @@ def _hexify_dataset(dataset: StrDict, hex_resolution: int):
 
 
 def _bin_dataset_by_hex(dataset: StrDict):
+    """Wrapper for hexagonally binning a dataset.
+
+    :param dataset: The dataset to be hexagonally binned
+    :type dataset: StrDict
+    """
     binning_fn = dataset.pop('binning_fn', None)
     binning_args = dataset.pop('binning_fn_args', ())
     binning_kw = dataset.pop('binning_fn_kwargs', {})
