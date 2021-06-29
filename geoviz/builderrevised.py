@@ -44,6 +44,8 @@ _group_functions = {
 StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
+def _reset_to_odata(dataset: StrDict):
+    dataset['data'] = dataset['odata'].copy(deep=True)
 
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
     geojson = gcg.simple_geojson(gdf, 'value_field')
@@ -268,10 +270,12 @@ def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
                         "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
                         "and longitude_field entries. Missing longitude_field member.")
 
-            dataset['data'] = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
+            data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
                                                                              crs='EPSG:4326'))
     else:
         raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
+
+    dataset['data'] = data
 
     if set_manager:
         _set_manager(dataset, **kwargs)
@@ -286,10 +290,10 @@ def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool =
 
 
 def _hexify_data(data, hex_resolution: int):
-    return gcg.hexify_geodataframe(data, hex_resolution=hex_resolution)
+    return gcg.ultimate_hexify(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
-def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwargs):
+def _bin_by_hex_helper(data: DFType, binning_field: str = None, binning_fn=None):
     if binning_fn in _group_functions:
         binning_fn = _group_functions[binning_fn]
 
@@ -304,9 +308,13 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwarg
     if binning_fn is None:
         binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
 
-    return gcg.conform_geogeometry(
-        gcg.bin_by_hex(data, binning_fn, *args, binning_field=binning_field, result_name='value_field',
-                       add_geoms=True, **kwargs)), vtype
+    return binning_fn, vtype
+
+
+def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwargs):
+    binning_fn, vtype = _bin_by_hex_helper(data, binning_field=binning_field, binning_fn=binning_fn)
+
+    return gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field, **kwargs), vtype
 
 
 def _hexify_dataset(dataset: StrDict, hex_resolution: int):
@@ -318,6 +326,7 @@ def _hexify_dataset(dataset: StrDict, hex_resolution: int):
                 raise ValueError("Received multiple arguments for hex resolution.")
             hres = hexbin_info['resolution']
     hres = hres if hres is not None else hex_resolution
+    dataset['hex_resolution'] = hres
     dataset['data'] = _hexify_data(dataset['data'], hres)
 
 
@@ -344,7 +353,6 @@ def _hexbinify_data(data, hex_resolution: int, *args, binning_field: str = None,
 
 def _hexbinify_dataset(dataset: StrDict, hex_resolution: int):
     _hexify_dataset(dataset, hex_resolution)
-    dataset['prebin'] = dataset['data'].copy(deep=True)
     _bin_dataset_by_hex(dataset)
 
 
@@ -369,7 +377,7 @@ def _prepare_general_dataset(dataset: StrDict, **kwargs):
         pass
 
     _read_dataset(dataset, **kwargs)
-    dataset['data'] = gcg.conform_geogeometry(dataset['data'], fix_polys=True)[['geometry']]
+    dataset['data'] = dataset['data']
     # logger.debug('dataframe geometry conformed to GeoJSON standard.')
 
     if dataset.pop('to_boundary', False):
@@ -612,8 +620,8 @@ class PlotBuilder:
 
     def rebin(self, *args, binning_field: str = None, binning_fn=None, **kwargs):
         dataset = self._get_main()
-        dataset['data'], dataset['VTYPE'] = _bin_by_hex(dataset['prebin'], *args, binning_field=binning_field,
-                                                        binning_fn=binning_fn, **kwargs)
+        df = dataset['data'].drop(columns='value_field', errors='ignore')
+        gcg.apply_bin_function(df, )
 
     def __setitem__(self, key: str, value: StrDict):
         """Overwritten setitem method.
@@ -721,6 +729,11 @@ class PlotBuilder:
     def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         _update_manager(self._get_main(), updates=updates, overwrite=overwrite, **kwargs)
 
+    def reset_main_data(self):
+        """Resets the data within the main dataset to the data that was input at the beginning.
+        """
+        _reset_to_odata(self._get_main())
+
     """
     REGION FUNCTIONS
     """
@@ -744,8 +757,12 @@ class PlotBuilder:
         _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=deepcopy(self._default_region_manager),
                                  allow_manager_updates=True)
-        if 'Point' in dataset['data'].geom_type.values:
-            raise NotImplementedError("Can not have region geometry type as points.")
+        if any(t in dataset['data'].geom_type.values for t in ('Point', 'LineString', 'MultiLineString',
+                                                               'GeometryCollection', 'LinearRing')):
+            raise NotImplementedError("There was an unexpected type of geometry found within the region. This type"
+                                      " of geometry has not been implemented yet.")
+        dataset['data'] = dataset['data'][['geometry', 'value_field']]
+        dataset['odata'] = dataset['data'].copy(deep=True)
         dataset['DSTYPE'] = 'RGN'
         self._get_regions()[name] = dataset
 
@@ -835,6 +852,20 @@ class PlotBuilder:
         else:
             _update_manager(self._get_region(name), updates=updates, overwrite=overwrite, **kwargs)
 
+    def reset_region_data(self, name: str = None):
+        """Resets the data within the region dataset to the data that was input at the beginning.
+
+        If the given name is None, all region datasets will be reset.
+
+        :param name: The name of the dataset to reset
+        :type name: str
+        """
+        if name is None:
+            for _, v in self._get_regions().items():
+                _reset_to_odata(v)
+        else:
+            _reset_to_odata(self._get_region(name))
+
     def reset_regions(self):
         """Resets the regions within the builder to empty.
         """
@@ -862,6 +893,9 @@ class PlotBuilder:
         _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=self._grid_manager, allow_manager_updates=False)
         _hexbinify_dataset(dataset, 3)  # change to default hex res
+        dataset['data']['value_field'] = 0
+        dataset['data'] = dataset['data'][['geometry', 'value_field']]
+        dataset['odata'] = dataset['data'].copy(deep=True)
         dataset['DSTYPE'] = 'GRD'
         self._get_grids()[name] = dataset
 
@@ -948,6 +982,20 @@ class PlotBuilder:
         _update_manager(dct, updates=updates, overwrite=overwrite, **kwargs)
         self._grid_manager = dct['manager']
 
+    def reset_grid_data(self, name: str = None):
+        """Resets the data within the grid dataset to the data that was input at the beginning.
+
+        If the given name is None, all grid datasets will be reset.
+
+        :param name: The name of the dataset to reset
+        :type name: str
+        """
+        if name is None:
+            for _, v in self._get_grids().items():
+                _reset_to_odata(v)
+        else:
+            _reset_to_odata(self._get_grid(name))
+
     def reset_grids(self):
         """Resets the grid dataset container to it's original state.
         """
@@ -975,8 +1023,10 @@ class PlotBuilder:
                                  default_manager=deepcopy(self._default_outline_manager),
                                  allow_manager_updates=True)
         # consider the pros and cons to converting the dataset to points here
+        dataset['data'] = dataset['data'][['geometry', 'value_field']]
+        dataset['odata'] = dataset['data'].copy(deep=True)
         dataset['DSTYPE'] = 'OUT'
-        self.get_outlines()[name] = dataset
+        self._get_outlines()[name] = dataset
 
     def _get_outline(self, name: str) -> StrDict:
         """Retrieves a outline dataset from the builder.
@@ -1064,6 +1114,20 @@ class PlotBuilder:
         else:
             _update_manager(self._get_outline(name), updates=updates, overwrite=overwrite, **kwargs)
 
+    def reset_outline_data(self, name: str = None):
+        """Resets the data within the outline dataset to the data that was input at the beginning.
+
+        If the given name is None, all outline datasets will be reset.
+
+        :param name: The name of the dataset to reset
+        :type name: str
+        """
+        if name is None:
+            for _, v in self._get_outlines().items():
+                _reset_to_odata(v)
+        else:
+            _reset_to_odata(self._get_outline(name))
+
     def reset_outlines(self):
         """Resets the outlines within the builder to empty.
         """
@@ -1095,7 +1159,8 @@ class PlotBuilder:
         _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
                                  default_manager=deepcopy(self._default_point_manager),
                                  allow_manager_updates=True)
-        dataset['data'] = gcg.pointify_geodataframe(dataset['data'])
+        dataset['data'] = gcg.pointify_geodataframe(dataset['data'], keep_geoms=False)
+        dataset['odata'] = dataset['data'].copy(deep=True)
         dataset['DSTYPE'] = 'PNT'
         self._get_points()[name] = dataset
 
@@ -1183,6 +1248,20 @@ class PlotBuilder:
                 _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
             _update_manager(self._get_point(name), updates=updates, overwrite=overwrite, **kwargs)
+
+    def reset_point_data(self, name: str = None):
+        """Resets the data within the point dataset to the data that was input at the beginning.
+
+        If the given name is None, all point datasets will be reset.
+
+        :param name: The name of the dataset to reset
+        :type name: str
+        """
+        if name is None:
+            for _, v in self._get_points().items():
+                _reset_to_odata(v)
+        else:
+            _reset_to_odata(self._get_point(name))
 
     def reset_points(self):
         """Resets the point dataset container to its original state.
@@ -1293,7 +1372,7 @@ class PlotBuilder:
         """
 
         try:
-            dataset = self.get_main()
+            dataset = self._get_main()
         except ValueError:
             raise ValueError("There is no main dataset to convert to a logarithmic scale.")
 
@@ -1324,16 +1403,11 @@ class PlotBuilder:
 
         datas = self.apply_to_query(to, lambda dataset: dataset['data'])
 
-        print(datas)
-
         def gpdhelp(dataset: dict):
-            dataset['data'] = butil.gpd_clip(dataset['data'], datas)
+            dataset['data'] = butil.gpd_clip(dataset['data'], datas, validate=True)
 
         def sjoinhelp(dataset: dict):
-            print(len(dataset['data']))
-            print(self._get_main())
-            dataset['data'] = butil.sjoin_clip(dataset['data'], datas, operation=operation)
-            print(len(dataset['data']))
+            dataset['data'] = butil.sjoin_clip(dataset['data'], datas, operation=operation, validate=True)
 
         if method == 'gpd':
             self.apply_to_query(clip, gpdhelp)
@@ -1452,7 +1526,6 @@ class PlotBuilder:
         if center_on:
             geos['center'] = center
 
-        print(geos)
         self._figure.update_geos(**geos)
 
     def auto_grid(self, query: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
@@ -1475,8 +1548,7 @@ class PlotBuilder:
             grid = GeoDataFrame(pd.concat(list(self.apply_to_query(query, helper))), crs='EPSG:4326')
             if not grid.empty:
                 grid['value_field'] = 0
-                self._get_grids()['|*AUTO*|'] = {'data': gcg.conform_geogeometry(grid), 'manager': self._grid_manager}
-                print(self._get_grids()['|*AUTO*|'])
+                self._get_grids()['|*AUTO*|'] = {'data': grid, 'manager': self._grid_manager}
             else:
                 raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
                                  "of an area.")
@@ -1503,7 +1575,6 @@ class PlotBuilder:
         else:
             low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
             high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
-            print(dataset['manager'].get('colorscale'))
             dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
                                                                 low, high, **kwargs)
 
@@ -1599,8 +1670,6 @@ class PlotBuilder:
         toppx = self._figure.layout.margin.t
         heightpx = self._figure.layout.height
 
-        print(bottompx, toppx, heightpx)
-
         self._figure.update_coloraxes(colorbar_lenmode='pixels', colorbar_yanchor='bottom', colorbar_len=heightpx)
         print(self._figure.layout)
 
@@ -1618,7 +1687,7 @@ class PlotBuilder:
         if not self._get_regions():
             raise ValueError("There are no region-type datasets to plot.")
         for regname, regds in self._get_regions().items():
-            choro = _prepare_choropleth_trace(regds['data'],
+            choro = _prepare_choropleth_trace(gcg.conform_geogeometry(regds['data']),
                                               mapbox=mapbox)
             choro.update(regds['manager'])
             self._figure.add_trace(choro)
@@ -1631,7 +1700,7 @@ class PlotBuilder:
         if not self._get_grids():
             raise ValueError("There are no grid-type datasets to plot.")
 
-        merged = pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates()
+        merged = gcg.conform_geogeometry(pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
 
         if remove_underlying:
             try:
@@ -1650,7 +1719,8 @@ class PlotBuilder:
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
         dataset = self.get_main()
-        df = dataset['data']
+        df = gcg.conform_geogeometry(dataset['data'])
+        print(df['value_field'])
 
         # qualitative dataset
         if dataset['VTYPE'] == 'str':
@@ -1675,7 +1745,6 @@ class PlotBuilder:
             manager = deepcopy(dataset['manager'])
             if isinstance(colorscale, dict):
                 for k, v in sep.items():
-                    print(colorscale[k])
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
@@ -1689,7 +1758,6 @@ class PlotBuilder:
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
 
                 for i, (k, v) in enumerate(sep.items()):
-                    print('ITEM', i)
 
                     try:
                         if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple):
@@ -1711,7 +1779,6 @@ class PlotBuilder:
                                               mapbox=self.plot_output_service == 'mapbox')
             choro.update(text=df['text'])
             choro.update(dataset['manager'])
-            print(choro.colorbar)
             self._figure.add_trace(choro)
 
         # self.change_colorbar_sizes()

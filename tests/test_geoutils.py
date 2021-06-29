@@ -4,7 +4,7 @@ from typing import List
 from pandas import DataFrame
 from geoviz.utils import geoutils
 from geopandas import GeoDataFrame
-from shapely.geometry import GeometryCollection, MultiPoint
+from shapely.geometry import GeometryCollection, MultiPoint, Point, MultiLineString, LineString
 from shapely import wkt
 
 
@@ -429,6 +429,22 @@ class GeoUtilsTestCase(unittest.TestCase):
         resultdf = geoutils.ultimate_hexbin(testingdf, hex_field='ids', add_geoms=True)
         self.assertTrue(all(v == 3 for v in resultdf['value_field']))
 
+    def test_get_present_geometries(self):
+        """Tests the module's ability to obtain all of the unique geometry types within a geodataframe.
+
+        Tests:
+        Take a geodataframe with multipart geometries and invoke the function.
+        Ensure the resulting set of unique geometry types is correct.
+        """
+        testdf = GeoDataFrame(geometry=[
+            GeometryCollection([Point(0, 0), Point(1, 1),
+                                GeometryCollection([MultiLineString([[[1, 1], [0, 0]], [[10, 10], [20, 20]]])])]),
+            LineString([[1, 1], [0, 0]])
+        ])
+        self.assertListEqual(list(sorted(['Point', 'MultiLineString', 'LineString'])),
+                             list(sorted(geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=False))))
+        self.assertListEqual(list(sorted(['Point', 'LineString'])),
+                             list(sorted(geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=True))))
 
 if __name__ == '__main__':
     unittest.main()
