@@ -44,10 +44,26 @@ _group_functions = {
 StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
+
 def _reset_to_odata(dataset: StrDict):
+    """Resets the odata parameter of a dataset.
+
+    :param dataset: The dataset to reset
+    :type dataset: StrDict
+    """
     dataset['data'] = dataset['odata'].copy(deep=True)
 
-def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
+
+def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False) -> Union[Choropleth, Choroplethmapbox]:
+    """Prepares a choropleth trace for a geodataframe.
+
+    :param gdf: The geodataframe to generate a choropleth trace for
+    :type gdf: GeoDataFrame
+    :param mapbox: Whether to return a mapbox trace or not
+    :type mapbox: bool
+    :return: The graph trace
+    :rtype: Union[Choropleth, Choroplethmapbox]
+    """
     geojson = gcg.simple_geojson(gdf, 'value_field')
 
     if mapbox:
@@ -64,7 +80,20 @@ def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False):
         )
 
 
-def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint: bool = False, mapbox: bool = False):
+def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint: bool = False, mapbox: bool = False) -> Union[Scattergeo, Scattermapbox]:
+    """Prepares a scattergeo trace for a geodataframe.
+
+    :param gdf: The geodataframe to make a trace for
+    :type gdf: GeoDataFrame
+    :param separate: Whether to geometries within the geodataframe as separate or not
+    :type separate: bool
+    :param disjoint: Whether to add np.nan in between entries (plotly recognizes this as separate) or not
+    :type disjoint: bool
+    :param mapbox: Whether to return a mapbox trace or not
+    :type mapbox: bool
+    :return: The plotly graph trace
+    :rtype: Union[Scattergeo, Scattermapbox]
+    """
     lats = []
     lons = []
 
@@ -111,7 +140,14 @@ def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint
         )
 
 
-def builder_from_dict(builder_dict: Dict[str, Any] = None, **kwargs):
+def builder_from_dict(builder_dict: StrDict = None, **kwargs):
+    """Makes a builder from a dictionary.
+
+    :param builder_dict: The dictionary to build from
+    :type builder_dict: StrDict
+    :param kwargs: Keyword arguments for the builder
+    :type kwargs: **kwargs
+    """
     settings = {}
     if builder_dict:
         settings.update(builder_dict)
@@ -271,7 +307,7 @@ def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
                         "and longitude_field entries. Missing longitude_field member.")
 
             data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
-                                                                             crs='EPSG:4326'))
+                                                                  crs='EPSG:4326'))
     else:
         raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
 
@@ -314,7 +350,8 @@ def _bin_by_hex_helper(data: DFType, binning_field: str = None, binning_fn=None)
 def _bin_by_hex(data, *args, binning_field: str = None, binning_fn=None, **kwargs):
     binning_fn, vtype = _bin_by_hex_helper(data, binning_field=binning_field, binning_fn=binning_fn)
 
-    return gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field, **kwargs), vtype
+    return gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
+                               **kwargs), vtype
 
 
 def _hexify_dataset(dataset: StrDict, hex_resolution: int):
@@ -534,8 +571,8 @@ class PlotBuilder:
         Initializes a new PlotBuilder with the given main dataset
         alongside any region, grid, outline, point type datasets.
 
-        :param main: The main dataset for this builder
-        :type main: StrDict
+        :param main_dataset: The main dataset for this builder
+        :type main_dataset: StrDict
         :param regions: A set of region-type datasets for this builder
         :type regions: Dict[str, StrDict]
         :param grids: A sed of grid-type datasets for this builder
@@ -1700,7 +1737,8 @@ class PlotBuilder:
         if not self._get_grids():
             raise ValueError("There are no grid-type datasets to plot.")
 
-        merged = gcg.conform_geogeometry(pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
+        merged = gcg.conform_geogeometry(
+            pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
 
         if remove_underlying:
             try:
@@ -1885,7 +1923,35 @@ class PlotBuilder:
         self._figure.data = []
 
     def reset(self):
-        print()
+        """Resets the builder to it's initial state.
+        """
+
+        self._figure = Figure()
+        self.update_figure(**self._default_figure_manager)
+        self._figure.update_layout(width=800, height=600, autosize=False)
+
+        self._container = {
+            'regions': {},
+            'grids': {},
+            'outlines': {},
+            'points': {}
+        }
+
+        # grids will all reference this manager
+        self._grid_manager = deepcopy(self._default_grid_manager)
+
+        self._output_service = 'plotly'
+        self.default_hex_resolution = 3
+
+    def reset_data(self):
+        try:
+            self.reset_main_data()
+        except ValueError:
+            pass
+        self.reset_region_data()
+        self.reset_grid_data()
+        self.reset_outline_data()
+        self.reset_point_data()
 
 
 if __name__ == '__main__':
