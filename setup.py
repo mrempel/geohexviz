@@ -6,7 +6,7 @@ HERE = pathlib.Path(__file__).parent
 README = (HERE / "README.md").read_text()
 
 setup(
-    name="real-geoviz",
+    name="geohexviz",  # formerly real-geohexviz
     version="1.0.0",
     description="A library for the visualization of hexagon-ally binned data sets.",
     long_description=README,
