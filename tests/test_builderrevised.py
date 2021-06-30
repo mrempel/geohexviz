@@ -494,7 +494,7 @@ class BuilderTestCase(unittest.TestCase):
         """
         self.builder.add_point(
             'PPA1',
-            df:=DataFrame(dict(
+            df := DataFrame(dict(
                 latitude=[10, 10, 10, 10, 20, 20],
                 longitude=[20, 20, 10, 10, 10, 10]
             ))
@@ -508,7 +508,7 @@ class BuilderTestCase(unittest.TestCase):
         testpoly = Polygon([[1, 1], [1, 10], [10, 10], [10, 1], [1, 1]])
         self.builder.add_region(
             'RRA1',
-            df:=GeoDataFrame(
+            df := GeoDataFrame(
                 geometry=[testpoly]
             )
         )
@@ -523,7 +523,7 @@ class BuilderTestCase(unittest.TestCase):
         # need to test by bounds version
         self.builder.add_point(
             'PPA1',
-            df:=DataFrame(dict(
+            df := DataFrame(dict(
                 latitude=[10, 20, 30],
                 longitude=[10, 20, 30]
             ))
@@ -531,6 +531,7 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.auto_grid(on='point:PPA1')
         getauto = self.builder.get_grid('|*AUTO*|')
         self.assertEqual(len(df), len(getauto['data']))
+
 
 if __name__ == '__main__':
     unittest.main()
