@@ -173,51 +173,6 @@ def builder_from_dict(builder_dict: StrDict = None, **kwargs):
     return builder
 
 
-"""
-Notes:
-
-Clipping has significant margin of error.
-For this application we should not allow Polygon or MultiPolygon datasets to be clipped to Points.
-Check CRS before clipping.
-We can either use geopandas.clip() or geopandas.sjoin(), however we have limited experience with clip() and 
-sjoin() fails a lot.
-clip() tends to fail when clipping to a weird geometry type such as points.
-
-We should also optimize how parameters are passed into the reading functions.
-
-Our custom functions main functionality should be put into a separate module and imported, maybe?
-
-Assumptions:
-
-Some of the functions will be limited to only the main dataset, and others will have to use query functions.
-
-Notes for Monday:
-
-- Help Nicholi produce his visualization
-- Optimize imports, functions, etc...
-- Test edge cases with clipping, then plotting or invoking other functions.
-
-Notes for Tuesday:
-
-- Meet with Mark and discuss progress track and such
-- Alter query functions, for both internal and external usage
-
-Notes for Thursday:
-- Continue with testing, documentation
-- Write in the reference document
-- Think out structure for JSON file
-- Review submission requirements for JOSS
-
-- Talk to Mark about working during school (part-time)
-- Think over using the more object oriented approach
-"""
-
-
-def set_df_preserve(df1: DataFrame, df2: DataFrame):
-    df2.attrs = df1.attrs
-    return df2
-
-
 def _validate_dataset(dataset: StrDict):
     """Validates a dataset.
 
@@ -249,7 +204,22 @@ def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manage
         raise ValueError("This dataset may not have a custom manager.")
 
 
-def _read_data_file(data: DFType):
+def _read_data_file(data: str) -> DataFrame:
+    """Reads data from a file, based on extension.
+
+    If the file extension is unknown the file is passed
+    directly into geopandas.read_file().
+
+    This function uses both geopandas and pandas to read data.
+
+    In the future it may be beneficial to allow the reading
+    of databases, and feather.
+
+    :param data: The data to be read.
+    :type data: str
+    :return: The read data
+    :rtype: DataFrame
+    """
     try:
         filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
         filepath = fix_filepath(filepath, add_ext=extension)
@@ -265,7 +235,16 @@ def _read_data_file(data: DFType):
     return data
 
 
-def _read_data(data: DFType, allow_builtin: bool = False):
+def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
+    """Reads the data into a usable type for the builder.
+
+    :param data: The data to be read
+    :type data: DFType
+    :param allow_builtin: Whether to allow builtin data types or not (countries, continents)
+    :type allow_builtin: bool
+    :return: A proper geodataframe from the input data
+    :rtype: GeoDataFrame
+    """
     err_msg = "The data must be a valid filepath, DataFrame, or GeoDataFrame."
     rtype = 'frame'
     try:
@@ -288,7 +267,18 @@ def _read_data(data: DFType, allow_builtin: bool = False):
     return data
 
 
-def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str = None):
+def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+    """Converts lat/long columns into a proper geometry column, if present.
+
+    :param data: The data that may or may not contain lat/long columns
+    :type data: GeoDataFrame
+    :param latitude_field: The latitude column within the dataframe
+    :type latitude_field: str
+    :param longitude_field: The longitude column within the dataframe
+    :type longitude_field: str
+    :return: The converted dataframe
+    :rtype: GeoDataFrame
+    """
     if data.empty:
         raise ValueError("If the data passed is a DataFrame, it must not be empty.")
 
@@ -321,12 +311,31 @@ def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str
     return data
 
 
-def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int, binning_args=None,
-                            binning_field: str = None, binning_fn=None, **kwargs):
+def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
+                            binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
+    """Converts a geodataframe into a hexagon-ally binned dataframe.
+
+    :param data: The data to be converted
+    :type data: GeoDataFrame
+    :param hex_resolution: The hexagonal resolution to use
+    :type hex_resolution: int
+    :param binning_args: Arguments for the binning functions
+    :type binning_args: Iterable
+    :param binning_field: The binning column to apply the function on
+    :type binning_field: str
+    :param binning_fn: The function to apply
+    :type binning_fn: Callable
+    :param kwargs: Keyword arguments for the function
+    :type kwargs: **kwargs
+    :return: The hexbinified dataframe
+    :rtype: GeoDataFrame
+    """
     data = _hexify_data(data, hex_resolution)
 
-    if binning_fn in _group_functions:
-        binning_fn = _group_functions[binning_fn]
+    try:
+        binning_fn = _group_functions[str(binning_fn)]
+    except KeyError:
+        pass
 
     vtype = 'NUM' if binning_field is None else get_column_type(data, binning_field)
 
@@ -344,91 +353,6 @@ def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution
 
     data.VTYPE = vtype
     return data
-
-
-def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
-    """Converts a dataset into a usable dataset for the builder.
-
-    Converts the dataset into a proper type.
-
-    :param dataset: The dataset to convert
-    :type dataset: StrDict
-    :param default_manager: The default manager to give to the dataset
-    :type default_manager: StrDict
-    :param allow_manager_updates: Whether or not to allow overwriting of the default manager
-    :type allow_manager_updates: bool
-    :param set_manager: Whether to set the manager for this dataset or not
-    :type set_manager: bool
-    :param kwargs: Keyword arguments to pass into _set_manager()
-    :type kwargs: **kwargs
-    """
-
-    _validate_dataset(dataset)
-    data = dataset['data']
-
-    if isinstance(data, str):
-        filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
-        filepath = fix_filepath(filepath, add_ext=extension)
-
-        try:
-            data = _extension_mapping[extension](filepath)
-        except KeyError:
-            pass
-            # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
-
-    if isinstance(data, GeoDataFrame) or isinstance(data, DataFrame):
-
-        if data.empty:
-            raise ValueError("If the data passed is a DataFrame, it must not be empty.")
-
-        data = data.copy(deep=True)
-
-        info_fields = dataset.get("info_fields")
-
-        if 'geometry' not in data.columns:
-
-            try:
-                if info_fields is not None and 'latitude_field' in info_fields:
-                    if 'latitude_field' in dataset:
-                        raise ValueError("Received multiple arguments for 'latitude_field' in dataset dict.")
-                    else:
-                        latitude_field = data[info_fields['latitude_field']]
-                else:
-                    latitude_field = data[dataset.pop('latitude_field')]
-
-            except KeyError:
-                if 'latitude' in data.columns:
-                    latitude_field = data['latitude']
-                else:
-                    raise ValueError(
-                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                        "and longitude_field entries. Missing latitude_field member.")
-
-            try:
-                if info_fields is not None and 'longitude_field' in info_fields:
-                    if 'longitude_field' in dataset:
-                        raise ValueError("Received multiple arguments for 'longitude_field' in dataset dict.")
-                    else:
-                        longitude_field = data[info_fields['longitude_field']]
-                else:
-                    longitude_field = data[dataset.pop('longitude_field')]
-            except KeyError:
-                if 'longitude' in data.columns:
-                    longitude_field = data['longitude']
-                else:
-                    raise ValueError(
-                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                        "and longitude_field entries. Missing longitude_field member.")
-
-            data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
-                                                                  crs='EPSG:4326'))
-    else:
-        raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
-
-    dataset['data'] = data
-
-    if set_manager:
-        _set_manager(dataset, **kwargs)
 
 
 def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
