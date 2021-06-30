@@ -317,7 +317,7 @@ def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str
                     "and longitude_field entries. Missing longitude_field member.")
         data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
                                                               crs='EPSG:4326'))
-    data.vtype = 'num'
+    data.vtype = 'NUM'
     return data
 
 
