@@ -1182,8 +1182,6 @@ class PlotBuilder:
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
         if as_boundary:
             data = gcg.unify_geodataframe(data)
-        print(data)
-        print('\n\nPOINTIFIED', gcg.pointify_geodataframe(data).geometry)
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         dataset['manager'] = deepcopy(self._default_outline_manager)
@@ -1621,7 +1619,11 @@ class PlotBuilder:
     def adjust_colorscale(self):
         """Adjusts the color scale position of the color bar to match the plot area size.
         """
-        print()
+        bottompx = self._figure.layout.margin.b
+        toppx = self._figure.layout.margin.t
+        heightpx = self._figure.layout.height
+
+        self._figure.update_coloraxes(colorbar_lenmode='pixels', colorbar_yanchor='bottom', colorbar_len=heightpx)
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
@@ -1634,7 +1636,7 @@ class PlotBuilder:
         :type alpha: float
         """
 
-        dataset = self.get_main()
+        dataset = self._get_main()
         butil.opacify_colorscale(dataset, alpha=alpha)
 
     def adjust_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
@@ -1735,7 +1737,7 @@ class PlotBuilder:
         """
 
         try:
-            dataset = self.get_main()
+            dataset = self._get_main()
         except ValueError:
             raise ValueError("There is no main dataset to discretize the scale of.")
 
@@ -1834,13 +1836,6 @@ class PlotBuilder:
 
     get_query_data = lambda self, name: self.apply_to_query(name, lambda ds: ds['data'])
 
-    def change_colorbar_sizes(self):
-        bottompx = self._figure.layout.margin.b
-        toppx = self._figure.layout.margin.t
-        heightpx = self._figure.layout.height
-
-        self._figure.update_coloraxes(colorbar_lenmode='pixels', colorbar_yanchor='bottom', colorbar_len=heightpx)
-        print(self._figure.layout)
 
     """
     PLOTTING FUNCTIONS
