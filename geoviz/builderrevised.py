@@ -1710,7 +1710,7 @@ class PlotBuilder:
         :type hex_resolution: int
         """
 
-        fn = gcg.generate_grid_over_hexes if by_bounds else gcg.hexify_dataframe
+        fn = gcg.generate_grid_over if by_bounds else gcg.hexify_dataframe
 
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
