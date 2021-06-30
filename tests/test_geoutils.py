@@ -170,18 +170,18 @@ class GeoUtilsTestCase(unittest.TestCase):
         # test empty dataframe
         e = False
         try:
-            geoutils.ultimate_hexify(GeoDataFrame(geometry=[], dtype='object'), 3, raise_errors=True)
-            geoutils.ultimate_hexify(GeoDataFrame(dtype='object'), 3, raise_errors=True)
+            geoutils.hexify_dataframe(GeoDataFrame(geometry=[], dtype='object'), 3, raise_errors=True)
+            geoutils.hexify_dataframe(GeoDataFrame(dtype='object'), 3, raise_errors=True)
         except ValueError:
             e = True
         self.assertTrue(e)
-        resultdf = geoutils.ultimate_hexify(GeoDataFrame(), 2, raise_errors=False)
+        resultdf = geoutils.hexify_dataframe(GeoDataFrame(), 2, raise_errors=False)
         self.assertTrue(resultdf.empty)
 
         # test with Points
         inputdf = GeoDataFrame(geometry=testpoints, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True,
-                                            as_index=False)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS',
+                                             as_index=False)
         self.assertIn('OLDGEOMS', list(resultdf.columns.values))
         self.assertTrue(
             all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))  # check if the old geometry is still present
@@ -189,50 +189,50 @@ class GeoUtilsTestCase(unittest.TestCase):
 
         # test with MultiPoint
         inputdf = GeoDataFrame(geometry=testmultipoint, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=False, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=False, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf.geometry for g in inputdf.geometry))  # old geometry is still present
         self.assertListEqual(list(sorted(testmultipoint_hexids)), list(resultdf.sort_index().index.values))
 
         # test with LineString
         inputdf = GeoDataFrame(geometry=testlinestring, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testlinestring_hexids)), list(resultdf.sort_index().index.values))
 
         # test with MultiLineString
         inputdf = GeoDataFrame(geometry=testmultilinestring, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testmultilinestring_hexids)), list(resultdf.sort_index().index.values))
 
         # test with LinearRing
         inputdf = GeoDataFrame(geometry=testlinearring, crs='EPSG:4326', dtype='object')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testlinearring_hexids)), list(resultdf.sort_index().index.values))
 
         # test with Polygon
         inputdf = GeoDataFrame(geometry=testpolygon, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testpolygon_hexids)), list(resultdf.sort_index().index.values))
 
         # test with MultiPolygon
         inputdf = GeoDataFrame(geometry=testmultipolygon, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testmultipolygon_hexids)), list(resultdf.sort_index().index.values))
 
         # test with a list of different types
         inputdf = GeoDataFrame(geometry=[*testpolygon, *testlinestring, *testmultipolygon], crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted([*testpolygon_hexids, *testlinestring_hexids, *testmultipolygon_hexids])),
                              list(resultdf.sort_index().index.values))
 
         # test with a geometry collection
         inputdf = GeoDataFrame(geometry=testgeometrycollection, crs='EPSG:4326')
-        resultdf = geoutils.ultimate_hexify(inputdf, 3, old_geom_name='OLDGEOMS', add_geom=True, keep_geom=True)
+        resultdf = geoutils.hexify_dataframe(inputdf, 3, add_geom=True, keep_geom=True, old_geom_name='OLDGEOMS')
         self.assertTrue(all(g in resultdf['OLDGEOMS'] for g in inputdf.geometry))
         self.assertListEqual(list(sorted(testgeometrycollection_hexids)), list(resultdf.sort_index().index.values))
 
@@ -426,7 +426,7 @@ class GeoUtilsTestCase(unittest.TestCase):
                 ] * 3
         ))
 
-        resultdf = geoutils.ultimate_hexbin(testingdf, hex_field='ids', add_geoms=True)
+        resultdf = geoutils.bin_by_hexid(testingdf, hex_field='ids', add_geoms=True)
         self.assertTrue(all(v == 3 for v in resultdf['value_field']))
 
     def test_get_present_geometries(self):
