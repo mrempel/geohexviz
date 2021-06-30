@@ -18,15 +18,14 @@ from geoviz.builder import PlotBuilder
 
 # Creating an example dataset
 inputdf = DataFrame(dict(
-    lats=[17.57, 17.57, 17.57, 19.98, 19.98, 46.75],
-    lons=[10.11, 10.11, 10.12, 50.55, 50.55, 31.17],
+    latitude=[17.57, 17.57, 17.57, 19.98, 19.98, 46.75],
+    longitude=[10.11, 10.11, 10.12, 50.55, 50.55, 31.17],
     value=[120, 120, 120, 400, 400, 700]
 ))
 
 # Instantiating builder
 builder = PlotBuilder()
-builder.set_main(inputdf, latitude_field='lats', longitude_field='lons',
-                 binning_field='value', binning_fn=sum)
+builder.set_main(inputdf, hexbin_info=dict(binning_fn='sum', binning_field='value'))
 
 builder.build_plot(raise_errors=False)
 builder.display_figure(clear_figure=True)
