@@ -336,7 +336,7 @@ def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution
         raise gce.BinValueTypeError("The binning field is not a valid type, must be string or numerical column.")
 
     if binning_fn is None:
-        binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
+        binning_fn = _group_functions['bestworst'] if vtype == 'STR' else _group_functions['count']
 
     data = gcg.ultimate_hexbin(data, *binning_args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
                                result_name='value_field',
@@ -588,24 +588,6 @@ def _split_name(name: str) -> Tuple[str, str]:
     return name[:lind], name[lind + 1:]
 
 
-# this function should standalone.
-def _prepare_general_dataset(dataset: StrDict, **kwargs):
-    try:
-        dataset['data'] = butil.get_shapes_from_world(dataset['data'])
-    except (KeyError, ValueError, TypeError):
-        # logger.debug("If name was a country or continent, the process failed.")
-        pass
-
-    _read_dataset(dataset, **kwargs)
-    dataset['data'] = dataset['data']
-    # logger.debug('dataframe geometry conformed to GeoJSON standard.')
-
-    if dataset.pop('to_boundary', False):
-        dataset['data'] = gcg.unify_geodataframe(dataset['data'])
-    dataset['data']['value_field'] = 0
-    dataset['VTYPE'] = 'num'
-
-
 def _check_name(name: str):
     if any(not i.isalnum() and i != '_' for i in name):
         raise ValueError("The name can not have any non alphanumeric characters in it besides the underscore.")
@@ -618,31 +600,15 @@ class PlotBuilder:
     # default choropleth manager (includes properties for choropleth only)
     _default_quantitative_dataset_manager: ClassVar[StrDict] = dict(
         colorscale='Viridis',
-        colorbar=dict(
-            title='COUNT'
-        ),
-        marker=dict(
-            line=dict(
-                color='white',
-                width=0.60
-            ),
-            opacity=0.8
-        ),
+        colorbar=dict(title='COUNT'),
+        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
         hoverinfo='location+z+text'
     )
 
     _default_qualitative_dataset_manager: ClassVar[StrDict] = dict(
         colorscale='Set3',
-        colorbar=dict(
-            title='COUNT'
-        ),
-        marker=dict(
-            line=dict(
-                color='white',
-                width=0.60
-            ),
-            opacity=0.8
-        ),
+        colorbar=dict(title='COUNT'),
+        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
         hoverinfo='location+z+text'
     )
 
@@ -650,31 +616,21 @@ class PlotBuilder:
     _default_point_manager: ClassVar[StrDict] = dict(
         mode='markers+text',
         marker=dict(
-            line=dict(
-                color='black',
-                width=0.3
-            ),
+            line=dict(color='black', width=0.3),
             color='white',
             symbol='circle-dot',
-            size=20
+            size=6
         ),
         showlegend=False,
         textposition='top center',
-        textfont=dict(
-            color='Black',
-            size=5
-        )
+        textfont=dict(color='Black', size=5)
     )
 
     _default_grid_manager: ClassVar[StrDict] = dict(
         colorscale=[[0, 'white'], [1, 'white']],
-        zmax=1, zmin=0,
-        marker=dict(
-            line=dict(
-                color='black'
-            ),
-            opacity=0.2
-        ),
+        zmax=1,
+        zmin=0,
+        marker=dict(line=dict(color='black'), opacity=0.2),
         showlegend=False,
         showscale=False,
         hoverinfo='text',
@@ -683,12 +639,7 @@ class PlotBuilder:
 
     _default_region_manager: ClassVar[StrDict] = dict(
         colorscale=[[0, 'rgba(255,255,255,0.525)'], [1, 'rgba(255,255,255,0.525)']],
-        marker=dict(
-            line=dict(
-                color="rgba(0,0,0,1)",
-                width=0.65
-            )
-        ),
+        marker=dict(line=dict(color="rgba(0,0,0,1)", width=0.65)),
         legendgroup='regions',
         zmin=0,
         zmax=1,
@@ -699,11 +650,7 @@ class PlotBuilder:
 
     _default_outline_manager: ClassVar[StrDict] = dict(
         mode='lines',
-        line=dict(
-            color="black",
-            width=1,
-            dash='dash'
-        ),
+        line=dict(color="black", width=1,dash='dash'),
         legendgroup='outlines',
         showlegend=False,
         hoverinfo='text'
@@ -712,9 +659,7 @@ class PlotBuilder:
     # contains the default properties for the figure
     _default_figure_manager: ClassVar[StrDict] = dict(
         geos=dict(
-            projection=dict(
-                type='orthographic'
-            ),
+            projection=dict(type='orthographic'),
             showcoastlines=False,
             showland=True,
             landcolor="rgba(166,166,166,0.625)",
@@ -723,21 +668,12 @@ class PlotBuilder:
             showlakes=False,
             showrivers=False,
             showcountries=False,
-            lataxis=dict(
-                showgrid=True
-            ),
-            lonaxis=dict(
-                showgrid=True
-            )
+            lataxis=dict(showgrid=True),
+            lonaxis=dict(showgrid=True)
         ),
         layout=dict(
-            title=dict(
-                text='',
-                x=0.5
-            ),
-            margin=dict(
-                r=0, l=0, t=50, b=50
-            )
+            title=dict(text='', x=0.5),
+            margin=dict(r=0, l=0, t=50, b=5)
         )
     )
 
@@ -838,11 +774,6 @@ class PlotBuilder:
             raise ValueError("The output service must be one of ['plotly', 'mapbox'].")
         self._output_service = service
 
-    def rebin(self, *args, binning_field: str = None, binning_fn=None, **kwargs):
-        dataset = self._get_main()
-        df = dataset['data'].drop(columns='value_field', errors='ignore')
-        gcg.apply_bin_function(df, )
-
     def __setitem__(self, key: str, value: StrDict):
         """Overwritten setitem method.
 
@@ -926,6 +857,19 @@ class PlotBuilder:
                  longitude_field: str = None,
                  hexbin_info: StrDict = None,
                  manager: StrDict = None):
+        """Sets the main dataset to plot.
+
+        :param data: The data for this set
+        :type data: DFType
+        :param latitude_field: The latitude column of the data
+        :type latitude_field: str
+        :param longitude_field: The longitude column of the data
+        :type longitude_field: str
+        :param hexbin_info: A container for properties pertaining to hexagonal binning
+        :type hexbin_info: StrDict
+        :param manager: A container for the plotly properties for this dataset
+        :type manager: StrDict
+        """
 
         hbin_info = dict(hex_resolution=self.default_hex_resolution)
         if hexbin_info is None:
@@ -945,32 +889,54 @@ class PlotBuilder:
         _update_manager(dataset, **(manager if manager is not None else {}))
         self._container['main'] = dataset
 
-    def set_main2(self, data: DFType, fields: dict = None, **kwargs):
-        _read_dataset(dataset := _create_dataset(data, fields=fields, **kwargs), set_manager=False)
-        _hexbinify_dataset(dataset, 3)
-        _set_manager(dataset, default_manager=deepcopy(self._default_quantitative_dataset_manager) if dataset[
-                                                                                                          'VTYPE'] == 'num' else deepcopy(
-            self._default_qualitative_dataset_manager))
-        dataset['DSTYPE'] = 'MN'
-        dataset['odata'] = dataset['data'].copy(deep=True)
-        self._container['main'] = dataset
+    def _get_main(self) -> StrDict:
+        """Retrieves the main dataset.
 
-    def _get_main(self):
+        Internal version.
+
+        :return: The main dataset
+        :rtype: StrDict
+        """
         try:
             return self._container['main']
         except KeyError:
             raise ValueError(f"The main dataset could not be found.")
 
     def get_main(self):
+        """Retrieves the main dataset.
+
+        External version, returns a deepcopy.
+
+        :return: The main dataset
+        :rtype: StrDict
+        """
         return deepcopy(self._get_main())
 
-    def remove_main(self):
+    def remove_main(self, pop: bool = False) -> StrDict:
+        """Removes the main dataset.
+
+        :param pop: Whether or not to return the removed dataset
+        :type pop: bool
+        :return: The removed dataset (pop=True)
+        :rtype: StrDict
+        """
         try:
-            del self._container['main']
+            main = self._container.pop('main')
+            if pop:
+                return main
         except KeyError:
             raise ValueError("The main dataset could not be found.")
 
     def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager the main dataset.
+
+        :param updates: A dict containing updates for the dataset(s)
+        :type updates: StrDict
+        :param overwrite: Whether to override the current properties with the new ones or not
+        :type overwrite: bool
+        :param kwargs: Other updates for the dataset(s)
+        :type kwargs: **kwargs
+        """
         _update_manager(self._get_main(), updates=updates, overwrite=overwrite, **kwargs)
 
     def reset_main_data(self):
@@ -995,6 +961,8 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
+        :param manager: The plotly properties for this dataset.
+        :type manager: StrDict
         """
         _check_name(name)
         data = _read_data(data, allow_builtin=True)
@@ -1003,34 +971,6 @@ class PlotBuilder:
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         dataset['manager'] = deepcopy(self._default_region_manager)
         _update_manager(dataset, **(manager or {}))
-        self._get_regions()[name] = dataset
-
-    def add_region2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
-        """Adds a region-type dataset to the builder.
-
-        Region-type datasets should consist of Polygon-like geometries.
-        Best results are read from a GeoDataFrame, or DataFrame.
-
-        :param name: The name this dataset is to be stored with
-        :type name: str
-        :param data: The location of the data for this dataset
-        :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
-        """
-        _check_name(name)
-        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
-                                 default_manager=deepcopy(self._default_region_manager),
-                                 allow_manager_updates=True)
-        if any(t in dataset['data'].geom_type.values for t in ('Point', 'LineString', 'MultiLineString',
-                                                               'GeometryCollection', 'LinearRing')):
-            raise NotImplementedError("There was an unexpected type of geometry found within the region. This type"
-                                      " of geometry has not been implemented yet.")
-        dataset['data'] = dataset['data'][['geometry', 'value_field']]
-        dataset['odata'] = dataset['data'].copy(deep=True)
-        dataset['DSTYPE'] = 'RGN'
         self._get_regions()[name] = dataset
 
     def _get_region(self, name: str) -> StrDict:
@@ -1171,30 +1111,6 @@ class PlotBuilder:
         dataset['manager'] = self._default_grid_manager
         self._get_grids()[name] = dataset
 
-    def add_grid2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
-        """Adds a grid-type dataset to the builder.
-
-        Grid-type datasets should consist of Polygon-like or Point-like geometries.
-
-        :param name: The name this dataset is to be stored with
-        :type name: str
-        :param data: The location of the data for this dataset
-        :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
-        """
-        _check_name(name)
-        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
-                                 default_manager=self._grid_manager, allow_manager_updates=False)
-        _hexbinify_dataset(dataset, 3)  # change to default hex res
-        dataset['data']['value_field'] = 0
-        dataset['data'] = dataset['data'][['geometry', 'value_field']]
-        dataset['odata'] = dataset['data'].copy(deep=True)
-        dataset['DSTYPE'] = 'GRD'
-        self._get_grids()[name] = dataset
-
     def _get_grid(self, name: str) -> StrDict:
         """Retrieves a grid dataset from the builder.
 
@@ -1315,6 +1231,14 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
+        :param latitude_field: The latitude column of the data
+        :type latitude_field: str
+        :param longitude_field: The longitude column of the data
+        :type longitude_field: str
+        :param as_boundary: Changes the data into one big boundary if true
+        :type as_boundary: bool
+        :param manager: Plotly properties for this dataset
+        :type manager: StrDict
         """
         _check_name(name)
         data = _read_data(data, allow_builtin=True)
@@ -1329,28 +1253,6 @@ class PlotBuilder:
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         dataset['manager'] = deepcopy(self._default_outline_manager)
         _update_manager(dataset, **(manager or {}))
-        self._get_outlines()[name] = dataset
-
-    def add_outline2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
-        """Adds a outline-type dataset to the builder.
-
-        :param name: The name this dataset is to be stored with
-        :type name: str
-        :param data: The location of the data for this dataset
-        :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
-        """
-        _check_name(name)
-        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
-                                 default_manager=deepcopy(self._default_outline_manager),
-                                 allow_manager_updates=True)
-        # consider the pros and cons to converting the dataset to points here
-        dataset['data'] = dataset['data'][['geometry', 'value_field']]
-        dataset['odata'] = dataset['data'].copy(deep=True)
-        dataset['DSTYPE'] = 'OUT'
         self._get_outlines()[name] = dataset
 
     def _get_outline(self, name: str) -> StrDict:
@@ -1479,10 +1381,12 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
+        :param latitude_field: The latitude column of the data
+        :type latitude_field: str
+        :param longitude_field: The longitude column of the data
+        :type longitude_field: str
+        :param manager: Plotly properties for this dataset
+        :type manager: StrDict
         """
 
         _check_name(name)
@@ -1492,33 +1396,6 @@ class PlotBuilder:
                        manager=manager if manager is not None else {})
         _set_manager(dataset, default_manager=deepcopy(self._default_point_manager), allow_manager_updates=True)
         dataset['odata'] = dataset['data'].copy(deep=True)
-        self._get_points()[name] = dataset
-
-    def add_point2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
-        """Adds a outline-type dataset to the builder.
-
-        Ideally the dataset's 'data' member should contain
-        lat/long columns or point like geometry column. If the geometry column
-        is present and contains no point like geometry, the geometry will be converted
-        into a bunch of points.
-
-        :param name: The name this dataset is to be stored with
-        :type name: str
-        :param data: The location of the data for this dataset
-        :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
-        """
-
-        _check_name(name)
-        _prepare_general_dataset(dataset := _create_dataset(data, fields=fields, **kwargs),
-                                 default_manager=deepcopy(self._default_point_manager),
-                                 allow_manager_updates=True)
-        dataset['data'] = gcg.pointify_geodataframe(dataset['data'], keep_geoms=False)
-        dataset['odata'] = dataset['data'].copy(deep=True)
-        dataset['DSTYPE'] = 'PNT'
         self._get_points()[name] = dataset
 
     def _get_point(self, name: str) -> StrDict:
@@ -1715,7 +1592,6 @@ class PlotBuilder:
         dataset['data'] = dataset['data'][dataset['data']['value_field'] != empty_symbol]
 
     # this is both a data altering, and plot altering function
-    # TODO: this function should only apply to the main dataset
     def logify_scale(self, **kwargs):
         """Makes the scale of the main datasets logarithmic.
 
@@ -1737,7 +1613,6 @@ class PlotBuilder:
             raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
         _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
 
-    # TODO: this function should be able to take any two big or small queries.
     def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = 'intersects'):
         """Clips a query of datasets to another dataset.
 
