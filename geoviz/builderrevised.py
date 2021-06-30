@@ -22,6 +22,7 @@ from geoviz.utils.colorscales import solid_scale, configureColorWithAlpha, confi
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from collections import defaultdict
+import geoviz.errors as gce
 
 plotly.io.kaleido.scope.default_format = 'pdf'
 
@@ -103,6 +104,7 @@ def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint
             df = gdf[gdf.index == polynum]
             lats.extend(list(df.geometry.y))
             lons.extend(list(df.geometry.x))
+
             if disjoint:
                 lats.append(np.nan)
                 lons.append(np.nan)
@@ -211,6 +213,11 @@ Notes for Thursday:
 """
 
 
+def set_df_preserve(df1: DataFrame, df2: DataFrame):
+    df2.attrs = df1.attrs
+    return df2
+
+
 def _validate_dataset(dataset: StrDict):
     """Validates a dataset.
 
@@ -243,51 +250,42 @@ def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manage
 
 
 def _read_data_file(data: DFType):
-    filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
-    filepath = fix_filepath(filepath, add_ext=extension)
-
     try:
-        data = _extension_mapping[extension](filepath)
-    except KeyError:
-        pass
+        filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
+        filepath = fix_filepath(filepath, add_ext=extension)
+
+        try:
+            data = _extension_mapping[extension](filepath)
+        except KeyError:
+            pass
+    except Exception as e:
+        raise gce.DataFileReadError(str(e))
         # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
 
     return data
 
 
-def _read_data(data: DFType, allow_dataframe: bool = False):
+def _read_data(data: DFType, allow_builtin: bool = False):
+    err_msg = "The data must be a valid filepath, DataFrame, or GeoDataFrame."
+    rtype = 'frame'
     try:
-        data = _read_data_file(data)
-        dtype = 'str'
-    except Exception:
-        if not isinstance(data, GeoDataFrame):
-            if allow_dataframe and not isinstance(data, DataFrame):
-                raise TypeError("The data being read must be a valid filepath, DataFrame, or GeoDataFrame object.")
-            raise TypeError("The data being read must be either a valid filepath or GeoDataFrame object.")
-        dtype = 'frame'
-    data['value_field'] = 0
-    return data, dtype
+        data, rtype = _read_data_file(data), 'file'
+    except gce.DataFileReadError:
+        if allow_builtin:
+            try:
+                data, rtype = butil.get_shapes_from_world(data), 'builtin'
+            except (KeyError, ValueError, TypeError):
+                err_msg = "The data must be a valid country or continent name, filepath, DataFrame, or GeoDataFrame."
 
+    if isinstance(data, DataFrame):
+        data = gcg.convert_gdf_crs(GeoDataFrame(data), crs='EPSG:4326')
+        data['value_field'] = 0
+        data.RTYPE = rtype
+        data.VTYPE = 'NUM'
+    else:
+        raise gce.DataReadError(err_msg)
 
-def _read_general_data(data: DFType, allow_dataframe: bool = False):
-    dtype = None
-    try:
-        data = butil.get_shapes_from_world(data)
-        dtype = 'builtin'
-    except (KeyError, ValueError, TypeError):
-        # logger.debug("If name was a country or continent, the process failed.")
-        pass
-
-    try:
-        data, dtype2 = _read_data(data, allow_dataframe=allow_dataframe)
-    except TypeError:
-        if allow_dataframe:
-            print(data)
-            raise TypeError("The data being read must be a valid country or continent name, filepath, DataFrame, "
-                            "or GeoDataFrame.")
-        raise TypeError("The data being read must be a valid country or continent name, filepath, or GeoDataFrame.")
-    data.vtype = 'num'
-    return data, dtype if dtype is not None else dtype2
+    return data
 
 
 def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str = None):
@@ -332,13 +330,10 @@ def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution
     if binning_fn in _group_functions:
         binning_fn = _group_functions[binning_fn]
 
-    if binning_field is None:
-        vtype = 'num'
-    else:
-        vtype = get_column_type(data, binning_field)
+    vtype = 'NUM' if binning_field is None else get_column_type(data, binning_field)
 
-    if vtype == 'unk':
-        raise TypeError("The binning field is not a valid type, must be string or numerical column.")
+    if vtype == 'UNK':
+        raise gce.BinValueTypeError("The binning field is not a valid type, must be string or numerical column.")
 
     if binning_fn is None:
         binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
@@ -346,57 +341,11 @@ def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution
     data = gcg.ultimate_hexbin(data, *binning_args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
                                result_name='value_field',
                                **kwargs)
-
     vtype = get_column_type(data, 'value_field')
-    data.vtype = vtype
-    return data
+    if vtype == 'UNK':
+        raise gce.BinValueTypeError("The result of the binning operation is a column of invalid type. Fatal Error.")
 
-
-def _read_data2(data: DFType, latitude_field: str = None, longitude_field: str = None):
-    if isinstance(data, str):
-        filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
-        filepath = fix_filepath(filepath, add_ext=extension)
-
-        try:
-            data = _extension_mapping[extension](filepath)
-        except KeyError:
-            pass
-            # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
-
-    if isinstance(data, GeoDataFrame) or isinstance(data, DataFrame):
-
-        if data.empty:
-            raise ValueError("If the data passed is a DataFrame, it must not be empty.")
-
-        data = data.copy(deep=True)
-
-        if 'geometry' not in data.columns:
-
-            try:
-                latitude_field = data[latitude_field]
-            except KeyError:
-                if 'latitude' in data.columns:
-                    latitude_field = data['latitude']
-                else:
-                    raise ValueError(
-                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                        "and longitude_field entries. Missing latitude_field member.")
-
-            try:
-                longitude_field = data[longitude_field]
-            except KeyError:
-                if 'longitude' in data.columns:
-                    longitude_field = data['longitude']
-                else:
-                    raise ValueError(
-                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                        "and longitude_field entries. Missing longitude_field member.")
-
-            data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
-                                                                  crs='EPSG:4326'))
-    else:
-        raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
-
+    data.VTYPE = vtype
     return data
 
 
@@ -979,19 +928,21 @@ class PlotBuilder:
                  manager: StrDict = None):
 
         hbin_info = dict(hex_resolution=self.default_hex_resolution)
-
         if hexbin_info is None:
             hexbin_info = {}
 
-        data = _convert_latlong_data(_read_data(data, allow_dataframe=True)[0],
-                                     latitude_field=latitude_field, longitude_field=longitude_field)
+        data = _read_data(data)
+        dataset = dict(NAME='MAIN', RTYPE=data.RTYPE, DSTYPE='MN')
+        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
         hbin_info.update(hexbin_info)
-
         data = _convert_to_hexbin_data(data, **hbin_info)
-        dataset = dict(data=data, VTYPE=data.vtype, DSTYPE='MN', manager=manager if manager is not None else {})
-        _set_manager(dataset,
-                     self._default_quantitative_dataset_manager if data.vtype == 'num' else self._default_qualitative_dataset_manager)
-        dataset['odata'] = dataset['data'].copy(deep=True)
+        dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
+        dataset['manager'] = {}
+        if dataset['VTYPE'] == 'NUM':
+            _update_manager(dataset, deepcopy(self._default_quantitative_dataset_manager))
+        else:
+            _update_manager(dataset, deepcopy(self._default_qualitative_dataset_manager))
+        _update_manager(dataset, **(manager if manager is not None else {}))
         self._container['main'] = dataset
 
     def set_main2(self, data: DFType, fields: dict = None, **kwargs):
@@ -1044,17 +995,14 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
         """
         _check_name(name)
-        data, _ = _read_general_data(data)
-        dataset = dict(data=data[['value_field', 'geometry']], VTYPE=data.vtype, DSTYPE='RGN',
-                       manager=manager if manager is not None else {})
-        _set_manager(dataset, default_manager=deepcopy(self._default_region_manager), allow_manager_updates=True)
-        dataset['odata'] = dataset['data'].copy(deep=True)
+        data = _read_data(data, allow_builtin=True)
+        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
+        data = data[['value_field', 'geometry']]
+        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        dataset['manager'] = deepcopy(self._default_region_manager)
+        _update_manager(dataset, **(manager or {}))
         self._get_regions()[name] = dataset
 
     def add_region2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
@@ -1197,10 +1145,9 @@ class PlotBuilder:
     def add_grid(self,
                  name: str,
                  data: DFType,
-                 latitude_field: str = None,
-                 longitude_field: str = None,
                  hex_resolution: int = None,
-                 manager: StrDict = None):
+                 latitude_field: str = None,
+                 longitude_field: str = None):
         """Adds a grid-type dataset to the builder.
 
         Grid-type datasets should consist of Polygon-like or Point-like geometries.
@@ -1209,22 +1156,19 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
         """
 
         _check_name(name)
-        data = _convert_latlong_data(_read_general_data(data, allow_dataframe=True)[0],
-                                     latitude_field=latitude_field, longitude_field=longitude_field)
-        data = _convert_to_hexbin_data(data, hex_resolution if hex_resolution is not \
-                                                               None else self.default_hex_resolution,
-                                       binning_fn=lambda lst: 0)
-        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='GRD',
-                       manager=manager if manager is not None else {})
-        _set_manager(dataset, default_manager=self._default_grid_manager, allow_manager_updates=False)
-        dataset['odata'] = dataset['data'].copy(deep=True)
+        data = _read_data(data, allow_builtin=True)
+        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE)
+        data = _convert_to_hexbin_data(
+            _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field),
+            hex_resolution=hex_resolution or self.default_hex_resolution,
+            binning_fn=lambda lst: 0
+        )
+        data = data[['value_field', 'geometry']]
+        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        dataset['manager'] = self._default_grid_manager
         self._get_grids()[name] = dataset
 
     def add_grid2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
@@ -1363,6 +1307,7 @@ class PlotBuilder:
                     data: DFType,
                     latitude_field: str = None,
                     longitude_field: str = None,
+                    as_boundary: bool = False,
                     manager: StrDict = None):
         """Adds a outline-type dataset to the builder.
 
@@ -1370,18 +1315,20 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param fields: Additional information for this dataset
-        :type fields: Dict[str, Any]
-        :param kwargs: Additional fields for this dataset
-        :type kwargs: **kwargs
         """
         _check_name(name)
-        data = _read_general_data(data, allow_dataframe=True)[0]
-        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
-        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='OUT',
-                       manager=manager if manager is not None else {})
-        _set_manager(dataset, default_manager=deepcopy(self._default_outline_manager), allow_manager_updates=True)
-        dataset['odata'] = dataset['data'].copy(deep=True)
+        data = _read_data(data, allow_builtin=True)
+        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
+        data = _convert_latlong_data(data, latitude_field=latitude_field,
+                                     longitude_field=longitude_field)[['value_field', 'geometry']]
+        if as_boundary:
+            data = gcg.unify_geodataframe(data)
+        print(data)
+        print('\n\nPOINTIFIED',gcg.pointify_geodataframe(data).geometry)
+
+        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        dataset['manager'] = deepcopy(self._default_outline_manager)
+        _update_manager(dataset, **(manager or {}))
         self._get_outlines()[name] = dataset
 
     def add_outline2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
@@ -1539,7 +1486,7 @@ class PlotBuilder:
         """
 
         _check_name(name)
-        data = _read_data(data, allow_dataframe=True)[0]
+        data = _read_data(data, allow_builtin=False)
         data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
         dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='OUT',
                        manager=manager if manager is not None else {})
@@ -1786,7 +1733,7 @@ class PlotBuilder:
         except ValueError:
             raise ValueError("There is no main dataset to convert to a logarithmic scale.")
 
-        if dataset['VTYPE'] == 'str':
+        if dataset['VTYPE'] == 'STR':
             raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
         _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
 
@@ -2134,7 +2081,7 @@ class PlotBuilder:
         print(df['value_field'])
 
         # qualitative dataset
-        if dataset['VTYPE'] == 'str':
+        if dataset['VTYPE'] == 'STR':
             df['text'] = 'BEST OPTION: ' + df['value_field']
             colorscale = dataset['manager'].pop('colorscale')
             try:
@@ -2207,7 +2154,7 @@ class PlotBuilder:
             raise ValueError("There are no outline-type datasets to plot.")
 
         for outname, outds in self.get_outlines().items():
-            outds['data'] = gcg.pointify_geodataframe(outds['data'], keep_geoms=False, raise_errors=raise_errors)
+            outds['data'] = gcg.pointify_geodataframe(outds['data'].explode(), keep_geoms=False, raise_errors=raise_errors)
             scatt = _prepare_scattergeo_trace(outds['data'], separate=True, disjoint=True,
                                               mapbox=self.plot_output_service == 'mapbox')
             scatt.update(outds['manager'])
