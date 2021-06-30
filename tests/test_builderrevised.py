@@ -17,7 +17,7 @@ from geopandas import GeoDataFrame
 import geopandas as gpd
 from shapely.geometry import Point, LineString, Polygon
 
-from geoviz import builderrevised as builder
+from geoviz import builder as builder
 from shapely import wkt
 from pandas import DataFrame
 from os.path import join as pjoin
