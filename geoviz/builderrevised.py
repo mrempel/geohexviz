@@ -2119,16 +2119,40 @@ class PlotBuilder:
                     raise e
 
     def output_figure(self, filepath: str, clear_figure: bool = False, **kwargs):
+        """Outputs the figure to a filepath.
+
+        The figure is output via Plotly's write_image() function.
+        Plotly's Kaleido is required for this feature.
+
+        :param filepath: The filepath to output the figure at (including filename and extension)
+        :type filepath: str
+        :param clear_figure: Whether or not to clear the figure after this operation
+        :type clear_figure: bool
+        :param kwargs: Keyword arguments for the write_image function
+        :type kwargs: **kwargs
+        """
         self._figure.write_image(filepath, **kwargs)
         if clear_figure:
             self.clear_figure()
 
     def display_figure(self, clear_figure: bool = False, **kwargs):
+        """Displays the figure.
+
+        The figure is displayed via Plotly's show() function.
+        Extensions may be needed.
+
+        :param clear_figure: Whether or not to clear the figure after this operation
+        :type clear_figure: bool
+        :param kwargs: Keyword arguments for the show function
+        :type kwargs: **kwargs
+        """
         self._figure.show(**kwargs)
         if clear_figure:
             self.clear_figure()
 
     def clear_figure(self):
+        """Clears the figure of its current data.
+        """
         self._figure.data = []
 
     def reset(self):
@@ -2153,6 +2177,8 @@ class PlotBuilder:
         self.default_hex_resolution = 3
 
     def reset_data(self):
+        """Resets the datasets of the builder to their original state.
+        """
         try:
             self.reset_main_data()
         except ValueError:
@@ -2161,43 +2187,3 @@ class PlotBuilder:
         self.reset_grid_data()
         self.reset_outline_data()
         self.reset_point_data()
-
-
-if __name__ == '__main__':
-    x = DataFrame(dict(lats=[10, 10, 20, 20, 30, 30], lons=[10, 10, 20, 20, 30, 30]))
-
-    pb = PlotBuilder()
-    pb.set_main(x, latitude_field='lats', longitude_field='lons', binning_fn=lambda x: 10,
-                manager=dict(colorscale='Viridis'))
-
-    pb.add_region('CCA1', 'CANADA')
-    pb.add_region('CCA2', 'FRANCE')
-    y = GeoDataFrame(
-        geometry=[Polygon([[-45.70, -32.99], [70.49, -32.99], [70.49, 62.51], [-45.70, 62.51], [-45.70, -32.99]])],
-        crs='EPSG:4326')
-
-    pb.add_region('TESTER', y)
-    pb.add_region('TESTER2', y.copy(deep=True))
-    # pb.add_region('tony', data=x.copy(deep=True), latitude_field='lats', longitude_field='lons')
-    pb.add_grid('tony', data=x.copy(deep=True), latitude_field='lats', longitude_field='lons', binning_fn=lambda x: 10)
-
-    # pb.searchv2('regions:-[CCA1+CA2+CCA3]')
-    pb.logify_scale('main')
-    pb.clip_datasets('main', 'regions', op='contains')
-
-    # pb.auto_focus(on='regions')
-    # pb.logify_scale()
-    # pb.discretize_scale()
-    # pb.auto_focus()
-    # print('FINAL', pb['main'])
-    # pb.remove_empties('main', add_to_plot=True)
-    # pb.logify_scale('grids')
-    # pb.auto_grid('main', by_bounds=True, hex_resolution=3)
-    # print(pb.get_grids())
-    # print(pb.get_grids())
-    # print('RESULT', pb['grid:tony']['data']['value_field'])
-    # print(pb['main']['main']['MAIN']['manager'])
-
-    # dataset = _read_dataset(x, latitude_field='lats', longitude_field='lons', binning_fn=dict(fn=sum))
-    # _hexbinify_dataset(dataset, 3)
-    # print(dataset['data']['value_field'])
