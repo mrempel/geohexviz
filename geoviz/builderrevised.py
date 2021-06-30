@@ -646,7 +646,7 @@ class PlotBuilder:
 
     _default_outline_manager: ClassVar[StrDict] = dict(
         mode='lines',
-        line=dict(color="black", width=1,dash='dash'),
+        line=dict(color="black", width=1, dash='dash'),
         legendgroup='outlines',
         showlegend=False,
         hoverinfo='text'
@@ -848,11 +848,14 @@ class PlotBuilder:
     MAIN DATASET FUNCTIONS
     """
 
-    def set_main(self, data: DFType,
-                 latitude_field: str = None,
-                 longitude_field: str = None,
-                 hexbin_info: StrDict = None,
-                 manager: StrDict = None):
+    def set_main(
+            self,
+            data: DFType,
+            latitude_field: str = None,
+            longitude_field: str = None,
+            hexbin_info: StrDict = None,
+            manager: StrDict = None
+    ):
         """Sets the main dataset to plot.
 
         :param data: The data for this set
@@ -944,10 +947,12 @@ class PlotBuilder:
     REGION FUNCTIONS
     """
 
-    def add_region(self,
-                   name: str,
-                   data: DFType,
-                   manager: StrDict = None):
+    def add_region(
+            self,
+            name: str,
+            data: DFType,
+            manager: StrDict = None
+    ):
         """Adds a region-type dataset to the builder.
 
         Region-type datasets should consist of Polygon-like geometries.
@@ -1078,12 +1083,14 @@ class PlotBuilder:
     GRID FUNCTIONS
     """
 
-    def add_grid(self,
-                 name: str,
-                 data: DFType,
-                 hex_resolution: int = None,
-                 latitude_field: str = None,
-                 longitude_field: str = None):
+    def add_grid(
+            self,
+            name: str,
+            data: DFType,
+            hex_resolution: int = None,
+            latitude_field: str = None,
+            longitude_field: str = None
+    ):
         """Adds a grid-type dataset to the builder.
 
         Grid-type datasets should consist of Polygon-like or Point-like geometries.
@@ -1092,6 +1099,12 @@ class PlotBuilder:
         :type name: str
         :param data: The location of the data for this dataset
         :type data: Union[str, DataFrame, GeoDataFrame]
+        :param hex_resolution: The hexagonal resolution to use for this dataset (None->builder default)
+        :type hex_resolution: int
+        :param latitude_field: The latitude column within the data
+        :type latitude_field: str
+        :param longitude_field: The longitude column within the data
+        :type longitude_field: str
         """
 
         _check_name(name)
@@ -1214,13 +1227,15 @@ class PlotBuilder:
     OUTLINE FUNCTIONS
     """
 
-    def add_outline(self,
-                    name: str,
-                    data: DFType,
-                    latitude_field: str = None,
-                    longitude_field: str = None,
-                    as_boundary: bool = False,
-                    manager: StrDict = None):
+    def add_outline(
+            self,
+            name: str,
+            data: DFType,
+            latitude_field: str = None,
+            longitude_field: str = None,
+            as_boundary: bool = False,
+            manager: StrDict = None
+    ):
         """Adds a outline-type dataset to the builder.
 
         :param name: The name this dataset is to be stored with
@@ -1244,7 +1259,7 @@ class PlotBuilder:
         if as_boundary:
             data = gcg.unify_geodataframe(data)
         print(data)
-        print('\n\nPOINTIFIED',gcg.pointify_geodataframe(data).geometry)
+        print('\n\nPOINTIFIED', gcg.pointify_geodataframe(data).geometry)
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         dataset['manager'] = deepcopy(self._default_outline_manager)
@@ -1360,12 +1375,14 @@ class PlotBuilder:
     POINT FUNCTIONS
     """
 
-    def add_point(self,
-                  name: str,
-                  data: DFType,
-                  latitude_field: str = None,
-                  longitude_field: str = None,
-                  manager: StrDict = None):
+    def add_point(
+            self,
+            name: str,
+            data: DFType,
+            latitude_field: str = None,
+            longitude_field: str = None,
+            manager: StrDict = None
+    ):
         """Adds a outline-type dataset to the builder.
 
         Ideally the dataset's 'data' member should contain
@@ -2025,7 +2042,8 @@ class PlotBuilder:
             raise ValueError("There are no outline-type datasets to plot.")
 
         for outname, outds in self.get_outlines().items():
-            outds['data'] = gcg.pointify_geodataframe(outds['data'].explode(), keep_geoms=False, raise_errors=raise_errors)
+            outds['data'] = gcg.pointify_geodataframe(outds['data'].explode(), keep_geoms=False,
+                                                      raise_errors=raise_errors)
             scatt = _prepare_scattergeo_trace(outds['data'], separate=True, disjoint=True,
                                               mapbox=self.plot_output_service == 'mapbox')
             scatt.update(outds['manager'])
