@@ -136,7 +136,6 @@ def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float,
         scale_value = cli.colorscale_to_colors(scale_value)
 
     scale_value = cli.convert_colors_to_same_type(scale_value, colortype="rgb", scale=None)[0]
-    print(scale_value)
 
     if scale_type == 'diverging':
         return discretize_diverging(scale_value, low, high, **kwargs)

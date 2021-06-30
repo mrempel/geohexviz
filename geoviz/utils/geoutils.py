@@ -851,17 +851,9 @@ def gpdclip(clip: GeoDataFrame, to: GeoDataFrame, enforce_crs: Any = 'EPSG:4326'
     clip, to = convert_crs(clip, to, crs=enforce_crs)
     return gpd.clip(clip, to, keep_geom_type=keep_geom_type)
 
-# this function needs to be changed a little bit to work with any dataframe
-def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None, hex_resolution: int = None):
-    if hex_resolution is None:
-        if hex_column is None:
-            gdf['hex_resolution_col'] = gdf.index
-            hex_resolution_col = gdf['hex_resolution_col'].astype(str).apply(h3.h3_get_resolution)
-        else:
-            hex_resolution_col = gdf[hex_column].apply(h3.h3_get_resolution)
-        hex_resolutions = get_occurrences(list(hex_resolution_col))
-        hex_resolution = int(max(hex_resolutions.items(), key=operator.itemgetter(1))[0])
 
+# this function needs to be changed a little bit to work with any dataframe
+def generate_grid_over(gdf: GeoDataFrame, hex_resolution: int):
     range_lon, range_lat = find_ranges_simple(gdf.geometry)
     range_lat, range_lon = list(range_lat), list(range_lon)
 

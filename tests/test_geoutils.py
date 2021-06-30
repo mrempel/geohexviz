@@ -442,12 +442,34 @@ class GeoUtilsTestCase(unittest.TestCase):
             LineString([[1, 1], [0, 0]])
         ])
         self.assertListEqual(list(sorted(['Point', 'MultiLineString', 'LineString'])),
-                             list(sorted(geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=False))))
+                             list(sorted(
+                                 geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=False))))
         self.assertListEqual(list(sorted(['Point', 'LineString'])),
-                             list(sorted(geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=True))))
+                             list(sorted(
+                                 geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=True))))
 
     def test_generate_grid_over(self):
-        print()
+        testdata = shapes_from_wkt(*[
+            'POINT (3.9111328125000004 48.45835188280866)',
+            'POINT (2.8125 46.92025531537451)',
+            'POINT (12.7001953125 42.45588764197166)',
+            'POINT (24.5654296875 46.07323062540835)',
+            'POINT (16.875 53.657661020298)',
+            'POINT (20.98388671875 54.059387886623576)',
+            'POINT (22.8076171875 52.06600028274635)',
+            'POINT (19.62158203125 50.387507803003146)',
+            'POINT (8.525390625 48.07807894349862)',
+            'POINT (6.83349609375 50.56928286558243)',
+            'POINT (8.72314453125 53.14677033085082)',
+            'POINT (5.185546875 57.088515327886505)',
+            'POINT (17.0947265625 51.984880139916626)',
+            'POINT (10.30517578125 50.12057809796008)',
+            'POINT (10.92041015625 52.10650519075632)'
+        ])
+        testdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
+        over = geoutils.generate_grid_over(testdf, 3)
+        # test edge case only one geometry
+
 
 if __name__ == '__main__':
     unittest.main()

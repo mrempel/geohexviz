@@ -1,3 +1,8 @@
+from typing import Any
+
+import pandas as pd
+from geopandas import GeoDataFrame
+from pandas import DataFrame
 from shapely.geometry import Point, Polygon, LineString, MultiPoint, MultiPolygon, MultiLineString, GeometryCollection
 
 
@@ -74,6 +79,15 @@ class TestingShape:
             self._transfer(newtst)
         else:
             return newtst
+
+    def to_shapes_frame(self, crs: Any = 'EPSG:4326'):
+        return GeoDataFrame(geometry=self.iter_shapes(), crs=crs)
+
+    def to_ids_frame(self, sorted: bool = True, as_index: bool = True):
+        iddf = DataFrame(dict(ids=self.hexids))
+        if as_index:
+            iddf.set_index('ids', inplace=True)
+        return iddf.sort_index() if sorted else iddf
 
     def __copy__(self):
         return TestingShape(*self.iter_shapes(), hexids=self.hexids.copy(), condense=False)

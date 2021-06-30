@@ -21,6 +21,15 @@ GeometryContainer = Union[MultiPolygon, MultiPoint, MultiLineString, GeometryCol
 AnyGeom = Union[Polygon, Point, LineString, GeometryContainer]
 
 
+def get_percdiff(current, previous):
+    if current == previous:
+        return 0
+    try:
+        return (abs(current - previous) / previous) * 100.0
+    except ZeroDivisionError:
+        return float('inf')
+
+
 def fix_filepath(filepath: str, add_filename: str = '', add_ext: str = '') -> str:
     """Converts a directorypath, or filepath into a valid filepath.
 
@@ -420,10 +429,10 @@ def get_column_type(df: DataFrame, col: str):
     col = get_column_or_default(df, col)
     if col is not None:
         if is_numeric_dtype(col):
-            return 'num'
+            return 'NUM'
         elif is_string_dtype(col):
-            return 'str'
-    return 'unk'
+            return 'STR'
+    return 'UNK'
 
 
 def generate_random_ids(n: int):
