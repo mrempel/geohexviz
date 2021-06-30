@@ -124,7 +124,7 @@ def getScaleFormat(colorscale):
             return 'unknown'
 
 
-def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float, high: float, discrete_size: float = 1, **kwargs):
+def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float, high: float, **kwargs):
     if isinstance(scale_value, str):
         try:
             scale_value = tryGetScale(scale_value)
@@ -132,7 +132,11 @@ def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float,
             if getScaleFormat(scale_value) not in ['nested-iterable', 'iterable']:
                 raise ValueError("The scale is in an invalid format.")
 
-    scale_value = cli.convert_colors_to_same_type(scale_value, colortype="rgb")[0]
+    if any(isinstance(i, list) or isinstance(i, tuple) for i in iter(scale_value)):
+        scale_value = cli.colorscale_to_colors(scale_value)
+
+    scale_value = cli.convert_colors_to_same_type(scale_value, colortype="rgb", scale=None)[0]
+    print(scale_value)
 
     if scale_type == 'diverging':
         return discretize_diverging(scale_value, low, high, **kwargs)
