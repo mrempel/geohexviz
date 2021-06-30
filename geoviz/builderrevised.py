@@ -384,7 +384,7 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
     :return: The hexified geodataframe
     :rtype: Union[DataFrame, GeoDataFrame]
     """
-    return gcg.hexify_dataframe(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
+    return gcg.hexify_dataframe(data, hex_resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
 def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[
@@ -1327,7 +1327,7 @@ class PlotBuilder:
         _check_name(name)
         data = _read_data(data, allow_builtin=False)
         data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
-        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='OUT',
+        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='PNT',
                        manager=manager if manager is not None else {})
         _set_manager(dataset, default_manager=deepcopy(self._default_point_manager), allow_manager_updates=True)
         dataset['odata'] = dataset['data'].copy(deep=True)
@@ -1699,24 +1699,24 @@ class PlotBuilder:
 
         self._figure.update_geos(**geos)
 
-    def auto_grid(self, query: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
+    def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
         """Makes a grid over the queried datasets.
 
-        :param query: The query for the datasets to have a grid generated over them
-        :type query: str
+        :param on: The query for the datasets to have a grid generated over them
+        :type on: str
         :param by_bounds: Whether or not to treat the  geometries as a single boundary
         :type by_bounds: bool
         :param hex_resolution: The hexagonal resolution to use for the auto grid
         :type hex_resolution: int
         """
 
-        fn = gcg.generate_grid_over_hexes if by_bounds else gcg.hexify_geodataframe
+        fn = gcg.generate_grid_over_hexes if by_bounds else gcg.hexify_dataframe
 
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
 
         try:
-            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(query, helper))), crs='EPSG:4326')
+            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(on, helper))), crs='EPSG:4326')[['value_field', 'geometry']].drop_duplicates()
             if not grid.empty:
                 grid['value_field'] = 0
                 self._get_grids()['|*AUTO*|'] = {'data': grid, 'manager': self._grid_manager}
@@ -1746,6 +1746,7 @@ class PlotBuilder:
         else:
             low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
             high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
+            print(low, high)
             dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
                                                                 low, high, **kwargs)
 

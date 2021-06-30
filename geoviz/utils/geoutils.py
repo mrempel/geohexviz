@@ -123,15 +123,15 @@ def check_crossing(lon1: float, lon2: float, validate: bool = True):
     return abs(lon2 - lon1) > 180.0
 
 
-def hexify_dataframe(gdf: GeoDataFrame, resolution: int, add_geom: bool = False, keep_geom: bool = False,
+def hexify_dataframe(gdf: GeoDataFrame, hex_resolution: int, add_geom: bool = False, keep_geom: bool = False,
                      old_geom_name: str = None, as_index: bool = True, raise_errors: bool = False) -> GeoDataFrame:
     """Makes a new GeoDataFrame, with the index set as the hex cell ids that each geometry in the geometry column
     corresponds to.
 
     :param gdf: The GeoDataFrame to place a hex cell id overlay on
     :type gdf: GeoDataFrame
-    :param resolution: The resolution of the hexes to be generated
-    :type resolution: int
+    :param hex_resolution: The resolution of the hexes to be generated
+    :type hex_resolution: int
     :param add_geom: Whether to add the hex geometry to the dataframe or not
     :type add_geom: bool
     :param keep_geom: Whether to keep old geometry or not (add_geom=True)
@@ -163,9 +163,9 @@ def hexify_dataframe(gdf: GeoDataFrame, resolution: int, add_geom: bool = False,
         """
 
         if isinstance(shape, Point):
-            return [h3.geo_to_h3(lat=shape.y, lng=shape.x, resolution=resolution)]
+            return [h3.geo_to_h3(lat=shape.y, lng=shape.x, resolution=hex_resolution)]
         elif isinstance(shape, Polygon):
-            return list(h3.polyfill(shape.__geo_interface__, resolution, geo_json_conformant=True))
+            return list(h3.polyfill(shape.__geo_interface__, hex_resolution, geo_json_conformant=True))
         elif isinstance(shape, LineString) or isinstance(shape, LinearRing):
             return [shape_to_hex_ids(Point(x))[0] for x in shape.coords]
         else:
@@ -851,7 +851,7 @@ def gpdclip(clip: GeoDataFrame, to: GeoDataFrame, enforce_crs: Any = 'EPSG:4326'
     clip, to = convert_crs(clip, to, crs=enforce_crs)
     return gpd.clip(clip, to, keep_geom_type=keep_geom_type)
 
-
+# this function needs to be changed a little bit to work with any dataframe
 def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None, hex_resolution: int = None):
     if hex_resolution is None:
         if hex_column is None:
@@ -874,8 +874,8 @@ def generate_grid_over_hexes(gdf: GeoDataFrame, hex_column: Optional[str] = None
 
     gdf = GeoDataFrame(geometry=[poly], crs="EPSG:4326")
 
-    hexed_gdf = hexify_geodataframe(gdf, hex_resolution=hex_resolution)
-    hexed_gdf = bin_by_hex(hexed_gdf, binning_fn=lambda lst: 0, add_geoms=True)
+    hexed_gdf = hexify_dataframe(gdf, hex_resolution=hex_resolution)
+    hexed_gdf = bin_by_hexid(hexed_gdf, binning_fn=lambda lst: 0, add_geoms=True)
     return conform_geogeometry(hexed_gdf, fix_polys=True)
 
 
