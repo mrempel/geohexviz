@@ -324,8 +324,6 @@ def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str
 def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn=None, **kwargs):
     data = _hexify_data(data, hex_resolution)
-    if binning_args is None:
-        binning_args = ()
 
     if binning_fn in _group_functions:
         binning_fn = _group_functions[binning_fn]
@@ -338,9 +336,8 @@ def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution
     if binning_fn is None:
         binning_fn = _group_functions['bestworst'] if vtype == 'STR' else _group_functions['count']
 
-    data = gcg.ultimate_hexbin(data, *binning_args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
-                               result_name='value_field',
-                               **kwargs)
+    data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
+                            result_name='value_field', add_geoms=True, **kwargs)
     vtype = get_column_type(data, 'value_field')
     if vtype == 'UNK':
         raise gce.BinValueTypeError("The result of the binning operation is a column of invalid type. Fatal Error.")
@@ -463,7 +460,7 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
     :return: The hexified geodataframe
     :rtype: Union[DataFrame, GeoDataFrame]
     """
-    return gcg.ultimate_hexify(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
+    return gcg.hexify_dataframe(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
 def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[
@@ -515,9 +512,8 @@ def _bin_by_hex(data, *args, binning_field: str = None, binning_fn: Callable = N
     """
     binning_fn, vtype = _bin_by_hex_helper(data, binning_field=binning_field, binning_fn=binning_fn)
 
-    result = gcg.ultimate_hexbin(data, *args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
-                                 result_name='value_field',
-                                 **kwargs)
+    result = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, result_name='value_field',
+                              add_geoms=True, **kwargs)
     vtype = get_column_type(result, 'value_field')
     return result, vtype
 

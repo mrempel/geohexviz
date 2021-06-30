@@ -144,6 +144,9 @@ def logify_info(values: Union[Sequence[float], Set[float]], text_type: str = 'ra
     scale = list(range(0, start)) if include_predecessors else []
     scale.extend(list(range(start, end)))
 
+    if len(scale) == 1 and 0 not in scale:
+        scale.insert(0, 0)
+
     for i in scale:
         info['scale-dict'][i] = expfn(i, exp_type)
 
