@@ -80,7 +80,8 @@ def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False) -> Union[
         )
 
 
-def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint: bool = False, mapbox: bool = False) -> Union[Scattergeo, Scattermapbox]:
+def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint: bool = False, mapbox: bool = False) -> \
+        Union[Scattergeo, Scattermapbox]:
     """Prepares a scattergeo trace for a geodataframe.
 
     :param gdf: The geodataframe to make a trace for
@@ -241,6 +242,164 @@ def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manage
         raise ValueError("This dataset may not have a custom manager.")
 
 
+def _read_data_file(data: DFType):
+    filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
+    filepath = fix_filepath(filepath, add_ext=extension)
+
+    try:
+        data = _extension_mapping[extension](filepath)
+    except KeyError:
+        pass
+        # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
+
+    return data
+
+
+def _read_data(data: DFType, allow_dataframe: bool = False):
+    try:
+        data = _read_data_file(data)
+        dtype = 'str'
+    except Exception:
+        if not isinstance(data, GeoDataFrame):
+            if allow_dataframe and not isinstance(data, DataFrame):
+                raise TypeError("The data being read must be a valid filepath, DataFrame, or GeoDataFrame object.")
+            raise TypeError("The data being read must be either a valid filepath or GeoDataFrame object.")
+        dtype = 'frame'
+    data['value_field'] = 0
+    return data, dtype
+
+
+def _read_general_data(data: DFType, allow_dataframe: bool = False):
+    dtype = None
+    try:
+        data = butil.get_shapes_from_world(data)
+        dtype = 'builtin'
+    except (KeyError, ValueError, TypeError):
+        # logger.debug("If name was a country or continent, the process failed.")
+        pass
+
+    try:
+        data, dtype2 = _read_data(data, allow_dataframe=allow_dataframe)
+    except TypeError:
+        if allow_dataframe:
+            print(data)
+            raise TypeError("The data being read must be a valid country or continent name, filepath, DataFrame, "
+                            "or GeoDataFrame.")
+        raise TypeError("The data being read must be a valid country or continent name, filepath, or GeoDataFrame.")
+    data.vtype = 'num'
+    return data, dtype if dtype is not None else dtype2
+
+
+def _convert_latlong_data(data, latitude_field: str = None, longitude_field: str = None):
+    if data.empty:
+        raise ValueError("If the data passed is a DataFrame, it must not be empty.")
+
+    data = data.copy(deep=True)
+
+    if 'geometry' not in data.columns:
+
+        try:
+            latitude_field = data[latitude_field]
+        except KeyError:
+            if 'latitude' in data.columns:
+                latitude_field = data['latitude']
+            else:
+                raise ValueError(
+                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                    "and longitude_field entries. Missing latitude_field member.")
+
+        try:
+            longitude_field = data[longitude_field]
+        except KeyError:
+            if 'longitude' in data.columns:
+                longitude_field = data['longitude']
+            else:
+                raise ValueError(
+                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                    "and longitude_field entries. Missing longitude_field member.")
+        data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
+                                                              crs='EPSG:4326'))
+    data.vtype = 'num'
+    return data
+
+
+def _convert_to_hexbin_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int, binning_args=None,
+                            binning_field: str = None, binning_fn=None, **kwargs):
+    data = _hexify_data(data, hex_resolution)
+    if binning_args is None:
+        binning_args = ()
+
+    if binning_fn in _group_functions:
+        binning_fn = _group_functions[binning_fn]
+
+    if binning_field is None:
+        vtype = 'num'
+    else:
+        vtype = get_column_type(data, binning_field)
+
+    if vtype == 'unk':
+        raise TypeError("The binning field is not a valid type, must be string or numerical column.")
+
+    if binning_fn is None:
+        binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
+
+    data = gcg.ultimate_hexbin(data, *binning_args, binning_fn=binning_fn, add_geoms=True, binning_field=binning_field,
+                               result_name='value_field',
+                               **kwargs)
+
+    vtype = get_column_type(data, 'value_field')
+    data.vtype = vtype
+    return data
+
+
+def _read_data2(data: DFType, latitude_field: str = None, longitude_field: str = None):
+    if isinstance(data, str):
+        filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
+        filepath = fix_filepath(filepath, add_ext=extension)
+
+        try:
+            data = _extension_mapping[extension](filepath)
+        except KeyError:
+            pass
+            # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
+
+    if isinstance(data, GeoDataFrame) or isinstance(data, DataFrame):
+
+        if data.empty:
+            raise ValueError("If the data passed is a DataFrame, it must not be empty.")
+
+        data = data.copy(deep=True)
+
+        if 'geometry' not in data.columns:
+
+            try:
+                latitude_field = data[latitude_field]
+            except KeyError:
+                if 'latitude' in data.columns:
+                    latitude_field = data['latitude']
+                else:
+                    raise ValueError(
+                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                        "and longitude_field entries. Missing latitude_field member.")
+
+            try:
+                longitude_field = data[longitude_field]
+            except KeyError:
+                if 'longitude' in data.columns:
+                    longitude_field = data['longitude']
+                else:
+                    raise ValueError(
+                        "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                        "and longitude_field entries. Missing longitude_field member.")
+
+            data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
+                                                                  crs='EPSG:4326'))
+    else:
+        raise ValueError("The 'data' member of the dataset must only be a string, DataFrame, or GeoDataFrame object.")
+
+    return data
+
+
 def _read_dataset(dataset: StrDict, set_manager: bool = True, **kwargs):
     """Converts a dataset into a usable dataset for the builder.
 
@@ -358,7 +517,8 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
     return gcg.ultimate_hexify(data, resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
-def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[Callable, str]:
+def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[
+    Callable, str]:
     """Determines the binning function and preliminary value type for a dataframe which is to be binned.
 
     :param data: The data which is to be binned
@@ -387,7 +547,8 @@ def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str 
     return binning_fn, vtype
 
 
-def _bin_by_hex(data, *args, binning_field: str = None, binning_fn: Callable = None, **kwargs) -> Tuple[GeoDataFrame, str]:
+def _bin_by_hex(data, *args, binning_field: str = None, binning_fn: Callable = None, **kwargs) -> Tuple[
+    GeoDataFrame, str]:
     """Wrapper for binning hexagonal data, and adding geometry to it.
 
     :param data: The data to be hexagonally binned
@@ -453,9 +614,12 @@ def _bin_dataset_by_hex(dataset: StrDict):
                                                     **binning_kw)
 
 
-def _hexbinify_data(data, hex_resolution: int, *args, binning_field: str = None, binning_fn=None, **kwargs):
+def _hexbinify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int, binning_args=None,
+                    binning_field: str = None, binning_fn=None, **kwargs):
     data = _hexify_data(data, hex_resolution)
-    return _bin_by_hex(data, *args, binning_field=binning_field, binning_fn=binning_fn, **kwargs)
+    if binning_args is None:
+        binning_args = ()
+    return _bin_by_hex(data, *binning_args, binning_field=binning_field, binning_fn=binning_fn, **kwargs)
 
 
 def _hexbinify_dataset(dataset: StrDict, hex_resolution: int):
@@ -808,7 +972,29 @@ class PlotBuilder:
     MAIN DATASET FUNCTIONS
     """
 
-    def set_main(self, data: DFType, fields: dict = None, **kwargs):
+    def set_main(self, data: DFType,
+                 latitude_field: str = None,
+                 longitude_field: str = None,
+                 hexbin_info: StrDict = None,
+                 manager: StrDict = None):
+
+        hbin_info = dict(hex_resolution=self.default_hex_resolution)
+
+        if hexbin_info is None:
+            hexbin_info = {}
+
+        data = _convert_latlong_data(_read_data(data, allow_dataframe=True)[0],
+                                     latitude_field=latitude_field, longitude_field=longitude_field)
+        hbin_info.update(hexbin_info)
+
+        data = _convert_to_hexbin_data(data, **hbin_info)
+        dataset = dict(data=data, VTYPE=data.vtype, DSTYPE='MN', manager=manager if manager is not None else {})
+        _set_manager(dataset,
+                     self._default_quantitative_dataset_manager if data.vtype == 'num' else self._default_qualitative_dataset_manager)
+        dataset['odata'] = dataset['data'].copy(deep=True)
+        self._container['main'] = dataset
+
+    def set_main2(self, data: DFType, fields: dict = None, **kwargs):
         _read_dataset(dataset := _create_dataset(data, fields=fields, **kwargs), set_manager=False)
         _hexbinify_dataset(dataset, 3)
         _set_manager(dataset, default_manager=deepcopy(self._default_quantitative_dataset_manager) if dataset[
@@ -845,7 +1031,33 @@ class PlotBuilder:
     REGION FUNCTIONS
     """
 
-    def add_region(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
+    def add_region(self,
+                   name: str,
+                   data: DFType,
+                   manager: StrDict = None):
+        """Adds a region-type dataset to the builder.
+
+        Region-type datasets should consist of Polygon-like geometries.
+        Best results are read from a GeoDataFrame, or DataFrame.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+        _check_name(name)
+        data, _ = _read_general_data(data)
+        dataset = dict(data=data[['value_field', 'geometry']], VTYPE=data.vtype, DSTYPE='RGN',
+                       manager=manager if manager is not None else {})
+        _set_manager(dataset, default_manager=deepcopy(self._default_region_manager), allow_manager_updates=True)
+        dataset['odata'] = dataset['data'].copy(deep=True)
+        self._get_regions()[name] = dataset
+
+    def add_region2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a region-type dataset to the builder.
 
         Region-type datasets should consist of Polygon-like geometries.
@@ -982,7 +1194,40 @@ class PlotBuilder:
     GRID FUNCTIONS
     """
 
-    def add_grid(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
+    def add_grid(self,
+                 name: str,
+                 data: DFType,
+                 latitude_field: str = None,
+                 longitude_field: str = None,
+                 hex_resolution: int = None,
+                 manager: StrDict = None):
+        """Adds a grid-type dataset to the builder.
+
+        Grid-type datasets should consist of Polygon-like or Point-like geometries.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+
+        _check_name(name)
+        data = _convert_latlong_data(_read_general_data(data, allow_dataframe=True)[0],
+                                     latitude_field=latitude_field, longitude_field=longitude_field)
+        data = _convert_to_hexbin_data(data, hex_resolution if hex_resolution is not \
+                                                               None else self.default_hex_resolution,
+                                       binning_fn=lambda lst: 0)
+        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='GRD',
+                       manager=manager if manager is not None else {})
+        _set_manager(dataset, default_manager=self._default_grid_manager, allow_manager_updates=False)
+        dataset['odata'] = dataset['data'].copy(deep=True)
+        self._get_grids()[name] = dataset
+
+    def add_grid2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a grid-type dataset to the builder.
 
         Grid-type datasets should consist of Polygon-like or Point-like geometries.
@@ -1113,7 +1358,33 @@ class PlotBuilder:
     OUTLINE FUNCTIONS
     """
 
-    def add_outline(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
+    def add_outline(self,
+                    name: str,
+                    data: DFType,
+                    latitude_field: str = None,
+                    longitude_field: str = None,
+                    manager: StrDict = None):
+        """Adds a outline-type dataset to the builder.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+        _check_name(name)
+        data = _read_general_data(data, allow_dataframe=True)[0]
+        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
+        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='OUT',
+                       manager=manager if manager is not None else {})
+        _set_manager(dataset, default_manager=deepcopy(self._default_outline_manager), allow_manager_updates=True)
+        dataset['odata'] = dataset['data'].copy(deep=True)
+        self._get_outlines()[name] = dataset
+
+    def add_outline2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a outline-type dataset to the builder.
 
         :param name: The name this dataset is to be stored with
@@ -1244,7 +1515,39 @@ class PlotBuilder:
     POINT FUNCTIONS
     """
 
-    def add_point(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
+    def add_point(self,
+                  name: str,
+                  data: DFType,
+                  latitude_field: str = None,
+                  longitude_field: str = None,
+                  manager: StrDict = None):
+        """Adds a outline-type dataset to the builder.
+
+        Ideally the dataset's 'data' member should contain
+        lat/long columns or point like geometry column. If the geometry column
+        is present and contains no point like geometry, the geometry will be converted
+        into a bunch of points.
+
+        :param name: The name this dataset is to be stored with
+        :type name: str
+        :param data: The location of the data for this dataset
+        :type data: Union[str, DataFrame, GeoDataFrame]
+        :param fields: Additional information for this dataset
+        :type fields: Dict[str, Any]
+        :param kwargs: Additional fields for this dataset
+        :type kwargs: **kwargs
+        """
+
+        _check_name(name)
+        data = _read_data(data, allow_dataframe=True)[0]
+        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
+        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='OUT',
+                       manager=manager if manager is not None else {})
+        _set_manager(dataset, default_manager=deepcopy(self._default_point_manager), allow_manager_updates=True)
+        dataset['odata'] = dataset['data'].copy(deep=True)
+        self._get_points()[name] = dataset
+
+    def add_point2(self, name: str, data: DFType, fields: StrDict = None, **kwargs):
         """Adds a outline-type dataset to the builder.
 
         Ideally the dataset's 'data' member should contain
