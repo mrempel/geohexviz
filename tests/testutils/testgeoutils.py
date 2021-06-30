@@ -2,7 +2,7 @@ import unittest
 from geoviz.utils import geoutils
 from geopandas import GeoDataFrame
 from shapely.geometry import Point, Polygon, LineString
-from testingstructures import TestingShape
+from tests.testingstructures import TestingShape
 
 testpoints1 = TestingShape(Point(45, 12), Point(60, 12), Point(60, 30),
                            hexids=['8352c6fffffffff', '836221fffffffff', '83430bfffffffff'], condense=False)

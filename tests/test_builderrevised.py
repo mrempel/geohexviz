@@ -424,6 +424,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(x in getmain['manager']['colorbar']['tickvals'] for x in range(start, end)))
 
     def test_adjust_opacity(self):
+        """Tests the adjusting opacity feature of the builder.
+
+        Tests:
+        Set the main dataset with a custom colorscale and invoke the function.
+        Ensure the opacity is present within the colors of the colorscale.
+        """
         err = False
         try:
             self.builder.adjust_opacity()
@@ -447,6 +453,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(str(inp_opacity) in ci for _, ci in out_colorscale))
 
     def test_discretize_scale(self):
+        """Tests the builder's ability to make a discrete scale.
+
+        Tests:
+        Set the main dataset alongside a custom colorscale and invoke the function.
+        Ensure that the colors are present twice in the output colorscale.
+        """
         err = False
         try:
             self.builder.discretize_scale()
@@ -474,6 +486,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(outcolors.count(ci) == 2 for ci in inpcolors))
 
     def test_adjust_focus(self):
+        """Tests the builders ability to adjust the focus of the plot.
+
+        Tests:
+        Add a dataset to the builder and focus onto it.
+        Ensure that the geospatial properties have been set properly.
+        """
         self.builder.add_point(
             'PPA1',
             df:=DataFrame(dict(

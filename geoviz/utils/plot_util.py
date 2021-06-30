@@ -365,7 +365,7 @@ def conformAlpha(properties: Dict[str, Any]):
     except ValueError:
         pass
 
-
+# TODO: this should go into colorscales module
 def opacify_colorscale(dataset: dict, alpha: float = None):
     colorscale = dataset['manager'].get('colorscale')
 
@@ -392,15 +392,14 @@ def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'int
     result = pd.concat(
         [gcg.sjoinclip(clip, item, operation=operation) for item in to], axis=0).drop_duplicates()
 
-    print(clip)
-    print(to)
-    print(len(result), result)
-
-    import matplotlib.pyplot as plt
-    import geoplot as gpt
-    ax = gpt.choropleth(clip, hue='value_field', cmap='viridis', projection=gpt.crs.Orthographic())
-    gpt.choropleth(result, ax=ax, hue='value_field', cmap='viridis_r')
-    plt.show()
+    #print(clip)
+    #print(to)
+    #print(len(result), result)
+    #import matplotlib.pyplot as plt
+    #import geoplot as gpt
+    #ax = gpt.choropleth(clip, hue='value_field', cmap='viridis', projection=gpt.crs.Orthographic())
+    #gpt.choropleth(result, ax=ax, hue='value_field', cmap='viridis_r')
+    #plt.show()
 
     if validate:
         cgtypes = gcg.get_present_geomtypes(clip, allow_collections=True, collapse_geoms=True)

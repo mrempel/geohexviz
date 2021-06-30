@@ -521,25 +521,6 @@ class PlotBuilder:
         self._output_stats = {}
         self.plot_name = plot_name
 
-        self._managers = {
-            "dataset": {},
-            "region": {
-                "singular": {},
-                "individual": defaultdict(dict)
-            },
-            "outline": {
-                "singular": {},
-                "individual": defaultdict(dict)
-            },
-            "point": {
-                "singular": {},
-                "individual": defaultdict(dict)
-            },
-            "grid": {},
-            "figure": {},
-            "file_output": {}
-        }
-
         # managers and settings
         self._dataset_manager: DataSetManager = {}
         self._grid_manager: DataSetManager = {}
@@ -664,8 +645,8 @@ class PlotBuilder:
 
         :param name: The name this dataset will be referred to as
         :type name: str
-        :param grid: The grid dataset to add
-        :type grid: DataSet
+        :param dataset: The grid dataset to add
+        :type dataset: DataSet
         """
 
         logger.debug(f'began conversion of grid, name={name}.')
@@ -878,10 +859,7 @@ class PlotBuilder:
     def _focus(self):
         """Zooms in on the area of interest according to the builder.
 
-        Sets the lataxis,lonaxis,projection
-
-        :param geometry_col: A list of geometry if auto-builder is being used
-        :type geometry_col: Optional[List[Union[Point,Polygon]]]
+        Sets the lataxis, lonaxis, projection.
         """
         fm = FocusMode(self._plot_settings['focus_mode'])
         if fm is FocusMode.AUTO_BUILDER:
@@ -1168,7 +1146,7 @@ class PlotBuilder:
                 grid = gcg.hexify_geodataframe(self._outlines['*COMBINED*']['data'])
 
             elif self._datasets['*MAIN*']:
-                grid = gcg.generate_grid_over_hexes(self._datasets['*MAIN*']['data'])
+                grid = gcg.generate_grid_over(self._datasets['*MAIN*']['data'])
 
             else:
                 raise gce.BuilderDatasetInfoError("There is no dataset to form an auto-grid with!")
@@ -1698,10 +1676,7 @@ class PlotBuilder:
     def _make_multi_region_dataset(self):
 
         if self._plot_settings['plot_regions'] or self._plot_settings['clip_mode'] == 'regions':
-            try:
-                self._regions['*COMBINED*'] = make_multi_dataset(self._regions)
-            except ValueError:
-                self._regions['*COMBINED*'] = GeoDataFrame()
+            self._regions['*COMBINED*'] = make_multi_dataset(self._regions)
 
     def _make_multi_outline_dataset(self):
 
