@@ -14,15 +14,14 @@ import math
 import unittest
 
 from geopandas import GeoDataFrame
-import geopandas as gpd
-from shapely.geometry import Point, LineString, Polygon
+from shapely.geometry import Polygon
 
 from geoviz import builder as builder
 from shapely import wkt
 from pandas import DataFrame
 from os.path import join as pjoin
 import os
-from test_geoutils import shapes_from_wkt
+from tests.testutils.test_geoutils import shapes_from_wkt
 import numpy as np
 
 DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
