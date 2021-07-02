@@ -8,7 +8,7 @@ ColorType = Tuple[int, ColorTuple]
 ColorHelperType = List[ColorType]
 
 
-def solid_scale(color: ColorTuple, min_scale: int = 0, max_scale: int = 1):
+def solid_scale(color: str, min_scale: float = 0.0, max_scale: float = 1.0) -> Tuple:
     """Retrieves a solid colorscale for a given color.
 
     :param color: The color to make a solid scale from
@@ -18,24 +18,9 @@ def solid_scale(color: ColorTuple, min_scale: int = 0, max_scale: int = 1):
     :param max_scale: The maximum value on this colorscale
     :type max_scale: number
     :return: A solid colorscale
-    :rtype: Tuple[Tuple[number, ColorTuple]]
+    :rtype: Tuple[Tuple[number, str]]
     """
     return (min_scale, color), (max_scale, color)
-
-
-def solidScales(colors: List[ColorTuple], min_scale: int = 0, max_scale: int = 1):
-    """Retrieves a list of solid colorscales.
-
-    :param colors: The list of colors to retrieve solid colorscales for
-    :type colors: List[ColorTuple]
-    :param min_scale: The minimum value for each solid scale
-    :type min_scale: number
-    :param max_scale: The maximum value for each solid scale
-    :type max_scale: number
-    :return: A list of solid colorscales
-    :rtype: List[Tuple[number,ColorTuple]]
-    """
-    return [solid_scale(color, min_scale, max_scale) for color in colors]
 
 
 def calculateLuminance(color: str) -> float:
@@ -51,7 +36,7 @@ colormodules = {
 }
 
 
-def getScale(scale_name, scale_type) -> list:
+def get_scale_from_module(scale_name, scale_type) -> list:
     if not scale_name:
         return cli.DEFAULT_PLOTLY_COLORS
 
@@ -64,13 +49,13 @@ def getScale(scale_name, scale_type) -> list:
     return list(reversed(cs)) if to_reverse else cs
 
 
-def tryGetScale(scale_name):
+def get_scale(scale_name):
     for k in colormodules:
         try:
-            return getScale(scale_name, k)
+            return get_scale_from_module(scale_name, k)
         except AttributeError:
             pass
-    raise AttributeError("No such color could be found.")
+    raise AttributeError("No such colorscale could be found.")
 
 
 def alphaScale(scale: list, starting_alpha=0.3, decreasing: bool = False):
@@ -81,10 +66,10 @@ def alphaScale(scale: list, starting_alpha=0.3, decreasing: bool = False):
 
     increment = diff / len(scale)
     for i in range(len(scale)):
-        scale[i] = configureColorWithAlpha(scale[i], starting_alpha + increment * i)
+        scale[i] = configure_color_opacity(scale[i], starting_alpha + increment * i)
 
 
-def configureColorWithAlpha(color: str, alpha: float):
+def configure_color_opacity(color: str, alpha: float):
     if 'rgba' in color:
         r, g, b = cli.unlabel_rgb(color)
         return f'rgba({r},{g},{b},{alpha})'
@@ -92,6 +77,29 @@ def configureColorWithAlpha(color: str, alpha: float):
         return f'{color[:-1].replace("rgb", "rgba")}, {alpha})'
     else:
         return color
+
+
+def configure_cscale_opacity(colorscale, alpha: float):
+    try:
+        colorscale = get_scale(colorscale)
+    except AttributeError:
+        pass
+
+    f = get_cscale_format(colorscale)
+    if f == 'nested-iterable':
+        colors, scale = cli.convert_colors_to_same_type(cli.colorscale_to_colors(colorscale), 'rgb',
+                                                        cli.colorscale_to_scale(colorscale))
+        colors = [configure_color_opacity(color, alpha) for color in colors]
+        return cli.make_colorscale(colors, scale)
+    elif f == 'iterable':
+        colorscale = cli.convert_colors_to_same_type(colorscale, 'rgb')[0]
+        return [configure_color_opacity(color, alpha) for color in colorscale]
+    elif f == 'dict':
+
+        return {k: configure_color_opacity(v, alpha) for k, v in colorscale.items()}
+    else:
+        raise ValueError(
+            "The colorscale is not of proper format for this function. It must be in iterable, nested-iterable or map format.")
 
 
 def configureScaleWithAlpha(scale, alpha: float = 0.4):
@@ -105,18 +113,19 @@ def configureScaleWithAlpha(scale, alpha: float = 0.4):
         colors = scale
 
     colors, sscale = cli.convert_colors_to_same_type(colors, 'rgb', sscale)
-    colors = [configureColorWithAlpha(pair, alpha=alpha) for pair in colors]
+    colors = [configure_color_opacity(pair, alpha=alpha) for pair in colors]
+    print(colors)
     return cli.make_colorscale(colors, scale=sscale)
 
 
-def getScaleFormat(colorscale):
+def get_cscale_format(colorscale):
     if isinstance(colorscale, dict):
         return 'dict'
     else:
         if isinstance(colorscale, str):
             return 'string'
         try:
-            if any(isinstance(i, list) or isinstance(i, tuple) for i in iter(colorscale)):
+            if any(isinstance(i, list) or isinstance(i, tuple) or isinstance(i, set) for i in iter(colorscale)):
                 return 'nested-iterable'
             else:
                 return 'iterable'
@@ -124,13 +133,13 @@ def getScaleFormat(colorscale):
             return 'unknown'
 
 
-def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float, high: float, **kwargs):
+def discretize_cscale(scale_value: Union[str, list], scale_type: str, low: float, high: float, **kwargs):
     if isinstance(scale_value, str):
         try:
-            scale_value = tryGetScale(scale_value)
+            scale_value = get_scale(scale_value)
         except AttributeError:
-            if getScaleFormat(scale_value) not in ['nested-iterable', 'iterable']:
-                raise ValueError("The scale is in an invalid format.")
+            if get_cscale_format(scale_value) not in ['nested-iterable', 'iterable']:
+                raise ValueError("The scale is in an invalid format. The scale must either be a named colorscale or a ")
 
     if any(isinstance(i, list) or isinstance(i, tuple) for i in iter(scale_value)):
         scale_value = cli.colorscale_to_colors(scale_value)
@@ -143,10 +152,10 @@ def getDiscreteScale(scale_value: Union[str, list], scale_type: str, low: float,
         return discretize_sequential(scale_value, low, high, **kwargs)
 
 
-def discretize(colors: List[str], size_portion: float = 0,
-               center_portion: float = 0,
-               fix_bound: bool = True,
-               fix_extension: bool = True) -> List[Tuple[float, str]]:
+def discretize2(colors: List[str], size_portion: float = 0,
+                center_portion: float = 0,
+                fix_bound: bool = True,
+                fix_extension: bool = True) -> List[Tuple[float, str]]:
     """Takes a single sequential colorscale and gets it's discrete form.
 
     :param colors: The list of colors on the scale
@@ -181,7 +190,9 @@ def discretize(colors: List[str], size_portion: float = 0,
             if fix_extension:
                 cv[len(cv) - 1][0] = 1.0
             break
-    cv[0][0] = 0.0
+
+    if not center_portion:
+        cv[0][0] = 0.0
     return cv
 
 
@@ -190,6 +201,7 @@ def discretize_sequential(colors: List[str], low: float, high: float, discrete_s
         List[Tuple[float, str]]:
     """Makes a sequential scale discrete based on min, max on the scale.
 
+    choose_luminance does not work with colors that are not in rgb format.
 
     :param colors: The list of colors on the scale
     :type colors: List[str]
@@ -207,21 +219,208 @@ def discretize_sequential(colors: List[str], low: float, high: float, discrete_s
     :rtype: List[Tuple[float, str]]
     """
 
-    colors = [color for color in colors if calculateLuminance(color) >= choose_luminance]
+    if choose_luminance:
+        colors = [color for color in colors if calculateLuminance(color) >= choose_luminance]
     try:
         colors = colors[::choose_hues]
     except TypeError:
         colors = [colors[i] for i in choose_hues]
 
-    return discretize(colors, size_portion=discrete_size / (abs(low) + abs(high)))
+    return discretize(colors, size_portion=discrete_size / (abs(low) + abs(high))).as_list()
+
+
+class _DBlock:
+
+    def __init__(self, start: float, end: float, color: str, interp: float = 0.00001):
+        self.start = start + interp
+        self.end = end
+        self.color = color
+
+    def as_node(self, interp: float = 0.00001):
+        return _DBlock(int(self.start) + interp, self.end, self.color)
+
+    def as_list(self):
+        return [self.start, self.color], [self.end, self.color]
+
+    def onto_list(self, lst: list):
+        lst.extend(self.as_list())
+
+    def __copy__(self):
+        return _DBlock(self.start, self.end, self.color, interp=0.0)
+
+    def __str__(self):
+        return f"Block\ns:\t\t{self.start}\ne:\t\t{self.end}\nc:\t\t{self.color}"
+
+
+class _DScale:
+
+    def __init__(self, start: float = 0.0, end: float = 1.0):
+        self.start = start
+        self.end = end
+        self.blocks: List[_DBlock] = []
+
+    def add_block(self, block: _DBlock):
+        if block.end > self.end or block.start > self.end or block.start < self.start:
+            raise ValueError("The block added is too large for the scale.")
+        self.blocks.append(block)
+
+    def end_block(self):
+        try:
+            return self.blocks[-1]
+        except IndexError:
+            raise IndexError("There is no end block, there are no blocks.")
+
+    def start_block(self):
+        try:
+            return self.blocks[0]
+        except IndexError:
+            raise IndexError("There is no start block, there are no blocks.")
+
+    def reverse_scale(self):
+        revlst = list(reversed(self.blocks))
+        lst = []
+        for r, o in zip(revlst, self.blocks):
+            lst.append(_DBlock(r.start, r.end, o.color, interp=0.0))
+        self.blocks = lst
+
+    def as_list(self):
+        lst = []
+
+        for block in self.blocks:
+            block.onto_list(lst)
+        return lst
+
+    def __str__(self):
+        joined = "\n".join(str(b.as_list()) for b in self.blocks)
+        return f'DSCALE:\ns:\t{self.start}\ne:\t{self.end}\nBlocks:\n{joined}'
+
+
+def discretize(colors: List[str], size_portion: float = 0,
+               center_portion: float = 0.0, size_low: float = 0.0, size_high: float = 1.0,
+               fix_bound: bool = True,
+               fix_extension: bool = True) -> _DScale:
+    """Takes a single sequential colorscale and gets it's discrete form.
+
+    :param colors: The list of colors on the scale
+    :type colors: List[str]
+    :param size_portion: The amount of space each discrete section will occupy on the scale (decimal-percentage)
+    :type size_portion: float
+    :param fix_bound: Determines if a color is fixed if it goes over the top of the scale
+    :type fix_bound: bool
+    :param fix_extension: Determines if the last color should reach the end of the scale if no more colors available
+    :type fix_extension: bool
+    :return: The discrete colorscale
+    :rtype: List[Tuple[float, str]]
+    """
+
+    scale = _DScale(start=size_low, end=size_high)
+    firstblock = _DBlock(size_low, size_low + (center_portion if center_portion else size_portion), colors.pop(0),
+                         interp=0.0)
+    print('FIRST', firstblock)
+    scale.add_block(firstblock)
+
+    for color_index, cv in enumerate(colors):
+
+        block = _DBlock(firstblock.end + size_portion * color_index, firstblock.end + size_portion * (color_index + 1),
+                        cv)
+        if block.start >= scale.end:
+            break
+        if block.end >= scale.end and fix_bound:
+            block.end = scale.end
+            scale.add_block(block)
+            break
+        else:
+            scale.add_block(block)
+
+    scale.blocks[0].start = scale.start
+
+    if fix_extension:
+        scale.blocks[-1].end = scale.end
+
+    return scale
+
+
+from functools import reduce
 
 
 def discretize_diverging(scale: List[str], low: float, high: float, discrete_size: float = 1.0,
-                         remove_middle: bool = True, high_shading: bool = True, center: float = 0.0,
+                         remove_middle: bool = True, center: float = None,
+                         center_hue: int = None,
                          choose_left_hues: Union[List[int], int] = 1, choose_right_hues: Union[List[int], int] = 1,
                          choose_left_luminance: float = 0.0, choose_right_luminance: float = 0.0,
                          choose_luminance: float = 0.0) -> List[Tuple[float, str]]:
+    total = abs(low) + abs(high)  # total space on scale
+    perc_scale = lambda num: abs(num / total)
+    if center is None:
+        center = (low + high) / 2
+
+    # split hues
+    if center_hue is None:
+        center_hue = len(scale) // 2
+
+    print(scale[center_hue])
+
+    left_hues = scale[:center_hue + 1]
+    right_hues = scale[center_hue:]
+
+    choose_left_luminance = choose_left_luminance if choose_left_luminance > choose_luminance else choose_luminance
+    choose_right_luminance = choose_right_luminance if choose_right_luminance > choose_luminance else choose_luminance
+
+    # an error may occur when choosing different luminance that removes the middle.
+    if choose_luminance or choose_left_luminance:
+        left_hues = [color for color in left_hues if
+                     choose_left_luminance <= calculateLuminance(color) >= choose_luminance]
+
+    try:
+        left_hues = left_hues[::choose_left_hues]
+    except TypeError:
+        left_hues = [left_hues[i] for i in choose_left_hues]
+
+    if choose_luminance or choose_left_luminance:
+        right_hues = [color for color in right_hues if
+                      choose_right_luminance <= calculateLuminance(color) >= choose_luminance]
+    try:
+        right_hues = right_hues[::choose_right_hues]
+    except TypeError:
+        right_hues = [right_hues[i] for i in choose_right_hues]
+
+    if remove_middle:
+        left_hues.pop()
+        right_hues.pop(0)
+
+    center_portion = perc_scale(discrete_size / 2) if not remove_middle else 0
+
+    leftds = discretize(list(reversed(left_hues)), center_portion=center_portion,
+                        size_portion=perc_scale(discrete_size), fix_bound=True, fix_extension=True,
+                        size_low=perc_scale(center), size_high=1.0).as_list()
+    rightds = discretize(right_hues, center_portion=center_portion, size_portion=perc_scale(discrete_size),
+                         fix_bound=True, fix_extension=True, size_low=perc_scale(center), size_high=1.0).as_list()
+    leftds = [(round(abs(i - 1), 6), v) for i, v in leftds]
+    rightds = [(round(i, 6), v) for i, v in rightds]
+
+    print(left_hues, leftds)
+    print(right_hues, rightds)
+
+    newlst = []
+    if not remove_middle:
+        leftds.pop(0)
+        rightds.pop(0)
+    newlst.extend(leftds)
+    newlst.extend(rightds)
+    newlst = list(sorted(newlst, key=lambda item: item[0]))
+    print(newlst)
+
+    return newlst
+
+
+def discretize_diverging2(scale: List[str], low: float, high: float, discrete_size: float = 1.0,
+                          remove_middle: bool = True, high_shading: bool = True, center: float = None,
+                          choose_left_hues: Union[List[int], int] = 1, choose_right_hues: Union[List[int], int] = 1,
+                          choose_left_luminance: float = 0.0, choose_right_luminance: float = 0.0,
+                          choose_luminance: float = 0.0) -> List[Tuple[float, str]]:
     """Transforms a diverging scale into a discrete diverging scale.
+
+    It should be noted that luminance parameters only work if the scale is in RGB format.
 
     :param scale: The list of colors on the scale
     :type scale: List[str]
@@ -252,6 +451,9 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     """
     total = abs(low) + abs(high)
 
+    if center is None:
+        center = (low + high) / 2
+
     def getPercScale(num):
         return (num + abs(low)) / total
 
@@ -274,15 +476,18 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     choose_left_luminance = choose_left_luminance if choose_left_luminance > choose_luminance else choose_luminance
     choose_right_luminance = choose_right_luminance if choose_right_luminance > choose_luminance else choose_luminance
 
-    left_hues = [color for color in left_hues if choose_left_luminance <= calculateLuminance(color) >= choose_luminance]
+    if choose_luminance or choose_left_luminance:
+        left_hues = [color for color in left_hues if
+                     choose_left_luminance <= calculateLuminance(color) >= choose_luminance]
 
     try:
         left_hues = left_hues[::choose_left_hues]
     except TypeError:
         left_hues = [left_hues[i] for i in choose_left_hues]
 
-    right_hues = [color for color in right_hues if
-                  choose_right_luminance <= calculateLuminance(color) >= choose_luminance]
+    if choose_luminance or choose_left_luminance:
+        right_hues = [color for color in right_hues if
+                      choose_right_luminance <= calculateLuminance(color) >= choose_luminance]
     try:
         right_hues = right_hues[::choose_right_hues]
     except TypeError:
@@ -296,8 +501,16 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
         left_hues = left_hues[-leftEdges:]
         right_hues = right_hues[-rightEdges:]
 
-    left = discretize(left_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
-    right = discretize(right_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
+    try:
+        left = discretize(left_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
+    except IndexError:
+        raise ValueError(
+            "There was most likely an issue with the amount of colors on the left of the scale (not enough).")
+    try:
+        right = discretize(right_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
+    except IndexError:
+        raise ValueError(
+            "There was most likely an issue with the amount of colors on the right of the scale (not enough).")
 
     leftFactor = percMiddleLeft - left[-1][0]
     shiftedLeft = []
@@ -318,17 +531,12 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
         else:
             shiftedRight.append([num, item[1]])
 
-    # print('Left', left)
-    # print('Right', right)
-    # print('\nShifted Left', shiftedLeft)
-    # print('Shifted Right', shiftedRight)
-
     try:
         shiftedLeft.insert(0, [0, shiftedLeft[0][1]])
     except IndexError:
         pass
     try:
-        shiftedRight[0][0] = shiftedLeft[-1][0] + 0.00001
+        shiftedRight[0][0] = percMiddleRight + 0.00001
     except IndexError:
         pass
     try:
@@ -336,15 +544,5 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     except IndexError:
         pass
 
-    # ('Left', left)
-    # print('Right', right)
-    # print('\nShifted Left', shiftedLeft)
-    # print('Shifted Right', shiftedRight)
-
     return [*shiftedLeft, *[[percMiddleLeft, middle], [percMiddleRight, middle]], *shiftedRight] if middle else [
         *shiftedLeft, *shiftedRight]
-
-
-if __name__ == '__main__':
-    x = getDiscreteScale('balance', 'diverging', [-6, -4, -3, -2, -1, 0, 1, 1.5], discrete_size=1, remove_middle=False,
-                         center=0)
