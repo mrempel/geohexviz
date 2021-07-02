@@ -6,10 +6,9 @@ import geopandas as gpd
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from . import colorscales as cli
-from .colorscales import tryGetScale, configureScaleWithAlpha, configureColorWithAlpha
+from .colorscales import get_scale, configureScaleWithAlpha, configure_color_opacity
 import geoviz.utils.geoutils as gcg
 import pandas as pd
-import warnings
 
 world_shape_definitions = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))
 world_shape_definitions['name'] = world_shape_definitions['name'].apply(lambda s: s.upper())
@@ -162,12 +161,12 @@ def logify_info(values: Union[Sequence[float], Set[float]], text_type: str = 'ra
 
 
 def logify_info_dep(values: Union[Sequence[float], Set[float]], text_type: str = 'raw',
-                 exp_type: Optional[str] = None,
-                 fill_first: bool = True, fill_last: bool = True,
-                 include_min: bool = False, include_max: bool = False,
-                 minmax_rounding: int = 6,
-                 min_prefix: str = '', min_suffix: str = '',
-                 max_prefix: str = '', max_suffix: str = '') -> Dict[str, Any]:
+                    exp_type: Optional[str] = None,
+                    fill_first: bool = True, fill_last: bool = True,
+                    include_min: bool = False, include_max: bool = False,
+                    minmax_rounding: int = 6,
+                    min_prefix: str = '', min_suffix: str = '',
+                    max_prefix: str = '', max_suffix: str = '') -> Dict[str, Any]:
     """Retrieves a dictionary of information for a log scale.
 
     :DEPRECATED:
@@ -299,6 +298,7 @@ def logify_info_dep(values: Union[Sequence[float], Set[float]], text_type: str =
 
     return info
 
+
 def logify_scale(df: DataFrame, **kwargs) -> Dict[str, Any]:
     """Converts a manager into log scale form.
 
@@ -316,6 +316,7 @@ def logify_scale(df: DataFrame, **kwargs) -> Dict[str, Any]:
               'zmin': tv[0], 'zmax': tv[-1]}
     print(result)
     return result
+
 
 def logify_scale_dep(df: DataFrame, **kwargs) -> Dict[str, Any]:
     """Converts a manager into log scale form.
@@ -335,23 +336,6 @@ def logify_scale_dep(df: DataFrame, **kwargs) -> Dict[str, Any]:
             'zmin': scale_info['scale-vals'][0], 'zmax': scale_info['scale-vals'][-1]}
 
 
-def conformOpacity(properties: Dict[str, Any], conform_alpha: bool = True):
-    """Conforms the opacity of a colorscale to match the opacity of the plotly marker.
-
-    :param properties: The dict of plotly properties
-    :type properties: Dict[str, Any]
-    :param conform_alpha: Whether to conform the opacity or not
-    :type conform_alpha: bool
-    """
-    if conform_alpha:
-        try:
-            alpha = properties['marker']['opacity']
-        except KeyError:
-            alpha = 1.0
-
-        properties['colorscale'] = cli.configureScaleWithAlpha(properties['colorscale'], alpha=alpha)
-
-
 def conformAlpha(properties: Dict[str, Any]):
     try:
         alpha = properties['marker']['opacity']
@@ -361,28 +345,21 @@ def conformAlpha(properties: Dict[str, Any]):
     colorscale = properties.get('colorscale')
 
     try:
-        colorscale = cli.tryGetScale(colorscale)
+        colorscale = cli.get_scale(colorscale)
     except ValueError:
         pass
 
-# TODO: this should go into colorscales module
+
 def opacify_colorscale(dataset: dict, alpha: float = None):
     colorscale = dataset['manager'].get('colorscale')
 
     try:
-        colorscale = tryGetScale(colorscale)
+        colorscale = get_scale(colorscale)
     except AttributeError:
         pass
     opacity = dataset['manager'].get('marker', {}).pop('opacity', 1)
     alpha = alpha if alpha is not None else opacity
-
-    if isinstance(colorscale, dict):
-        colorscale = {k: configureColorWithAlpha(v, alpha) for k, v in colorscale.items()}
-    if isinstance(colorscale, tuple):
-        colorscale = list(colorscale)
-    if isinstance(colorscale, list):
-        colorscale = configureScaleWithAlpha(colorscale, alpha=alpha)
-    dataset['manager']['colorscale'] = colorscale
+    dataset['manager']['colorscale'] = cli.configure_cscale_opacity(colorscale, alpha)
 
 
 def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'intersects', validate: bool = False):
@@ -391,15 +368,6 @@ def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'int
 
     result = pd.concat(
         [gcg.sjoinclip(clip, item, operation=operation) for item in to], axis=0).drop_duplicates()
-
-    #print(clip)
-    #print(to)
-    #print(len(result), result)
-    #import matplotlib.pyplot as plt
-    #import geoplot as gpt
-    #ax = gpt.choropleth(clip, hue='value_field', cmap='viridis', projection=gpt.crs.Orthographic())
-    #gpt.choropleth(result, ax=ax, hue='value_field', cmap='viridis_r')
-    #plt.show()
 
     if validate:
         cgtypes = gcg.get_present_geomtypes(clip, allow_collections=True, collapse_geoms=True)
@@ -430,18 +398,3 @@ def gpd_clip(clip: GeoDataFrame, to: List[GeoDataFrame], validate: bool = True):
 
         # There may be an error if the user somehow gets the clip result to not be the same type as the original clip
     return result
-
-
-def to_plotly_points_format(gdf: GeoDataFrame, disjoint: bool = True):
-    lats = []
-    lons = []
-
-    for i in gdf.index.unique():
-        points = gdf[gdf.index == i]
-        lats.extend(list(points.geometry.y))
-        lons.extend(list(points.geometry.x))
-        if disjoint:
-            lats.append(np.nan)
-            lons.append(np.nan)
-
-    return lats, lons

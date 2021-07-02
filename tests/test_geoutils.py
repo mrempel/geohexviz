@@ -2,9 +2,10 @@ import unittest
 from typing import List
 
 from pandas import DataFrame
+import geopandas as gpd
 from geoviz.utils import geoutils
 from geopandas import GeoDataFrame
-from shapely.geometry import GeometryCollection, MultiPoint, Point, MultiLineString, LineString
+from shapely.geometry import GeometryCollection, MultiPoint, Point, MultiLineString, LineString, Polygon
 from shapely import wkt
 
 
@@ -449,6 +450,15 @@ class GeoUtilsTestCase(unittest.TestCase):
                                  geoutils.get_present_geomtypes(testdf, allow_collections=True, collapse_geoms=True))))
 
     def test_generate_grid_over(self):
+        """Tests the module's ability to generate a grid over a dataframe (bbox).
+
+        Tests:
+        Take two dataframes. One with multiple geometries and one with a single geometry.
+        Ensure that the all of the resulting hexes fall intersect with the bbox.
+        The single geometry dataframe should return an empty dataframe.
+        """
+
+
         testdata = shapes_from_wkt(*[
             'POINT (3.9111328125000004 48.45835188280866)',
             'POINT (2.8125 46.92025531537451)',
@@ -466,9 +476,22 @@ class GeoUtilsTestCase(unittest.TestCase):
             'POINT (10.30517578125 50.12057809796008)',
             'POINT (10.92041015625 52.10650519075632)'
         ])
-        testdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
-        over = geoutils.generate_grid_over(testdf, 3)
-        # test edge case only one geometry
+        inputdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
+        testdf = GeoDataFrame(geometry=[Polygon.from_bounds(*inputdf.total_bounds)], crs='EPSG:4326')
+        resultdf = geoutils.generate_grid_over(inputdf, 3)
+        resulting = gpd.sjoin(resultdf, testdf, op='intersects')
+        print(resulting)
+        self.assertEqual(len(resultdf), len(resulting))
+        self.assertTrue(all(i == 0 for i in resulting['index_right']))
+
+        # edge case: only one geometry
+        testdata = shapes_from_wkt('POINT (3.9111328125000004 48.45835188280866)')
+        inputdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
+        testdf = GeoDataFrame(geometry=[Polygon.from_bounds(*inputdf.total_bounds)], crs='EPSG:4326')
+        resultdf = geoutils.generate_grid_over(inputdf, 3)
+        resulting = gpd.sjoin(resultdf, testdf, op='intersects')
+        self.assertEqual(len(resultdf), len(resulting))
+        self.assertTrue(all(i == 0 for i in resulting['index_right']))
 
 
 if __name__ == '__main__':
