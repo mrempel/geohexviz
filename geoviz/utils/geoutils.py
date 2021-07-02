@@ -853,22 +853,19 @@ def gpdclip(clip: GeoDataFrame, to: GeoDataFrame, enforce_crs: Any = 'EPSG:4326'
 
 
 # this function needs to be changed a little bit to work with any dataframe
-def generate_grid_over(gdf: GeoDataFrame, hex_resolution: int):
-    range_lon, range_lat = find_ranges_simple(gdf.geometry)
-    range_lat, range_lon = list(range_lat), list(range_lon)
+def generate_grid_over(gdf: GeoDataFrame, hex_resolution: int) -> GeoDataFrame:
+    """This function generates a hexagonal grid around a dataframe (a box).
 
-    bl = [range_lon[0], range_lat[0]]
-    br = [range_lon[1], range_lat[0]]
-    tl = [range_lon[0], range_lat[1]]
-    tr = [range_lon[1], range_lat[1]]
-
-    poly = (Polygon([bl, tl, tr, br, bl]))
-
-    gdf = GeoDataFrame(geometry=[poly], crs="EPSG:4326")
-
-    hexed_gdf = hexify_dataframe(gdf, hex_resolution=hex_resolution)
-    hexed_gdf = bin_by_hexid(hexed_gdf, binning_fn=lambda lst: 0, add_geoms=True)
-    return conform_geogeometry(hexed_gdf, fix_polys=True)
+    :param gdf: The dataframe to generate a hex-box around
+    :type gdf: GeoDataFrame
+    :param hex_resolution: The resolution to use for the grid
+    :type hex_resolution: int
+    :return: The resulting grid box
+    :rtype: GeoDataFrame
+    """
+    return bin_by_hexid(hexify_dataframe(GeoDataFrame(geometry=[Polygon.from_bounds(*gdf.total_bounds)],
+                                                      crs="EPSG:4326"),
+                                         hex_resolution=hex_resolution), binning_fn=lambda lst: 0, add_geoms=True)
 
 
 def find_center_simple(col):

@@ -16,8 +16,8 @@ from geoviz.utils.util import fix_filepath, get_sorted_occurrences, generate_dat
 from geoviz.utils import geoutils as gcg
 from geoviz.utils import plot_util as butil
 
-from geoviz.utils.colorscales import solid_scale, configureColorWithAlpha, configureScaleWithAlpha, getDiscreteScale, \
-    tryGetScale
+from geoviz.utils.colorscales import solid_scale, configure_color_opacity, configureScaleWithAlpha, discretize_cscale, \
+    get_scale
 
 from geopandas import GeoDataFrame
 from pandas import DataFrame
@@ -1719,7 +1719,7 @@ class PlotBuilder:
             grid = GeoDataFrame(pd.concat(list(self.apply_to_query(on, helper))), crs='EPSG:4326')[['value_field', 'geometry']].drop_duplicates()
             if not grid.empty:
                 grid['value_field'] = 0
-                self._get_grids()['|*AUTO*|'] = {'data': grid, 'manager': self._grid_manager}
+                self._get_grids()[f'|*AUTO-{on}*|'] = {'data': grid, 'manager': self._grid_manager}
             else:
                 raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
                                  "of an area.")
@@ -1747,8 +1747,8 @@ class PlotBuilder:
             low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
             high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
             print(low, high)
-            dataset['manager']['colorscale'] = getDiscreteScale(dataset['manager'].get('colorscale'), scale_type,
-                                                                low, high, **kwargs)
+            dataset['manager']['colorscale'] = discretize_cscale(dataset['manager'].get('colorscale'), scale_type,
+                                                                 low, high, **kwargs)
 
     """
     RETRIEVAL/SEARCHING FUNCTIONS
@@ -1893,7 +1893,7 @@ class PlotBuilder:
             df['text'] = 'BEST OPTION: ' + df['value_field']
             colorscale = dataset['manager'].pop('colorscale')
             try:
-                colorscale = tryGetScale(colorscale)
+                colorscale = get_scale(colorscale)
             except AttributeError:
                 pass
 

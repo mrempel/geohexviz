@@ -520,6 +520,11 @@ class BuilderTestCase(unittest.TestCase):
         self.assertListEqual(rlon, list(getgeo.lonaxis.range))
 
     def test_auto_grid(self):
+        """Tests the builders ability to... may scrap.
+
+        :return:
+        :rtype:
+        """
         # need to test by bounds version
         self.builder.add_point(
             'PPA1',
@@ -529,7 +534,7 @@ class BuilderTestCase(unittest.TestCase):
             ))
         )
         self.builder.auto_grid(on='point:PPA1')
-        getauto = self.builder.get_grid('|*AUTO*|')
+        getauto = self.builder.get_grid('|*AUTO-point:PPA1*|')
         self.assertEqual(len(df), len(getauto['data']))
 
 
