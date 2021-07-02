@@ -5,7 +5,7 @@ The package's main feature is a PlotBuilder class which utilizes tools to hexago
 
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install foobar.
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install GeoHexViz.
 
 ```bash
 pip install geoviz
