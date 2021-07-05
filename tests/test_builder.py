@@ -75,9 +75,6 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.add_point('PPA1', testdf)
         # self.builder.clip_datasets('main', 'region:CCA1')
         self.builder.logify_scale()
-        self.builder.build_plot(raise_errors=False)
-        print(self.builder._get_main())
-        self.builder.display_figure()
 
     def test_set_main_dataset_quantitative(self):
         """Tests quantitative dataset functionality.
@@ -176,7 +173,6 @@ class BuilderTestCase(unittest.TestCase):
             )
         )
         getmain = self.builder._get_main()  # internal version does not return a deepcopy
-        print(getmain['data']['value_field'])
         self.assertTrue(getmain)  # test to see if the main dataset was added correctly
         # ensure the information stored in the dataset is valid
         self.assertTrue('data' in getmain)
@@ -186,8 +182,6 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual(getmain['VTYPE'], 'STR')
         # ensure the main dataframe does not reference the dame input dataframe
         self.assertFalse(testdf.equals(getmain['data']))
-        self.builder.build_plot(raise_errors=False)
-        self.builder.display_figure()
 
     def test_add_region(self):
         self.builder.add_region('RRA1', 'CANADA')
@@ -429,12 +423,9 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset with a custom colorscale and invoke the function.
         Ensure the opacity is present within the colors of the colorscale.
         """
-        err = False
-        try:
+        with self.assertRaises(ValueError):
             self.builder.adjust_opacity()
-        except ValueError:
-            err = True
-        self.assertTrue(err)
+
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
         inp_opacity = 0.6
         self.builder.set_main(
@@ -458,12 +449,9 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset alongside a custom colorscale and invoke the function.
         Ensure that the colors are present twice in the output colorscale.
         """
-        err = False
-        try:
+        with self.assertRaises(ValueError):
             self.builder.discretize_scale()
-        except ValueError:
-            err = True
-        self.assertTrue(err)
+
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
         # inp_colorscale = ['red', 'blue', 'green']
         inp_ds = 1
