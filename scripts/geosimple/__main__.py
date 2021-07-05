@@ -1,6 +1,6 @@
 from typing import Dict, Any, Callable
 from geoviz.builder import PlotBuilder
-from utils import run_simple_JSON
+from util import run_simple_JSON
 import json
 import os
 import sys
