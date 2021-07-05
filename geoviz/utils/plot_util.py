@@ -16,6 +16,16 @@ world_shape_definitions['continent'] = world_shape_definitions['continent'].appl
 
 
 def get_shapes_from_world(name: Optional[str] = None) -> GeoDataFrame:
+    """Retrieves a continent or country from the world, or the whole world.
+
+    This function uses GeoPandas naturalearth_lowres dataset.
+    If the given name is None, the function will retrieve the shapes of thw entire world.
+
+    :param name: The name of the continent or country to get the shapes for
+    :type name: str
+    :return: The dataframe containing the geometry of the country, continent, or world
+    :rtype: GeoDataFrame
+    """
     if name:
         if name in world_shape_definitions['continent'].values:
             return world_shape_definitions[world_shape_definitions['continent'] == name].reset_index()
@@ -24,10 +34,12 @@ def get_shapes_from_world(name: Optional[str] = None) -> GeoDataFrame:
         else:
             raise KeyError(f"Could not find world object, got={name}.")
     else:
-        return world_shape_definitions.copy()
+        return world_shape_definitions.copy(deep=True)
 
 
 def format_latex_exp10(exp: float, exp_type: str) -> str:
+    """Formats a exponent to the power of 10 in latex form.
+    """
     if exp_type.lower() not in ['e', '^', '*', 'r']:
         raise ValueError(f"The 'exp_type' argument must be one of ['e', '^', '*', 'r']. Received {exp_type}.")
 
@@ -42,6 +54,8 @@ def format_latex_exp10(exp: float, exp_type: str) -> str:
 
 
 def format_html_exp10(exp: float, exp_type: str) -> str:
+    """Formats a exponent to the power of 10 in html form.
+    """
     if exp_type.lower() not in ['e', '^', '*', 'r', 'n']:
         raise ValueError(f"The 'exp_type' argument must be one of ['e', '^', '*', 'r', 'n']. Received {exp_type}.")
 
@@ -58,6 +72,8 @@ def format_html_exp10(exp: float, exp_type: str) -> str:
 
 
 def format_raw_exp10(exp: float, exp_type: str) -> str:
+    """Formats a exponent to the power of 10 in raw form.
+    """
     if exp_type.lower() not in ['e', '^', '*', 'r']:
         raise ValueError(f"The 'exp_type' argument must be one of ['e', '^', '*', 'r']. Received {exp_type}.")
 
@@ -92,8 +108,7 @@ def logify_info(values: Union[Sequence[float], Set[float]], text_type: str = 'ra
     scale-max -> The maximum value on the scale
     original-values -> The values given
     logged-values -> The values after having log10 performed on them
-    scale-vals -> The scale values
-    scale-text -> The text for each scale values
+    scale-dict -> The scale values and their text
 
     :param values: The values to compute a log scale for
     :type values: Union[Sequence[float], Set[float]]
@@ -153,8 +168,7 @@ def logify_info(values: Union[Sequence[float], Set[float]], text_type: str = 'ra
         info['scale-dict'][info['scale-min']] = f"{min_prefix}{expfn(info['scale-min'], exp_type)}{min_suffix}"
 
     if include_max:
-        if include_min:
-            info['scale-dict'][info['scale-max']] = f"{max_prefix}{expfn(info['scale-max'], exp_type)}{max_suffix}"
+        info['scale-dict'][info['scale-max']] = f"{max_prefix}{expfn(info['scale-max'], exp_type)}{max_suffix}"
 
     info['scale-dict'] = dict(sorted(info['scale-dict'].items(), key=lambda it: it[0]))
     return info
@@ -222,8 +236,6 @@ def logify_info_dep(values: Union[Sequence[float], Set[float]], text_type: str =
 
     min_differs = info['scale-vals'][0] != info['scale-min']
     max_differs = info['scale-vals'][-1] != info['scale-max']
-
-    print(info['scale-vals'], info['scale-min'])
 
     if min_differs:
         if fill_first:
@@ -314,7 +326,6 @@ def logify_scale(df: DataFrame, **kwargs) -> Dict[str, Any]:
     tv, tt = list(zip(*list(scale_info['scale-dict'].items())))
     result = {'colorbar': {'tickvals': tv, 'ticktext': tt},
               'zmin': tv[0], 'zmax': tv[-1]}
-    print(result)
     return result
 
 
@@ -334,20 +345,6 @@ def logify_scale_dep(df: DataFrame, **kwargs) -> Dict[str, Any]:
 
     return {'colorbar': {'tickvals': scale_info['scale-vals'], 'ticktext': scale_info['scale-text']},
             'zmin': scale_info['scale-vals'][0], 'zmax': scale_info['scale-vals'][-1]}
-
-
-def conformAlpha(properties: Dict[str, Any]):
-    try:
-        alpha = properties['marker']['opacity']
-    except KeyError:
-        alpha = 1.0
-
-    colorscale = properties.get('colorscale')
-
-    try:
-        colorscale = cli.get_scale(colorscale)
-    except ValueError:
-        pass
 
 
 def opacify_colorscale(dataset: dict, alpha: float = None):

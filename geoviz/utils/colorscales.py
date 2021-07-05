@@ -114,7 +114,6 @@ def configureScaleWithAlpha(scale, alpha: float = 0.4):
 
     colors, sscale = cli.convert_colors_to_same_type(colors, 'rgb', sscale)
     colors = [configure_color_opacity(pair, alpha=alpha) for pair in colors]
-    print(colors)
     return cli.make_colorscale(colors, scale=sscale)
 
 
@@ -316,7 +315,6 @@ def discretize(colors: List[str], size_portion: float = 0,
     scale = _DScale(start=size_low, end=size_high)
     firstblock = _DBlock(size_low, size_low + (center_portion if center_portion else size_portion), colors.pop(0),
                          interp=0.0)
-    print('FIRST', firstblock)
     scale.add_block(firstblock)
 
     for color_index, cv in enumerate(colors):
@@ -358,8 +356,6 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     if center_hue is None:
         center_hue = len(scale) // 2
 
-    print(scale[center_hue])
-
     left_hues = scale[:center_hue + 1]
     right_hues = scale[center_hue:]
 
@@ -398,9 +394,6 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     leftds = [(round(abs(i - 1), 6), v) for i, v in leftds]
     rightds = [(round(i, 6), v) for i, v in rightds]
 
-    print(left_hues, leftds)
-    print(right_hues, rightds)
-
     newlst = []
     if not remove_middle:
         leftds.pop(0)
@@ -408,7 +401,6 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     newlst.extend(leftds)
     newlst.extend(rightds)
     newlst = list(sorted(newlst, key=lambda item: item[0]))
-    print(newlst)
 
     return newlst
 
