@@ -31,28 +31,6 @@ ____________________________________________________________________
 """
 
 
-def validate_dataframe_hexes(df: DataFrame, hex_field: Optional[str] = None, store_validity: bool = True) -> bool:
-    if hex_field:
-        hex_field = df[hex_field]
-    else:
-        hex_field = pd.Index.to_series(index=df.index, name='pind')
-
-    if store_validity:
-        isvalid, df['hex-validity'] = validate_hexes(hex_field, get_sequence=True)
-    else:
-        isvalid = validate_hexes(hex_field, get_sequence=False)
-    return isvalid
-
-
-def validate_hexes(hexids: Iterable, get_sequence: bool = True):
-    validity = [h3.h3_is_valid(x) for x in hexids]
-
-    if get_sequence:
-        return (False not in validity), validity
-    else:
-        return False not in validity
-
-
 def add_geometry(row) -> Polygon:
     """Returns a Polygon of the hex id in the same row.
 
