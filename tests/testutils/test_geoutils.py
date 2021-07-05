@@ -169,13 +169,11 @@ class GeoUtilsTestCase(unittest.TestCase):
         ]
 
         # test empty dataframe
-        e = False
-        try:
+        with self.assertRaises(ValueError):
             geoutils.hexify_dataframe(GeoDataFrame(geometry=[], dtype='object'), 3, raise_errors=True)
+        with self.assertRaises(ValueError):
             geoutils.hexify_dataframe(GeoDataFrame(dtype='object'), 3, raise_errors=True)
-        except ValueError:
-            e = True
-        self.assertTrue(e)
+
         resultdf = geoutils.hexify_dataframe(GeoDataFrame(), 2, raise_errors=False)
         self.assertTrue(resultdf.empty)
 
