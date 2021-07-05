@@ -31,8 +31,17 @@ for quick and easy plots.
   "display_figure": true
 }
 ```
+running the JSON script will allow you to input a JSON file via command line
 
-## Python Module Usage
+You may also use the functions that allow the executing of a JSON file from a python module.
+
+```python
+from scripts.geosimple.util import run_simple_JSON
+
+run_simple_JSON("<filepath here>")
+```
+
+## Python Module Usage (PlotBuilder)
 ```python
 from pandas import DataFrame
 from geoviz.builder import PlotBuilder
