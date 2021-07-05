@@ -1,4 +1,5 @@
 from copy import deepcopy
+from enum import Enum
 from typing import Any, Tuple, ClassVar, Dict, Union, Callable
 
 import geopandas as gpd
@@ -11,7 +12,7 @@ import plotly.colors
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
 from shapely.geometry import Point, Polygon
 
-from geoviz.utils.util import fix_filepath, get_sorted_occurrences, generate_dataframe_random_ids, get_column_type, \
+from geoviz.utils.util import fix_filepath, get_sorted_occ, generate_dataframe_random_ids, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff
 from geoviz.utils import geoutils as gcg
 from geoviz.utils import plot_util as butil
@@ -39,7 +40,7 @@ _group_functions = {
     'min': lambda lst: min(lst),
     'max': lambda lst: max(lst),
     'count': lambda lst: len(lst),
-    'bestworst': get_sorted_occurrences
+    'bestworst': get_sorted_occ
 }
 
 StrDict = Dict[str, Any]
@@ -257,7 +258,7 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
                 err_msg = "The data must be a valid country or continent name, filepath, DataFrame, or GeoDataFrame."
 
     if isinstance(data, DataFrame):
-        data = gcg.convert_gdf_crs(GeoDataFrame(data), crs='EPSG:4326')
+        data = GeoDataFrame(data)
         data['value_field'] = 0
         data.RTYPE = rtype
         data.VTYPE = 'NUM'
@@ -512,6 +513,9 @@ def _check_name(name: str):
     if any(not i.isalnum() and i != '_' for i in name):
         raise ValueError("The name can not have any non alphanumeric characters in it besides the underscore.")
 
+class PlotStatus(Enum):
+    DATA_PRESENT = 0
+    NO_DATA = 1
 
 class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
@@ -621,6 +625,8 @@ class PlotBuilder:
         :param points: A set of point-type datasets for this builder
         :type points: Dict[str, StrDict]
         """
+
+        self._plot_status = PlotStatus.NO_DATA
 
         self._figure = Figure()
         self.update_figure(**self._default_figure_manager)
@@ -1699,7 +1705,7 @@ class PlotBuilder:
 
         self._figure.update_geos(**geos)
 
-    def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = 3):
+    def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = None):
         """Makes a grid over the queried datasets.
 
         :param on: The query for the datasets to have a grid generated over them
@@ -1711,7 +1717,7 @@ class PlotBuilder:
         """
 
         fn = gcg.generate_grid_over if by_bounds else gcg.hexify_dataframe
-
+        hex_resolution = hex_resolution if hex_resolution is not None else self.default_hex_resolution
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
 
@@ -1741,12 +1747,11 @@ class PlotBuilder:
         except ValueError:
             raise ValueError("There is no main dataset to discretize the scale of.")
 
-        if dataset['VTYPE'] == 'str':
+        if dataset['VTYPE'] == 'STR':
             raise ValueError(f"You can not discretize a qualitative dataset.")
         else:
             low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
             high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
-            print(low, high)
             dataset['manager']['colorscale'] = discretize_cscale(dataset['manager'].get('colorscale'), scale_type,
                                                                  low, high, **kwargs)
 
@@ -1852,10 +1857,11 @@ class PlotBuilder:
         if not self._get_regions():
             raise ValueError("There are no region-type datasets to plot.")
         for regname, regds in self._get_regions().items():
-            choro = _prepare_choropleth_trace(gcg.conform_geogeometry(regds['data']),
-                                              mapbox=mapbox)
-            choro.update(regds['manager'])
-            self._figure.add_trace(choro)
+            self._figure.add_trace(_prepare_choropleth_trace(
+                gcg.conform_geogeometry(regds['data']),
+                mapbox=mapbox).update(regds['manager']))
+
+        self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_grids(self, remove_underlying: bool = False):
         """Plots the grid datasets within the builder.
@@ -1873,20 +1879,19 @@ class PlotBuilder:
                 merged = self._remove_underlying_grid(self._get_main()['data'], merged)
             except KeyError:
                 raise ValueError("Can not remove underlying grid when there is no main dataset.")
+        self._figure.add_trace(_prepare_choropleth_trace(
+            merged,
+            mapbox=self.plot_output_service == 'mapbox').update(text='GRID').update(self._grid_manager))
 
-        merged['text'] = 'GRID'
-        choro = _prepare_choropleth_trace(merged, mapbox=self.plot_output_service == 'mapbox').update(
-            text=merged['text']).update(self._grid_manager)
-        self._figure.add_trace(choro)
+        self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_main(self):
         """Plots the main dataset within the builder.
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
-        dataset = self.get_main()
+        dataset = self._get_main()
         df = gcg.conform_geogeometry(dataset['data'])
-        print(df['value_field'])
 
         # qualitative dataset
         if dataset['VTYPE'] == 'STR':
@@ -1914,12 +1919,10 @@ class PlotBuilder:
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise TypeError(
-                            "If the colorscale is a map, you must provide hues for each option.")  # TODO: figure out how to change this error
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True,
-                                                                               text=v['text']).update(
-                        manager)
-                    self._figure.add_trace(choro)
+                        raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")  # TODO: figure out how to change this error
+                    self._figure.add_trace(_prepare_choropleth_trace(
+                        v,
+                        mapbox=mapbox).update(name=k, showscale=False, showlegend=True, text=v['text']).update(manager))
 
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
 
@@ -1932,22 +1935,15 @@ class PlotBuilder:
                             manager['colorscale'] = solid_scale(colorscale[i])
                     except IndexError:
                         raise IndexError("There were not enough hues for all of the unique options in the dataset.")
-                    choro = _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False,
-                                                                               showlegend=True, text=v['text']).update(
-                        manager)
-                    self._figure.add_trace(choro)
+                    self._figure.add_trace(_prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True, text=v['text']).update(manager))
             else:
-                raise TypeError("The colorscale must be a map, iterable, or nested iterables.")
+                raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
-            choro = _prepare_choropleth_trace(df,
-                                              mapbox=self.plot_output_service == 'mapbox')
-            choro.update(text=df['text'])
-            choro.update(dataset['manager'])
-            self._figure.add_trace(choro)
+            self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(text=df['text']).update(dataset['manager']))
 
-        # self.change_colorbar_sizes()
+        self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_outlines(self, raise_errors: bool = False):
         """Plots the outline datasets within the builder.
@@ -1958,29 +1954,39 @@ class PlotBuilder:
         :param raise_errors: Whether or not to throw errors upon reaching empty dataframes
         :type raise_errors: bool
         """
-        if not self.get_outlines():
+        if not self._get_outlines():
             raise ValueError("There are no outline-type datasets to plot.")
 
-        for outname, outds in self.get_outlines().items():
-            outds['data'] = gcg.pointify_geodataframe(outds['data'].explode(), keep_geoms=False,
-                                                      raise_errors=raise_errors)
-            scatt = _prepare_scattergeo_trace(outds['data'], separate=True, disjoint=True,
-                                              mapbox=self.plot_output_service == 'mapbox')
-            scatt.update(outds['manager'])
-            self._figure.add_trace(scatt)
+        mapbox = self.plot_output_service == 'mapbox'
+        for outname, outds in self._get_outlines().items():
+            self._figure.add_trace(_prepare_scattergeo_trace(
+                gcg.pointify_geodataframe(outds['data'].explode(),
+                                          keep_geoms=False,
+                                          raise_errors=raise_errors),
+                separate=True,
+                disjoint=True,
+                mapbox=mapbox).update(outds['manager']))
+
+        self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_points(self):
         """Plots the point datasets within the builder.
 
         All of the point are treated as separate plot traces.
         """
-        if not self.get_points():
+
+        if not self._get_points():
             raise ValueError("There are no point-type datasets to plot.")
-        for poiname, poids in self.get_points().items():
-            scatt = _prepare_scattergeo_trace(poids['data'], separate=False, disjoint=False,
-                                              mapbox=self.plot_output_service == 'mapbox')
-            scatt.update(poids['manager'])
-            self._figure.add_trace(scatt)
+
+        mapbox = self.plot_output_service == 'mapbox'
+        for poiname, poids in self._get_points().items():
+            self._figure.add_trace(_prepare_scattergeo_trace(
+                poids['data'],
+                separate=False,
+                disjoint=False,
+                mapbox=mapbox).update(poids['manager']))
+
+        self._plot_status = PlotStatus.DATA_PRESENT
 
     def set_mapbox(self, accesstoken: str):
         """Prepares the builder for a mapbox output.
@@ -1993,8 +1999,15 @@ class PlotBuilder:
         self.plot_output_service = 'mapbox'
         self._figure.update_layout(mapbox_accesstoken=accesstoken)
 
-    def build_plot(self, plot_regions: bool = True, plot_grids: bool = True, plot_main: bool = True,
-                   plot_outlines: bool = True, plot_points: bool = True, raise_errors: bool = True):
+    def build_plot(
+            self,
+            plot_regions: bool = True,
+            plot_grids: bool = True,
+            plot_main: bool = True,
+            plot_outlines: bool = True,
+            plot_points: bool = True,
+            raise_errors: bool = False
+    ):
         """Builds the final plot by adding traces in order.
 
         Invokes the functions in the following order:
@@ -2070,15 +2083,25 @@ class PlotBuilder:
         if clear_figure:
             self.clear_figure()
 
+    def get_plot_status(self) -> PlotStatus:
+        """Retrieves the status of the internal plot.
+
+        :return: The status of the plot
+        :rtype: PlotStatus
+        """
+        return self._plot_status
+
     def clear_figure(self):
         """Clears the figure of its current data.
         """
+        self._plot_status = PlotStatus.NO_DATA
         self._figure.data = []
 
     def reset(self):
         """Resets the builder to it's initial state.
         """
 
+        self._plot_status = PlotStatus.NO_DATA
         self._figure = Figure()
         self.update_figure(**self._default_figure_manager)
         self._figure.update_layout(width=800, height=600, autosize=False)
