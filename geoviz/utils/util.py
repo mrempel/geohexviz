@@ -455,13 +455,11 @@ def get_column_or_default(df: DataFrame, col: str, default_val=None):
         return default_val
 
 
-def get_column_type(df: DataFrame, col: str):
-    col = get_column_or_default(df, col)
-    if col is not None:
-        if all(isinstance(x, (int, float)) for x in col):
-            return 'NUM'
-        elif all(isinstance(x, str) for x in col):
-            return 'STR'
+def get_column_type(df: DataFrame, col: str) -> str:
+    if all(isinstance(x, (int, float)) for x in df[col]):
+        return 'NUM'
+    elif all(isinstance(x, str) for x in df[col]):
+        return 'STR'
     return 'UNK'
 
 
