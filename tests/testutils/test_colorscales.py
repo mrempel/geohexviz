@@ -3,8 +3,10 @@ import geoviz.utils.colorscales as cli
 
 roughly_equal = lambda x, y: round(x) == round(y)
 
+
 def nested_colorscale_equal(cs1, cs2):
     return all(roughly_equal(i1, i2) and c1 == c2 for (i1, c1), (i2, c2) in list(zip(cs1, cs2)))
+
 
 class ColorscalesTestCase(unittest.TestCase):
 
@@ -72,12 +74,13 @@ class ColorscalesTestCase(unittest.TestCase):
         testsizep = 0.25
         testcolors = ['red', 'blue', 'green', 'yellow', 'purple']
 
-        print(str(cli.discretize(testcolors, size_portion=testsizep)))
-
-        self.assertListEqual([[0.250001, 'red'], [0.5, 'red'], [0.500001, 'blue'], [0.75, 'blue'], [0.750001, 'green'], [1.0, 'green']],
-                             cli.discretize(testcolors, size_portion=testsizep, center_portion=testcenterp).as_list())
-        self.assertListEqual([[0.0, 'red'], [0.25, 'red'], [0.250001, 'blue'], [0.5, 'blue'], [0.500001, 'green'], [0.75, 'green'], [0.750001, 'yellow'], [1.0, 'yellow']],
-                             cli.discretize(testcolors, size_portion=testsizep).as_list())
+        self.assertListEqual(
+            [[0.250001, 'red'], [0.5, 'red'], [0.500001, 'blue'], [0.75, 'blue'], [0.750001, 'green'], [1.0, 'green']],
+            cli.discretize(testcolors, size_portion=testsizep, center_portion=testcenterp).as_list())
+        self.assertListEqual(
+            [[0.0, 'red'], [0.25, 'red'], [0.250001, 'blue'], [0.5, 'blue'], [0.500001, 'green'], [0.75, 'green'],
+             [0.750001, 'yellow'], [1.0, 'yellow']],
+            cli.discretize(testcolors, size_portion=testsizep).as_list())
 
     def test_discretize_sequential(self):
         self.assertTrue(nested_colorscale_equal([
@@ -145,7 +148,7 @@ class ColorscalesTestCase(unittest.TestCase):
              ], cli.discretize_diverging(['blue', 'red', 'green', 'yellow', 'purple'],
                                          -2, 0, discrete_size=0.4, remove_middle=False)))
 
-        #print(cli.discretize_diverging(['rgb(255, 255, 255)', 'rgb(0, 0, 0)', 'rgb(225, 225, 225)', 'rgb(0, 0, 0)', 'rgb(200, 200, 200)', 'rgb(0, 0, 0)', 'rgb(175, 175, 175)', 'rgb(0, 0, 0)', 'rgb(150, 150, 150)'], -2, 0, discrete_size=0.4, remove_middle=False, center=-1.0, choose_luminance=100))
+        # print(cli.discretize_diverging(['rgb(255, 255, 255)', 'rgb(0, 0, 0)', 'rgb(225, 225, 225)', 'rgb(0, 0, 0)', 'rgb(200, 200, 200)', 'rgb(0, 0, 0)', 'rgb(175, 175, 175)', 'rgb(0, 0, 0)', 'rgb(150, 150, 150)'], -2, 0, discrete_size=0.4, remove_middle=False, center=-1.0, choose_luminance=100))
         self.assertTrue(nested_colorscale_equal(
             [
                 [0, 'rgb(255, 255, 255)'], [0.2, 'rgb(255, 255, 255)'],
@@ -153,8 +156,12 @@ class ColorscalesTestCase(unittest.TestCase):
                 [0.4, 'rgb(200, 200, 200)'], [0.6, 'rgb(200, 200, 200)'],
                 [0.6, 'rgb(175, 175, 175)'], [0.8, 'rgb(175, 175, 175)'],
                 [0.8, 'rgb(150, 150, 150)'], [1.0, 'rgb(150, 150, 150)']
-            ], cli.discretize_diverging(['rgb(255, 255, 255)', 'rgb(0, 0, 0)', 'rgb(225, 225, 225)', 'rgb(0, 0, 0)', 'rgb(200, 200, 200)', 'rgb(0, 0, 0)', 'rgb(175, 175, 175)', 'rgb(0, 0, 0)', 'rgb(150, 150, 150)'], -2, 0, discrete_size=0.4, remove_middle=False, center=-1.0, choose_luminance=100)
+            ], cli.discretize_diverging(
+                ['rgb(255, 255, 255)', 'rgb(0, 0, 0)', 'rgb(225, 225, 225)', 'rgb(0, 0, 0)', 'rgb(200, 200, 200)',
+                 'rgb(0, 0, 0)', 'rgb(175, 175, 175)', 'rgb(0, 0, 0)', 'rgb(150, 150, 150)'], -2, 0, discrete_size=0.4,
+                remove_middle=False, center=-1.0, choose_luminance=100)
         ))
+
 
 if __name__ == '__main__':
     unittest.main()
