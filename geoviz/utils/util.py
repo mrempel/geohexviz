@@ -61,8 +61,8 @@ def dict_deep_update(d: dict, u: dict) -> object:
     :type u: dict
     """
     for k, v in u.items():
-        if isinstance(d, collections.Mapping):
-            if isinstance(v, collections.Mapping):
+        if isinstance(d, collections.abc.Mapping):
+            if isinstance(v, collections.abc.Mapping):
                 r = dict_deep_update(d.get(k, {}), v)
                 d[k] = r
             else:
@@ -77,7 +77,9 @@ def get_occurrences(lst: list, **kwargs):
     return [list(group) for key, group in groupby(occ, itemgetter(1))]
 
 
-def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector=[], **kwargs):
+def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector=None, **kwargs):
+    if selector is None:
+        selector = []
     occ = get_occurrences(lst, **kwargs)
 
     def select(lst: list):
@@ -91,6 +93,7 @@ def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector
         for j in range(len(occ[i])):
             occ[i][j] = str(occ[i][j][0])
         group = occ[i]
+        print(group)
         if isinstance(group, list):
             group = list(sorted(group))
             while np.nan in group:
@@ -105,6 +108,33 @@ def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector
                 else:
                     group = 'tie'
         occ[i] = group
+    return occ[0]
+
+
+def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None, reverse: bool = True):
+    if selector is None:
+        selector = []
+
+    occ = get_occurrences(lst, reverse=reverse)
+
+    def select(lst: list):
+        if len(selector) > 0:
+            for select in selector:
+                if select in lst:
+                    return select
+        return lst[0]
+
+    for i in range(0, len(occ)):
+        group = [str(occ[i][j][0]) for j in range(len(occ[i]))]
+        while np.nan in group:
+            group.remove(np.nan)
+        while 'empty' in group:
+            group.remove('empty')
+        if len(group) == 0:
+            group = [np.nan]
+
+        occ[i] = (', '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group)\
+            if len(group) > 1 else group[0]
     return occ[0]
 
 
@@ -428,9 +458,9 @@ def get_column_or_default(df: DataFrame, col: str, default_val=None):
 def get_column_type(df: DataFrame, col: str):
     col = get_column_or_default(df, col)
     if col is not None:
-        if is_numeric_dtype(col):
+        if all(isinstance(x, (int, float)) for x in col):
             return 'NUM'
-        elif is_string_dtype(col):
+        elif all(isinstance(x, str) for x in col):
             return 'STR'
     return 'UNK'
 
