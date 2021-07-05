@@ -11,7 +11,28 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install GeoHexV
 pip install geoviz
 ```
 
-## Usage
+## Command Line / JSON Usage
+The GeoHexViz distribution includes a module that can allow the reading of JSON files
+for quick and easy plots.
+
+```json
+{
+  "main_dataset": {
+    "data": "<sample csv file>",
+    "hexbin_info": {
+      "hex_resolution": 4
+    }
+  },
+  "output_figure": {
+    "filepath": "<sample filepath>",
+    "width": 600,
+    "height": 400
+  },
+  "display_figure": true
+}
+```
+
+## Python Module Usage
 ```python
 from pandas import DataFrame
 from geoviz.builder import PlotBuilder
