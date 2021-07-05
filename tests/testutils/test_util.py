@@ -63,6 +63,12 @@ class UtilTestCase(unittest.TestCase):
         self.assertTrue(util.get_column_or_default(testdf, 'y', default_val=None) is not None)
 
     def test_get_column_type(self):
+        """Test's the modules ability to get the type of a column from a dataframe.
+
+        Tests:
+        Take a dataframe and checks the type of the column using the function. Ensure the type
+        is correct.
+        """
         testdf = DataFrame(dict(x=[1, 2, 3, 4, 5], y=['9', '9', '9', '9', '9'], z=[[], [], [], [], []]))
         print(testdf)
         self.assertEqual(util.get_column_type(testdf, 'x'), 'NUM')
