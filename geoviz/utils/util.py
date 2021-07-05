@@ -77,7 +77,7 @@ def get_occurrences(lst: list, **kwargs):
     return [list(group) for key, group in groupby(occ, itemgetter(1))]
 
 
-def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector=None, **kwargs):
+def get_sorted_occ2(lst: list, allow_ties=False, join_ties=True, selector=None, **kwargs):
     if selector is None:
         selector = []
     occ = get_occurrences(lst, **kwargs)
@@ -93,7 +93,6 @@ def get_sorted_occurrences(lst: list, allow_ties=False, join_ties=True, selector
         for j in range(len(occ[i])):
             occ[i][j] = str(occ[i][j][0])
         group = occ[i]
-        print(group)
         if isinstance(group, list):
             group = list(sorted(group))
             while np.nan in group:
