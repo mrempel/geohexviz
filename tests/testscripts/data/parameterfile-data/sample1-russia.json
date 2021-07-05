@@ -1,0 +1,21 @@
+{
+	"main_dataset": {
+		"data": "E:\\software\\cjoc_py\\geoviz\\tests\\data\\csv-data\\sample3-sarincidents.csv",
+		"latitude_field": "latitude",
+		"longitude_field": "longitude",
+		"hexbin_info": {
+			"hex_resolution": 4
+		}
+	},
+	"regions": {
+		"CCA2": {
+			"data": "RUSSIA"
+		}
+	},
+	"adjustments": {
+			"focus": "region:CCA2"
+	},
+	"builder_functions": {
+		"logarithmic scale": true
+	}
+}
