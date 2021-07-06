@@ -312,6 +312,53 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     return data
 
 
+def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+    """Converts lat/long columns into a proper geometry column, if present.
+
+    :param data: The data that may or may not contain lat/long columns
+    :type data: GeoDataFrame
+    :param latitude_field: The latitude column within the dataframe
+    :type latitude_field: str
+    :param longitude_field: The longitude column within the dataframe
+    :type longitude_field: str
+    :return: The converted dataframe
+    :rtype: GeoDataFrame
+    """
+    if data.empty:
+        raise ValueError("If the data passed is a DataFrame, it must not be empty.")
+
+    data = data.copy(deep=True)
+
+    try:
+        latitude_field = data[latitude_field]
+    except KeyError:
+        try:
+            latitude_field = data['latitude']
+        except KeyError:
+            if 'geometry' not in data.columns:
+                raise ValueError(
+                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                    "and longitude_field entries. Missing latitude_field member.")
+
+    try:
+        longitude_field = data[longitude_field]
+    except KeyError:
+        try:
+            longitude_field = data['longitude']
+        except KeyError:
+            if 'geometry' not in data.columns:
+                raise ValueError(
+                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                    "and longitude_field entries. Missing longitude_field member.")
+
+    try:
+        data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field, crs='EPSG:4326'))
+    except (TypeError, ValueError):
+        pass
+    data.vtype = 'NUM'
+    return data
+
+
 def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
@@ -484,26 +531,6 @@ def _bin_dataset_by_hex(dataset: StrDict):
                                                     **binning_kw)
 
 
-def _hexbinify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int, binning_args=None,
-                    binning_field: str = None, binning_fn=None, **kwargs):
-    data = _hexify_data(data, hex_resolution)
-    if binning_args is None:
-        binning_args = ()
-    return _bin_by_hex(data, *binning_args, binning_field=binning_field, binning_fn=binning_fn, **kwargs)
-
-
-def _hexbinify_dataset(dataset: StrDict, hex_resolution: int):
-    _hexify_dataset(dataset, hex_resolution)
-    _bin_dataset_by_hex(dataset)
-
-
-def _create_dataset(data, fields: StrDict = None, **kwargs) -> StrDict:
-    if fields is None:
-        fields = {}
-    fields.update(dict(data=data, **kwargs))
-    return fields
-
-
 def _split_name(name: str) -> Tuple[str, str]:
     lind = name.index(':')
     return name[:lind], name[lind + 1:]
@@ -511,11 +538,13 @@ def _split_name(name: str) -> Tuple[str, str]:
 
 def _check_name(name: str):
     if any(not i.isalnum() and i != '_' for i in name):
-        raise ValueError("The name can not have any non alphanumeric characters in it besides the underscore.")
+        raise gce.DatasetNamingError("NERR001 - Non-alphanumeric found (besides underscores)")
+
 
 class PlotStatus(Enum):
     DATA_PRESENT = 0
     NO_DATA = 1
+
 
 class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
@@ -597,7 +626,10 @@ class PlotBuilder:
         ),
         layout=dict(
             title=dict(text='', x=0.5),
-            margin=dict(r=0, l=0, t=50, b=5)
+            margin=dict(r=0, l=0, t=50, b=5),
+            width=800,
+            height=600,
+            autosize=False
         )
     )
 
@@ -607,7 +639,8 @@ class PlotBuilder:
             regions: Dict[str, StrDict] = None,
             grids: Dict[str, StrDict] = None,
             outlines: Dict[str, StrDict] = None,
-            points: Dict[str, StrDict] = None
+            points: Dict[str, StrDict] = None,
+            use_default_managers: bool = True
     ):
         """Initializer for instances of PlotBuilder.
 
@@ -629,8 +662,15 @@ class PlotBuilder:
         self._plot_status = PlotStatus.NO_DATA
 
         self._figure = Figure()
-        self.update_figure(**self._default_figure_manager)
-        self._figure.update_layout(width=800, height=600, autosize=False)
+
+        if use_default_managers:
+            self.update_figure(**self._default_figure_manager)
+            # grids will all reference this manager
+            self._grid_manager = deepcopy(self._default_grid_manager)
+        else:
+            self._grid_manager = {}
+
+        self.use_default_managers = use_default_managers
 
         self._container = {
             'regions': {},
@@ -638,9 +678,6 @@ class PlotBuilder:
             'outlines': {},
             'points': {}
         }
-
-        # grids will all reference this manager
-        self._grid_manager = deepcopy(self._default_grid_manager)
 
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
@@ -807,14 +844,16 @@ class PlotBuilder:
         data = _read_data(data)
         dataset = dict(NAME='MAIN', RTYPE=data.RTYPE, DSTYPE='MN')
         data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
+
         hbin_info.update(hexbin_info)
         data = _convert_to_hexbin_data(data, **hbin_info)
         dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
         dataset['manager'] = {}
-        if dataset['VTYPE'] == 'NUM':
-            _update_manager(dataset, deepcopy(self._default_quantitative_dataset_manager))
-        else:
-            _update_manager(dataset, deepcopy(self._default_qualitative_dataset_manager))
+        if self.use_default_managers:
+            if dataset['VTYPE'] == 'NUM':
+                _update_manager(dataset, deepcopy(self._default_quantitative_dataset_manager))
+            else:
+                _update_manager(dataset, deepcopy(self._default_qualitative_dataset_manager))
         _update_manager(dataset, **(manager if manager is not None else {}))
         self._container['main'] = dataset
 
@@ -829,7 +868,7 @@ class PlotBuilder:
         try:
             return self._container['main']
         except KeyError:
-            raise ValueError(f"The main dataset could not be found.")
+            raise gce.MainDatasetNotFoundError()
 
     def get_main(self):
         """Retrieves the main dataset.
@@ -854,7 +893,7 @@ class PlotBuilder:
             if pop:
                 return main
         except KeyError:
-            raise ValueError("The main dataset could not be found.")
+            raise gce.MainDatasetNotFoundError()
 
     def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager the main dataset.
@@ -867,6 +906,14 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
         _update_manager(self._get_main(), updates=updates, overwrite=overwrite, **kwargs)
+
+    def clear_main_manager(self):
+        """Clears the manager of the main dataset.
+        """
+        try:
+            self._get_main()['manager'] = {}
+        except ValueError:
+            raise gce.MainDatasetNotFoundError()
 
     def reset_main_data(self):
         """Resets the data within the main dataset to the data that was input at the beginning.
@@ -900,7 +947,10 @@ class PlotBuilder:
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        dataset['manager'] = deepcopy(self._default_region_manager)
+        if self.use_default_managers:
+            dataset['manager'] = deepcopy(self._default_region_manager)
+        else:
+            dataset['manager'] = {}
         _update_manager(dataset, **(manager or {}))
         self._get_regions()[name] = dataset
 
@@ -917,7 +967,7 @@ class PlotBuilder:
         try:
             return self._get_regions()[name]
         except KeyError:
-            raise KeyError(f"The region-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "region")
 
     def get_region(self, name: str) -> StrDict:
         """Retrieves a region dataset from the builder.
@@ -966,7 +1016,7 @@ class PlotBuilder:
             if pop:
                 return region
         except KeyError:
-            raise ValueError(f"The region-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "region")
 
     def update_region_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a region or regions.
@@ -989,6 +1039,13 @@ class PlotBuilder:
                 _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
             _update_manager(self._get_region(name), updates=updates, overwrite=overwrite, **kwargs)
+
+    def clear_region_manager(self, name: str = None):
+        """Clears the manager of a region dataset.
+
+        If the given name is none, clears all of the region managers.
+        """
+        self.update_region_manager(name=name, updates={}, overwrite=True)
 
     def reset_region_data(self, name: str = None):
         """Resets the data within the region dataset to the data that was input at the beginning.
@@ -1047,7 +1104,7 @@ class PlotBuilder:
         )
         data = data[['value_field', 'geometry']]
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        dataset['manager'] = self._default_grid_manager
+        dataset['manager'] = self._grid_manager
         self._get_grids()[name] = dataset
 
     def _get_grid(self, name: str) -> StrDict:
@@ -1063,7 +1120,7 @@ class PlotBuilder:
         try:
             return self._get_grids()[name]
         except KeyError:
-            raise KeyError(f"The grid-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "grid")
 
     def get_grid(self, name: str) -> StrDict:
         """Retrieves a grid dataset from the builder.
@@ -1117,7 +1174,7 @@ class PlotBuilder:
             if pop:
                 return grid
         except KeyError:
-            raise ValueError(f"The grid-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "grid")
 
     def update_grid_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the general grid manager.
@@ -1129,9 +1186,20 @@ class PlotBuilder:
         :param kwargs: Any additional updates for the manager
         :type kwargs: **kwargs
         """
-        dct = {'manager': self._grid_manager}
-        _update_manager(dct, updates=updates, overwrite=overwrite, **kwargs)
-        self._grid_manager = dct['manager']
+
+        if self._get_grids():
+            dct = {'manager': deepcopy(self._grid_manager)}
+            _update_manager(dct, updates=updates, overwrite=overwrite, **kwargs)
+            self._grid_manager.clear()
+            self._grid_manager.update(dct['manager'])
+
+    def clear_grid_manager(self):
+        """Clears the manager of a region dataset.
+
+        If the given name is none, clears all of the region managers.
+        """
+        if self._get_grids():
+            self._grid_manager.clear()
 
     def reset_grid_data(self, name: str = None):
         """Resets the data within the grid dataset to the data that was input at the beginning.
@@ -1151,7 +1219,7 @@ class PlotBuilder:
         """Resets the grid dataset container to it's original state.
         """
         self._container['grids'] = {}
-        self._grid_manager = deepcopy(self._default_grid_manager)  # reset to default
+        self.clear_grid_manager()
 
     """
     OUTLINE FUNCTIONS
@@ -1190,7 +1258,10 @@ class PlotBuilder:
             data = gcg.unify_geodataframe(data)
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        dataset['manager'] = deepcopy(self._default_outline_manager)
+        if self.use_default_managers:
+            dataset['manager'] = deepcopy(self._default_outline_manager)
+        else:
+            dataset['manager'] = {}
         _update_manager(dataset, **(manager or {}))
         self._get_outlines()[name] = dataset
 
@@ -1207,7 +1278,7 @@ class PlotBuilder:
         try:
             return self._get_outlines()[name]
         except KeyError:
-            raise KeyError(f"The outline-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "outline")
 
     def get_outline(self, name: str) -> StrDict:
         """Retrieves a outline dataset from the builder.
@@ -1256,7 +1327,7 @@ class PlotBuilder:
             if pop:
                 return outline
         except KeyError:
-            raise ValueError(f"The outline-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "outline")
 
     def update_outline_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a outline or outlines.
@@ -1279,6 +1350,13 @@ class PlotBuilder:
                 _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
             _update_manager(self._get_outline(name), updates=updates, overwrite=overwrite, **kwargs)
+
+    def clear_outline_manager(self, name: str = None):
+        """Clears the manager of a outline dataset.
+
+        If the given name is none, clears all of the outline managers.
+        """
+        self.update_outline_manager(name=name, updates={}, overwrite=True)
 
     def reset_outline_data(self, name: str = None):
         """Resets the data within the outline dataset to the data that was input at the beginning.
@@ -1332,11 +1410,16 @@ class PlotBuilder:
 
         _check_name(name)
         data = _read_data(data, allow_builtin=False)
-        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
-        dataset = dict(data=data[['value_field', 'geometry']], VTYPE='num', DSTYPE='PNT',
-                       manager=manager if manager is not None else {})
-        _set_manager(dataset, default_manager=deepcopy(self._default_point_manager), allow_manager_updates=True)
-        dataset['odata'] = dataset['data'].copy(deep=True)
+        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
+        data = _convert_latlong_data(data, latitude_field=latitude_field,
+                                     longitude_field=longitude_field)[['value_field', 'geometry']]
+
+        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        if self.use_default_managers:
+            dataset['manager'] = deepcopy(self._default_point_manager)
+        else:
+            dataset['manager'] = {}
+        _update_manager(dataset, **(manager or {}))
         self._get_points()[name] = dataset
 
     def _get_point(self, name: str) -> StrDict:
@@ -1350,9 +1433,9 @@ class PlotBuilder:
         :rtype: StrDict
         """
         try:
-            return self.get_points()[name]
+            return self._get_points()[name]
         except KeyError:
-            raise KeyError(f"The point-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "point")
 
     def get_point(self, name: str) -> StrDict:
         """Retrieves a point dataset from the builder.
@@ -1401,7 +1484,7 @@ class PlotBuilder:
             if pop:
                 return point
         except KeyError:
-            raise ValueError(f"The point-type dataset with the name '{name}' could not be found.")
+            raise gce.DatasetNotFoundError(name, "point")
 
     def update_point_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a point or points.
@@ -1418,11 +1501,19 @@ class PlotBuilder:
         :param kwargs: Other updates for the dataset(s)
         :type kwargs: **kwargs
         """
+
         if name is None:
             for _, v in self._get_points().items():
                 _update_manager(v, updates=updates, overwrite=overwrite, **kwargs)
         else:
             _update_manager(self._get_point(name), updates=updates, overwrite=overwrite, **kwargs)
+
+    def clear_point_manager(self, name: str = None):
+        """Clears the manager of a point dataset.
+
+        If the given name is none, clears all of the point managers.
+        """
+        self.update_point_manager(name=name, updates={}, overwrite=True)
 
     def reset_point_data(self, name: str = None):
         """Resets the data within the point dataset to the data that was input at the beginning.
@@ -1480,7 +1571,6 @@ class PlotBuilder:
         """
 
         datasets = self._search(name)
-
         lst = []
 
         if not datasets and not allow_empty:
@@ -1523,7 +1613,7 @@ class PlotBuilder:
         try:
             dataset = self.get_main()
         except ValueError:
-            raise ValueError("There is no main dataset to remove empty entries from.")
+            raise gce.MainDatasetNotFoundError()
 
         if add_to_plot:
             empties = dataset['data'][dataset['data']['value_field'] == empty_symbol]
@@ -1548,7 +1638,7 @@ class PlotBuilder:
         try:
             dataset = self._get_main()
         except ValueError:
-            raise ValueError("There is no main dataset to convert to a logarithmic scale.")
+            raise gce.MainDatasetNotFoundError()
 
         if dataset['VTYPE'] == 'STR':
             raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
@@ -1718,11 +1808,13 @@ class PlotBuilder:
 
         fn = gcg.generate_grid_over if by_bounds else gcg.hexify_dataframe
         hex_resolution = hex_resolution if hex_resolution is not None else self.default_hex_resolution
+
         def helper(dataset):
             return fn(dataset['data'], hex_resolution=hex_resolution)
 
         try:
-            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(on, helper))), crs='EPSG:4326')[['value_field', 'geometry']].drop_duplicates()
+            grid = GeoDataFrame(pd.concat(list(self.apply_to_query(on, helper))), crs='EPSG:4326')[
+                ['value_field', 'geometry']].drop_duplicates()
             if not grid.empty:
                 grid['value_field'] = 0
                 self._get_grids()[f'|*AUTO-{on}*|'] = {'data': grid, 'manager': self._grid_manager}
@@ -1730,8 +1822,8 @@ class PlotBuilder:
                 raise ValueError("There may have been an error when generating auto grid, shapes may span too large "
                                  "of an area.")
 
-        except ValueError as e:
-            raise e
+        except ValueError:
+            pass
 
     def discretize_scale(self, scale_type: str = 'sequential', **kwargs):
         """Converts the color scale of the dataset(s) to a discrete scale.
@@ -1745,7 +1837,7 @@ class PlotBuilder:
         try:
             dataset = self._get_main()
         except ValueError:
-            raise ValueError("There is no main dataset to discretize the scale of.")
+            raise gce.MainDatasetNotFoundError()
 
         if dataset['VTYPE'] == 'STR':
             raise ValueError(f"You can not discretize a qualitative dataset.")
@@ -1819,13 +1911,14 @@ class PlotBuilder:
             if big_query:
                 return self._container if query == 'all' else self._container[query]
             else:
-                raise ValueError("The given query should not refer to a collection of datasets.")
+                raise gce.BuilderQueryInvalidError("The given query should not refer to a collection of datasets.")
 
         try:
             typer, name = _split_name(query)
         except ValueError:
-            raise ValueError("The given query should be one of ['regions', 'grids', 'outlines', 'points', "
-                             f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
+            raise gce.BuilderQueryInvalidError(
+                "The given query should be one of ['regions', 'grids', 'outlines', 'points', "
+                f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
 
         if typer == 'region':
             return self._get_region(name)
@@ -1836,12 +1929,10 @@ class PlotBuilder:
         elif typer == 'point':
             return self._get_point(name)
         else:
-            raise ValueError("The given dataset type does not exist. Must be one of ['region', 'grid', "
-                             "'outline', 'point']. "
-                             f"Received {typer}.")
+            raise gce.BuilderQueryInvalidError("The given dataset type does not exist. Must be one of ['region', "
+                                               f"'grid', 'outline', 'point']. Received {typer}.")
 
     get_query_data = lambda self, name: self.apply_to_query(name, lambda ds: ds['data'])
-
 
     """
     PLOTTING FUNCTIONS
@@ -1855,7 +1946,7 @@ class PlotBuilder:
         # logger.debug('adding regions to plot.')
         mapbox = self.plot_output_service == 'mapbox'
         if not self._get_regions():
-            raise ValueError("There are no region-type datasets to plot.")
+            raise gce.NoDatasetsError("There are no region-type datasets to plot.")
         for regname, regds in self._get_regions().items():
             self._figure.add_trace(_prepare_choropleth_trace(
                 gcg.conform_geogeometry(regds['data']),
@@ -1869,16 +1960,13 @@ class PlotBuilder:
         Merges all of the datasets together, and plots it as a single plot trace.
         """
         if not self._get_grids():
-            raise ValueError("There are no grid-type datasets to plot.")
+            raise gce.NoDatasetsError("There are no grid-type datasets to plot.")
 
         merged = gcg.conform_geogeometry(
             pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
 
         if remove_underlying:
-            try:
-                merged = self._remove_underlying_grid(self._get_main()['data'], merged)
-            except KeyError:
-                raise ValueError("Can not remove underlying grid when there is no main dataset.")
+            merged = self._remove_underlying_grid(self._get_main()['data'], merged)
         self._figure.add_trace(_prepare_choropleth_trace(
             merged,
             mapbox=self.plot_output_service == 'mapbox').update(text='GRID').update(self._grid_manager))
@@ -1890,7 +1978,10 @@ class PlotBuilder:
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
-        dataset = self._get_main()
+        try:
+            dataset = self._get_main()
+        except gce.MainDatasetNotFoundError:
+            raise gce.NoDatasetsError("There is no main dataset to plot.")
         df = gcg.conform_geogeometry(dataset['data'])
 
         # qualitative dataset
@@ -1919,7 +2010,8 @@ class PlotBuilder:
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")  # TODO: figure out how to change this error
+                        raise gce.ColorscaleError(
+                            "If the colorscale is a map, you must provide hues for each option.")
                     self._figure.add_trace(_prepare_choropleth_trace(
                         v,
                         mapbox=mapbox).update(name=k, showscale=False, showlegend=True, text=v['text']).update(manager))
@@ -1935,13 +2027,16 @@ class PlotBuilder:
                             manager['colorscale'] = solid_scale(colorscale[i])
                     except IndexError:
                         raise IndexError("There were not enough hues for all of the unique options in the dataset.")
-                    self._figure.add_trace(_prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True, text=v['text']).update(manager))
+                    self._figure.add_trace(
+                        _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True,
+                                                                           text=v['text']).update(manager))
             else:
                 raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
-            self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(text=df['text']).update(dataset['manager']))
+            self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
+                text=df['text']).update(dataset['manager']))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
@@ -1955,7 +2050,7 @@ class PlotBuilder:
         :type raise_errors: bool
         """
         if not self._get_outlines():
-            raise ValueError("There are no outline-type datasets to plot.")
+            raise gce.NoDatasetsError("There are no outline-type datasets to plot.")
 
         mapbox = self.plot_output_service == 'mapbox'
         for outname, outds in self._get_outlines().items():
@@ -1976,7 +2071,7 @@ class PlotBuilder:
         """
 
         if not self._get_points():
-            raise ValueError("There are no point-type datasets to plot.")
+            raise gce.NoDatasetsError("There are no point-type datasets to plot.")
 
         mapbox = self.plot_output_service == 'mapbox'
         for poiname, poids in self._get_points().items():
@@ -2023,31 +2118,31 @@ class PlotBuilder:
         if plot_regions:
             try:
                 self.plot_regions()
-            except ValueError as e:
+            except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
         if plot_grids:
             try:
                 self.plot_grids(remove_underlying=True)
-            except ValueError as e:
+            except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
         if plot_main:
             try:
                 self.plot_main()
-            except ValueError as e:
+            except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
         if plot_outlines:
             try:
                 self.plot_outlines()
-            except ValueError as e:
+            except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
         if plot_points:
             try:
                 self.plot_points()
-            except ValueError as e:
+            except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
 
@@ -2103,8 +2198,13 @@ class PlotBuilder:
 
         self._plot_status = PlotStatus.NO_DATA
         self._figure = Figure()
-        self.update_figure(**self._default_figure_manager)
-        self._figure.update_layout(width=800, height=600, autosize=False)
+
+        if self.use_default_managers:
+            self.update_figure(**self._default_figure_manager)
+            # grids will all reference this manager
+            self._grid_manager = deepcopy(self._default_grid_manager)
+        else:
+            self._grid_manager = {}
 
         self._container = {
             'regions': {},
@@ -2112,9 +2212,6 @@ class PlotBuilder:
             'outlines': {},
             'points': {}
         }
-
-        # grids will all reference this manager
-        self._grid_manager = deepcopy(self._default_grid_manager)
 
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
@@ -2124,7 +2221,7 @@ class PlotBuilder:
         """
         try:
             self.reset_main_data()
-        except ValueError:
+        except gce.MainDatasetNotFoundError:
             pass
         self.reset_region_data()
         self.reset_grid_data()
