@@ -17,6 +17,7 @@ from geopandas import GeoDataFrame
 from shapely.geometry import Polygon
 
 from geoviz import builder as builder
+from geoviz import errors as err
 from shapely import wkt
 from pandas import DataFrame
 from os.path import join as pjoin
@@ -27,6 +28,10 @@ import numpy as np
 DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
 CSV_PATH = pjoin(DATA_PATH, 'csv-data')
 SHAPE_PATH = pjoin(DATA_PATH, 'shapefiles')
+
+
+def alterer(dataset):
+    dataset['data']['value_field'] = -1
 
 
 # TODO: see how long it will take to get new model implemented.
@@ -423,7 +428,7 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset with a custom colorscale and invoke the function.
         Ensure the opacity is present within the colors of the colorscale.
         """
-        with self.assertRaises(ValueError):
+        with self.assertRaises(err.MainDatasetNotFoundError):
             self.builder.adjust_opacity()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -449,7 +454,7 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset alongside a custom colorscale and invoke the function.
         Ensure that the colors are present twice in the output colorscale.
         """
-        with self.assertRaises(ValueError):
+        with self.assertRaises(err.MainDatasetNotFoundError):
             self.builder.discretize_scale()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -495,7 +500,7 @@ class BuilderTestCase(unittest.TestCase):
         testpoly = Polygon([[1, 1], [1, 10], [10, 10], [10, 1], [1, 1]])
         self.builder.add_region(
             'RRA1',
-            df := GeoDataFrame(
+            GeoDataFrame(
                 geometry=[testpoly]
             )
         )
@@ -505,6 +510,440 @@ class BuilderTestCase(unittest.TestCase):
         rlat, rlon = [minlat, maxlat], [minlon, maxlon]
         self.assertListEqual(rlat, list(getgeo.lataxis.range))
         self.assertListEqual(rlon, list(getgeo.lonaxis.range))
+
+    def test_apply_to_query(self):
+        """Tests the builder's ability to apply a function to a query
+
+        Tests:
+        Add datasets and apply a query to them. Ensure the resulting
+        datasets have been altered in the correct way.
+        """
+        self.builder.set_main(
+            DataFrame(dict(
+                latitude=[10, 10, 10, 10, 20, 20],
+                longitude=[20, 20, 10, 10, 10, 10]
+            )))
+        getmain = self.builder._get_main()
+        self.builder.apply_to_query('all', alterer)
+        self.assertTrue(all(x == -1 for x in getmain['data']['value_field'].values))
+
+    def test_update_main_manager(self):
+        """Tests the builder's ability to update the main dataset's manager.
+
+        Tests:
+        Set the main dataset and update it. Check if it was updated properly.
+        """
+        with self.assertRaises(err.MainDatasetNotFoundError):
+            self.builder.update_main_manager(colorscale='Viridis')
+        self.builder.set_main(
+            DataFrame(dict(
+                latitude=[10, 10, 10, 10, 20, 20],
+                longitude=[20, 20, 10, 10, 10, 10]
+            )))
+        self.builder.update_main_manager(colorscale='Picnic')
+        self.assertEqual('Picnic', self.builder._get_main()['manager']['colorscale'])
+
+
+    def test_clear_main_manager(self):
+        """Tests the builder's ability to clear the manager of the main dataset.
+
+        Tests:
+        Set the main dataset and clear it's manager. Ensure the manager is empty.
+        """
+        with self.assertRaises(err.MainDatasetNotFoundError):
+            self.builder.clear_main_manager()
+        self.builder.set_main(
+            DataFrame(dict(
+                latitude=[10, 10, 10, 10, 20, 20],
+                longitude=[20, 20, 10, 10, 10, 10]
+            )))
+        self.builder.clear_main_manager()
+        self.assertEqual({}, self.builder._get_main()['manager'])
+
+    def test_reset_main_data(self):
+        """Tests the builder's ability to reset the main dataset's data back to its original state.
+
+        Tests:
+        Set the main dataset. Alter it's data and reset it. Ensure that the data is equal to the original data.
+        """
+        with self.assertRaises(err.MainDatasetNotFoundError):
+            self.builder.reset_main_data()
+
+        self.builder.set_main(
+            DataFrame(dict(
+                latitude=[10, 10, 10, 10, 20, 20],
+                longitude=[20, 20, 10, 10, 10, 10]
+            )))
+
+        getmain = self.builder._get_main()
+        vals = getmain['data']['value_field'].copy()
+        self.builder.apply_to_query('main', alterer)
+        self.assertTrue(all(x == -1 for x in getmain['data']['value_field'].values))
+        self.builder.reset_main_data()
+        self.assertTrue(getmain['data']['value_field'].equals(vals))
+
+    def test_update_region_manager(self):
+        """Tests the builder's ability to update the manager of region datasets.
+
+        Tests:
+        Add region datasets and update their managers. Ensure they were updated correctly.
+        """
+        with self.assertRaises(err.DatasetNotFoundError):
+            self.builder.update_region_manager(name='RRA1', colorscale='Picnic')
+        self.builder.update_region_manager(colorscale='Picnic')  # may change this behaviour (this does nothing)
+        self.builder.add_region('RRA1', 'CANADA')
+        self.builder.add_region('RRA2', 'FRANCE')
+
+        rra1 = self.builder._get_region('RRA1')
+        rra2 = self.builder._get_region('RRA2')
+
+        self.builder.update_region_manager(name='RRA1', colorscale='Inferno')
+        self.assertEqual('Inferno', rra1['manager']['colorscale'])
+        self.assertNotEqual('Inferno', rra2['manager']['colorscale'])
+
+        self.builder.update_region_manager(colorscale='Plasma')
+        self.assertEqual('Plasma', rra1['manager']['colorscale'])
+        self.assertEqual('Plasma', rra2['manager']['colorscale'])
+
+        self.builder.update_region_manager(overwrite=True, legendgroup='regions')
+        with self.assertRaises(KeyError):
+            _ = rra1['manager']['colorscale']
+
+    def test_clear_region_manager(self):
+        """Tests the builder's ability to clear the manager of region datasets.
+
+        Tests:
+        Add region datasets and clear their managers. Ensure they are empty.
+        """
+        self.builder.clear_region_manager()
+        self.builder.add_region('RRA1', 'CANADA')
+        self.builder.add_region('RRA2', 'FRANCE')
+
+        rra1 = self.builder._get_region('RRA1')
+        rra2 = self.builder._get_region('RRA2')
+
+        self.assertNotEqual({}, rra1['manager'])
+        self.assertNotEqual({}, rra2['manager'])
+        self.builder.clear_region_manager()
+
+        self.assertEqual({}, rra1['manager'])
+        self.assertEqual({}, rra2['manager'])
+
+    def test_reset_region_data(self):
+        """Tests the builder's ability to reset the data of region datasets.
+
+        Tests:
+        Add region datasets and alter their data. Revert the data. Ensure they are back to original state.
+        """
+        self.builder.add_region('RRA1', 'CANADA')
+        self.builder.add_region('RRA2', 'FRANCE')
+
+        rra1 = self.builder._get_region('RRA1')
+        rra2 = self.builder._get_region('RRA2')
+
+        rra1vals = rra1['data']['value_field'].copy()
+        rra2vals = rra2['data']['value_field'].copy()
+
+        self.builder.apply_to_query('regions', alterer)
+
+        self.assertTrue(all(x == -1 for x in rra1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in rra2['data']['value_field'].values))
+        self.builder.reset_region_data(name='RRA1')
+        self.assertTrue(rra1['data']['value_field'].equals(rra1vals))
+        self.assertFalse(rra2['data']['value_field'].equals(rra2vals))
+
+        self.builder.apply_to_query('regions', alterer)
+        self.assertTrue(all(x == -1 for x in rra1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in rra2['data']['value_field'].values))
+        self.builder.reset_region_data(name='RRA2')
+        self.assertFalse(rra1['data']['value_field'].equals(rra1vals))
+        self.assertTrue(rra2['data']['value_field'].equals(rra2vals))
+
+        self.builder.apply_to_query('regions', alterer)
+        self.assertTrue(all(x == -1 for x in rra1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in rra2['data']['value_field'].values))
+        self.builder.reset_region_data()
+        self.assertTrue(rra1['data']['value_field'].equals(rra1vals))
+        self.assertTrue(rra2['data']['value_field'].equals(rra2vals))
+
+    def test_update_grid_manager(self):
+        """Tests the builder's ability to update the manager of grid datasets.
+
+        Tests:
+        Add grid datasets and update their managers. Ensure they were updated correctly.
+        """
+        self.builder.update_grid_manager(colorscale='Viridis')
+        self.builder.add_grid('GGA1', 'CANADA')
+        self.builder.add_grid('GGA2', 'FRANCE')
+
+        gga1 = self.builder._get_grid('GGA1')
+        gga2 = self.builder._get_grid('GGA2')
+
+        self.assertNotEqual('Viridis', gga1['manager']['colorscale'])
+        self.assertNotEqual('Viridis', gga2['manager']['colorscale'])
+        self.assertEqual(gga1['manager'], gga2['manager'])
+
+        self.builder.update_grid_manager(colorscale='Picnic')
+        self.assertEqual('Picnic', gga1['manager']['colorscale'])
+        self.assertEqual('Picnic', gga2['manager']['colorscale'])
+        self.assertEqual(gga1['manager'], gga2['manager'])
+
+        self.builder.update_grid_manager(overwrite=True, legendgroup='grids')
+        with self.assertRaises(KeyError):
+            _ = gga1['manager']['colorscale']
+
+    def test_clear_grid_manager(self):
+        """Tests the builder's ability to clear the manager of grid datasets.
+
+        Tests:
+        Add grid datasets and clear their managers. Ensure they are empty.
+        """
+        self.builder.clear_grid_manager()
+        self.builder.add_grid('GGA1', 'CANADA')
+        self.builder.add_grid('GGA2', 'FRANCE')
+
+        gga1 = self.builder._get_grid('GGA1')
+        gga2 = self.builder._get_grid('GGA2')
+
+        self.assertNotEqual({}, gga1['manager'])
+        self.assertNotEqual({}, gga2['manager'])
+        self.assertEqual(gga1['manager'], gga2['manager'])
+        self.builder.clear_grid_manager()
+
+        self.assertEqual({}, gga1['manager'])
+        self.assertEqual({}, gga2['manager'])
+        self.assertEqual(gga1['manager'], gga2['manager'])
+
+    def test_reset_grid_data(self):
+        """Tests the builder's ability to reset the data of grid datasets.
+
+        Tests:
+        Add grid datasets and alter their data. Revert the data. Ensure they are back to original state.
+        """
+        self.builder.add_grid('GGA1', 'CANADA')
+        self.builder.add_grid('GGA2', 'FRANCE')
+
+        gga1 = self.builder._get_grid('GGA1')
+        gga2 = self.builder._get_grid('GGA2')
+
+        gga1vals = gga1['data']['value_field'].copy()
+        gga2vals = gga2['data']['value_field'].copy()
+
+        self.builder.apply_to_query('grids', alterer)
+        self.assertTrue(all(x == -1 for x in gga1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in gga2['data']['value_field'].values))
+        self.builder.reset_grid_data(name='GGA1')
+        self.assertTrue(gga1['data']['value_field'].equals(gga1vals))
+        self.assertFalse(gga2['data']['value_field'].equals(gga2vals))
+
+        self.builder.apply_to_query('grids', alterer)
+        self.assertTrue(all(x == -1 for x in gga1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in gga2['data']['value_field'].values))
+        self.builder.reset_grid_data(name='GGA2')
+        self.assertFalse(gga1['data']['value_field'].equals(gga1vals))
+        self.assertTrue(gga2['data']['value_field'].equals(gga2vals))
+
+        self.builder.apply_to_query('grids', alterer)
+        self.assertTrue(all(x == -1 for x in gga1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in gga2['data']['value_field'].values))
+        self.builder.reset_grid_data()
+        self.assertTrue(gga1['data']['value_field'].equals(gga1vals))
+        self.assertTrue(gga2['data']['value_field'].equals(gga2vals))
+
+    def test_update_outline_manager(self):
+        """Tests the builder's ability to update the manager of outline datasets.
+
+        Tests:
+        Add outline datasets and update their managers. Ensure they were updated correctly.
+        """
+        with self.assertRaises(err.DatasetNotFoundError):
+            self.builder.update_outline_manager(name='OOA1', mode='markers')
+        self.builder.update_outline_manager(mode='markers')  # may change this behaviour (this does nothing)
+        self.builder.add_outline('OOA1', 'CANADA')
+        self.builder.add_outline('OOA2', 'FRANCE')
+
+        ooa1 = self.builder._get_outline('OOA1')
+        ooa2 = self.builder._get_outline('OOA2')
+
+        self.builder.update_outline_manager(name='OOA1', mode='markers')
+        self.assertEqual('markers', ooa1['manager']['mode'])
+        self.assertNotEqual('markers', ooa2['manager']['mode'])
+
+        self.builder.update_outline_manager(mode='lines+markers')
+        self.assertEqual('lines+markers', ooa1['manager']['mode'])
+        self.assertEqual('lines+markers', ooa2['manager']['mode'])
+
+        self.builder.update_outline_manager(overwrite=True, legendgroup='outlines')
+        with self.assertRaises(KeyError):
+            _ = ooa1['manager']['mode']
+
+    def test_clear_outline_manager(self):
+        """Tests the builder's ability to clear the manager of outline datasets.
+
+        Tests:
+        Add outline datasets and clear their managers. Ensure they are empty.
+        """
+        self.builder.clear_outline_manager()
+        self.builder.add_outline('OOA1', 'CANADA')
+        self.builder.add_outline('OOA2', 'FRANCE')
+
+        ooa1 = self.builder._get_outline('OOA1')
+        ooa2 = self.builder._get_outline('OOA2')
+
+        self.assertNotEqual({}, ooa1['manager'])
+        self.assertNotEqual({}, ooa2['manager'])
+        self.builder.clear_outline_manager()
+
+        self.assertEqual({}, ooa1['manager'])
+        self.assertEqual({}, ooa2['manager'])
+
+    def test_reset_outline_data(self):
+        """Tests the builder's ability to reset the data of outline datasets.
+
+        Tests:
+        Add outline datasets and alter their data. Revert the data. Ensure they are back to original state.
+        """
+        self.builder.add_outline('OOA1', 'CANADA')
+        self.builder.add_outline('OOA2', 'FRANCE')
+
+        ooa1 = self.builder._get_outline('OOA1')
+        ooa2 = self.builder._get_outline('OOA2')
+
+        ooa1vals = ooa1['data']['value_field'].copy()
+        ooa2vals = ooa2['data']['value_field'].copy()
+
+        self.builder.apply_to_query('outlines', alterer)
+        self.assertTrue(all(x == -1 for x in ooa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ooa2['data']['value_field'].values))
+        self.builder.reset_outline_data(name='OOA1')
+        self.assertTrue(ooa1['data']['value_field'].equals(ooa1vals))
+        self.assertFalse(ooa2['data']['value_field'].equals(ooa2vals))
+
+        self.builder.apply_to_query('outlines', alterer)
+        self.assertTrue(all(x == -1 for x in ooa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ooa2['data']['value_field'].values))
+        self.builder.reset_outline_data(name='OOA2')
+        self.assertFalse(ooa1['data']['value_field'].equals(ooa1vals))
+        self.assertTrue(ooa2['data']['value_field'].equals(ooa2vals))
+
+        self.builder.apply_to_query('outlines', alterer)
+        self.assertTrue(all(x == -1 for x in ooa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ooa2['data']['value_field'].values))
+        self.builder.reset_outline_data()
+        self.assertTrue(ooa1['data']['value_field'].equals(ooa1vals))
+        self.assertTrue(ooa2['data']['value_field'].equals(ooa2vals))
+
+    def test_update_point_manager(self):
+        """Tests the builder's ability to update the manager of point datasets.
+
+        Tests:
+        Add point datasets and update their managers. Ensure they were updated correctly.
+        """
+        with self.assertRaises(err.DatasetNotFoundError):
+            self.builder.update_point_manager(name='PPA1', mode='markers')
+        self.builder.update_point_manager(mode='markers')  # may change this behaviour (this does nothing)
+        self.builder.add_point('PPA1', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+        self.builder.add_point('PPA2', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+
+        ppa1 = self.builder._get_point('PPA1')
+        ppa2 = self.builder._get_point('PPA2')
+
+        self.builder.update_point_manager(name='PPA1', mode='markers')
+        self.assertEqual('markers', ppa1['manager']['mode'])
+        self.assertNotEqual('markers', ppa2['manager']['mode'])
+
+        self.builder.update_point_manager(mode='lines+markers')
+        self.assertEqual('lines+markers', ppa1['manager']['mode'])
+        self.assertEqual('lines+markers', ppa2['manager']['mode'])
+
+        self.builder.update_point_manager(overwrite=True, legendgroup='points')
+        with self.assertRaises(KeyError):
+            _ = ppa1['manager']['mode']
+
+    def test_clear_point_manager(self):
+        """Tests the builder's ability to clear the manager of point datasets.
+
+        Tests:
+        Add point datasets and clear their managers. Ensure they are empty.
+        """
+        self.builder.clear_point_manager()
+        self.builder.add_point('PPA1', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+        self.builder.add_point('PPA2', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+
+        ppa1 = self.builder._get_point('PPA1')
+        ppa2 = self.builder._get_point('PPA2')
+
+        self.assertNotEqual({}, ppa1['manager'])
+        self.assertNotEqual({}, ppa2['manager'])
+        self.builder.clear_point_manager()
+
+        self.assertEqual({}, ppa1['manager'])
+        self.assertEqual({}, ppa2['manager'])
+
+    def test_reset_point_data(self):
+        """Tests the builder's ability to reset the data of point datasets.
+
+        Tests:
+        Add point datasets and alter their data. Revert the data. Ensure they are back to original state.
+        """
+
+        self.builder.add_point('PPA1', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+        self.builder.add_point('PPA2', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
+
+        ppa1 = self.builder._get_point('PPA1')
+        ppa2 = self.builder._get_point('PPA2')
+
+        ppa1vals = ppa1['data']['value_field'].copy()
+        ppa2vals = ppa2['data']['value_field'].copy()
+
+        self.builder.apply_to_query('points', alterer)
+        self.assertTrue(all(x == -1 for x in ppa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ppa2['data']['value_field'].values))
+        self.builder.reset_point_data(name='PPA1')
+        self.assertTrue(ppa1['data']['value_field'].equals(ppa1vals))
+        self.assertFalse(ppa2['data']['value_field'].equals(ppa2vals))
+
+        self.builder.apply_to_query('points', alterer)
+        self.assertTrue(all(x == -1 for x in ppa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ppa2['data']['value_field'].values))
+        self.builder.reset_point_data(name='PPA2')
+        self.assertFalse(ppa1['data']['value_field'].equals(ppa1vals))
+        self.assertTrue(ppa2['data']['value_field'].equals(ppa2vals))
+
+        self.builder.apply_to_query('points', alterer)
+        self.assertTrue(all(x == -1 for x in ppa1['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in ppa2['data']['value_field'].values))
+        self.builder.reset_point_data()
+        self.assertTrue(ppa1['data']['value_field'].equals(ppa1vals))
+        self.assertTrue(ppa2['data']['value_field'].equals(ppa2vals))
+
+    def test_reset(self):
+        print()
+
+        self.builder.add_grid('GGA1', 'CANADA')
+        self.builder.add_outline('OOA1', 'CANADA')
+        self.builder.add_point('PPA1', DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        )))
 
     def test_auto_grid(self):
         """Tests the builders ability to... may scrap.
