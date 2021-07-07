@@ -4,6 +4,8 @@ import geoviz.utils.util as util
 
 
 class UtilTestCase(unittest.TestCase):
+    """Test cases for the util module.
+    """
 
     def test_dict_deep_update(self):
         """Tests the module's ability to deep update a dictionary.
