@@ -2,6 +2,7 @@ from typing import Dict, Any, Callable
 from geoviz.builder import PlotBuilder
 import json
 
+
 def _parse_args_kwargs(item):
     if isinstance(item, dict):
         try:
