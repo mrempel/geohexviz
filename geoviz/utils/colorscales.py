@@ -11,7 +11,7 @@ ColorHelperType = List[ColorType]
 def solid_scale(color: str, min_scale: float = 0.0, max_scale: float = 1.0) -> Tuple:
     """Retrieves a solid colorscale for a given color.
 
-    :param color: The color to make a solid scale from
+    :param color: The color to make a solid colors from
     :type color: ColorTuple
     :param min_scale: The minimum value on this colorscale
     :type min_scale: number
@@ -146,9 +146,9 @@ def discretize_cscale(colorscale, scale_type: str, low: float, high: float, **kw
     :type colorscale: Any
     :param scale_type: The type of colorscale (sequential, diverging)
     :type scale_type: str
-    :param low: The minimum value on the scale
+    :param low: The minimum value on the colors
     :type low: float
-    :param high: The maximum value on the scale
+    :param high: The maximum value on the colors
     :type high: float
     :param kwargs: Keyword arguments for the discrete functions
     :type kwargs: **kwargs
@@ -160,7 +160,8 @@ def discretize_cscale(colorscale, scale_type: str, low: float, high: float, **kw
             colorscale = get_scale(colorscale)
         except AttributeError:
             if get_cscale_format(colorscale) not in ['nested-iterable', 'iterable']:
-                raise ValueError("The scale is in an invalid format. The scale must either be a named colorscale or a ")
+                raise ValueError(
+                    "The colors is in an invalid format. The colors must either be a named colorscale or a ")
 
     if any(isinstance(i, list) or isinstance(i, tuple) for i in iter(colorscale)):
         colorscale = cli.colorscale_to_colors(colorscale)
@@ -179,15 +180,15 @@ def discretize(colors: List[str], size_portion: float = 0,
                fix_extension: bool = True) -> List[Tuple[float, str]]:
     """Takes a single sequential colorscale and gets it's discrete form.
 
-    :param colors: The list of colors on the scale
+    :param colors: The list of colors on the colors
     :type colors: List[str]
-    :param size_portion: The amount of space each discrete section will occupy on the scale (decimal-percentage)
+    :param size_portion: The amount of space each discrete section will occupy on the colors (decimal-percentage)
     :type size_portion: float
-    :param center_portion: The amount of space that the center will take up on the scale (decimal-percentage)
+    :param center_portion: The amount of space that the center will take up on the colors (decimal-percentage)
     :type center_portion: float
-    :param fix_bound: Determines if a color is fixed if it goes over the top of the scale
+    :param fix_bound: Determines if a color is fixed if it goes over the top of the colors
     :type fix_bound: bool
-    :param fix_extension: Determines if the last color should reach the end of the scale if no more colors available
+    :param fix_extension: Determines if the last color should reach the end of the colors if no more colors available
     :type fix_extension: bool
     :return: The discrete colorscale
     :rtype: List[Tuple[float, str]]
@@ -220,23 +221,23 @@ def discretize(colors: List[str], size_portion: float = 0,
 def discretize_sequential(colors: List[str], low: float, high: float, discrete_size: float = 1.0,
                           choose_hues: Union[List[int], int] = 1, choose_luminance: float = 0.0) -> \
         List[Tuple[float, str]]:
-    """Makes a sequential scale discrete based on min, max on the scale.
+    """Makes a sequential colors discrete based on min, max on the colors.
 
     choose_luminance does not work with colors that are not in rgb format.
 
-    :param colors: The list of colors on the scale
+    :param colors: The list of colors on the colors
     :type colors: List[str]
-    :param low: The minimum numerical value on the scale (not percentage)
+    :param low: The minimum numerical value on the colors (not percentage)
     :type low: float
-    :param high: The maximum numerical value on the scale (not percentage)
+    :param high: The maximum numerical value on the colors (not percentage)
     :type high: float
     :param discrete_size: The numerical amount that each discrete bar will occupy (not percentage)
     :type discrete_size: float
-    :param choose_hues: Determines the step used in selecting colors from the scale, or the list of color positions that are used
+    :param choose_hues: Determines the step used in selecting colors from the colors, or the list of color positions that are used
     :type choose_hues: Union[List[int],int]
     :param choose_luminance: The maximum luminance of the colors to be selected
     :type choose_luminance: float
-    :return: The discrete sequential scale
+    :return: The discrete sequential colors
     :rtype: List[Tuple[float, str]]
     """
 
@@ -247,19 +248,34 @@ def discretize_sequential(colors: List[str], low: float, high: float, discrete_s
     except TypeError:
         colors = [colors[i] for i in choose_hues]
 
-    return discretize(colors, size_portion=discrete_size / (abs(low) + abs(high)))
+    try:
+        return discretize(colors, size_portion=discrete_size / (abs(low) + abs(high)))
+    except IndexError:
+        raise ValueError("There was most likely an issue with the amount of colors on the colors (not enough).")
 
-def discretize_diverging(scale: List[str], low: float, high: float, discrete_size: float = 1.0,
-                         remove_middle: bool = True, high_shading: bool = True, center: float = None,
-                         choose_left_hues: Union[List[int], int] = 1, choose_right_hues: Union[List[int], int] = 1,
-                         choose_left_luminance: float = 0.0, choose_right_luminance: float = 0.0,
-                         choose_luminance: float = 0.0) -> List[Tuple[float, str]]:
+
+def discretize_diverging(
+        colors: List[str],
+        low: float,
+        high: float,
+        discrete_size: float = 1.0,
+        remove_middle: bool = True,
+        high_shading: bool = True,
+        center: float = None,
+        center_hue: int = None,
+        choose_left_hues: Union[List[int], int] = 1,
+        choose_right_hues: Union[List[int], int] = 1,
+        choose_left_luminance: float = 0.0,
+        choose_right_luminance: float = 0.0,
+        choose_luminance: float = 0.0
+) -> List[Tuple[float, str]]:
     """Transforms a diverging scale into a discrete diverging scale.
 
     It should be noted that luminance parameters only work if the scale is in RGB format.
+    THIS FEATURE IS HIGHLY EXPERIMENTAL.
 
-    :param scale: The list of colors on the scale
-    :type scale: List[str]
+    :param colors: The list of colors on the scale
+    :type colors: List[str]
     :param low: The minimum value on the scale
     :type low: float
     :param high: The maximum value on the scale
@@ -272,6 +288,8 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     :type high_shading: bool
     :param center: The position of the center on the scale
     :type center: float
+    :param center_hue: Where the center hue is in the list of colors given
+    :type center_hue: int
     :param choose_left_hues: The list of color positions to use on the left of the scale or an integer skip for color selection on the left
     :type choose_left_hues: Union[List[int], int]
     :param choose_right_hues: The list of color positions to use on the right of the scale or an integer skip for color selection on the right
@@ -290,23 +308,30 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     if center is None:
         center = (low + high) / 2
 
+    if center_hue is None:
+        center_hue = len(colors) // 2
+
     percentage_scale = lambda scale_position: (scale_position + abs(low)) / total
 
-    left_hues = scale[:len(scale) // 2]
-    right_hues = scale[(len(scale) // 2):]
+    left_hues = colors[:center_hue]
+    right_hues = colors[center_hue:]
 
     discrete_perc = discrete_size / total
 
     middle = None
     middle_left, middle_right = center, center
 
-    if remove_middle:
-        right_hues.pop(0)
-    else:
-        middle = right_hues.pop(0)
-        middle_right, middle_left = center + discrete_size / 2, center - discrete_size / 2
-        middle_left = middle_left if middle_left >= low else low
-        middle_right = middle_right if middle_right <= high else high
+    try:
+        if remove_middle:
+            right_hues.pop(0)
+        else:
+            middle = right_hues.pop(0)
+            middle_right, middle_left = center + discrete_size / 2, center - discrete_size / 2
+            middle_left = middle_left if middle_left >= low else low
+            middle_right = middle_right if middle_right <= high else high
+    except IndexError:
+        raise ValueError("There was most likely an issue with the amount"
+                         " of colors on the right of the colors (not enough).")
 
     choose_left_luminance = choose_left_luminance if choose_left_luminance > choose_luminance else choose_luminance
     choose_right_luminance = choose_right_luminance if choose_right_luminance > choose_luminance else choose_luminance
@@ -336,35 +361,34 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
         left_hues = left_hues[-leftEdges:]
         right_hues = right_hues[-rightEdges:]
 
+    shiftedLeft = []
     try:
         left = discretize(left_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
+
+        leftFactor = percMiddleLeft - left[-1][0]
+        for item in left:
+            num = item[0] + leftFactor
+
+            if num <= 0:
+                continue
+            else:
+                shiftedLeft.append([num, item[1]])
     except IndexError:
-        raise ValueError(
-            "There was most likely an issue with the amount of colors on the left of the scale (not enough).")
+        pass
+
+    shiftedRight = []
     try:
         right = discretize(right_hues, size_portion=discrete_perc, fix_bound=False, fix_extension=False)
+        rightFactor = percMiddleRight - right[0][0]
+
+        for item in right:
+            num = item[0] + rightFactor
+            if num >= 1:
+                continue
+            else:
+                shiftedRight.append([num, item[1]])
     except IndexError:
-        raise ValueError(
-            "There was most likely an issue with the amount of colors on the right of the scale (not enough).")
-
-    leftFactor = percMiddleLeft - left[-1][0]
-    shiftedLeft = []
-    for item in left:
-        num = item[0] + leftFactor
-
-        if num <= 0:
-            continue
-        else:
-            shiftedLeft.append([num, item[1]])
-
-    rightFactor = percMiddleRight - right[0][0]
-    shiftedRight = []
-    for item in right:
-        num = item[0] + rightFactor
-        if num >= 1:
-            continue
-        else:
-            shiftedRight.append([num, item[1]])
+        pass
 
     try:
         shiftedLeft.insert(0, [0, shiftedLeft[0][1]])
@@ -379,8 +403,13 @@ def discretize_diverging(scale: List[str], low: float, high: float, discrete_siz
     except IndexError:
         pass
 
-    return [*shiftedLeft, *[[percMiddleLeft, middle], [percMiddleRight, middle]], *shiftedRight] if middle else [
+    newlst = [*shiftedLeft, *[[percMiddleLeft, middle], [percMiddleRight, middle]], *shiftedRight] if middle else [
         *shiftedLeft, *shiftedRight]
+    newlst[0][0] = 0.0
+    newlst[-1][0] = 1.0
+
+    return newlst
+
 
 class _DBlock:
 
@@ -414,7 +443,7 @@ class _DScale:
 
     def add_block(self, block: _DBlock):
         if block.end > self.end or block.start > self.end or block.start < self.start:
-            raise ValueError("The block added is too large for the scale.")
+            raise ValueError("The block added is too large for the colors.")
         self.blocks.append(block)
 
     def end_block(self):
@@ -454,13 +483,13 @@ def discretize2(colors: List[str], size_portion: float = 0,
                 fix_extension: bool = True) -> _DScale:
     """Takes a single sequential colorscale and gets it's discrete form.
 
-    :param colors: The list of colors on the scale
+    :param colors: The list of colors on the colors
     :type colors: List[str]
-    :param size_portion: The amount of space each discrete section will occupy on the scale (decimal-percentage)
+    :param size_portion: The amount of space each discrete section will occupy on the colors (decimal-percentage)
     :type size_portion: float
-    :param fix_bound: Determines if a color is fixed if it goes over the top of the scale
+    :param fix_bound: Determines if a color is fixed if it goes over the top of the colors
     :type fix_bound: bool
-    :param fix_extension: Determines if the last color should reach the end of the scale if no more colors available
+    :param fix_extension: Determines if the last color should reach the end of the colors if no more colors available
     :type fix_extension: bool
     :return: The discrete colorscale
     :rtype: List[Tuple[float, str]]
@@ -501,7 +530,7 @@ def discretize_diverging2(scale: List[str], low: float, high: float, discrete_si
                           choose_left_hues: Union[List[int], int] = 1, choose_right_hues: Union[List[int], int] = 1,
                           choose_left_luminance: float = 0.0, choose_right_luminance: float = 0.0,
                           choose_luminance: float = 0.0) -> List[Tuple[float, str]]:
-    total = abs(low) + abs(high)  # total space on scale
+    total = abs(low) + abs(high)  # total space on colors
     perc_scale = lambda num: abs(num / total)
     if center is None:
         center = (low + high) / 2
@@ -557,6 +586,3 @@ def discretize_diverging2(scale: List[str], low: float, high: float, discrete_si
     newlst = list(sorted(newlst, key=lambda item: item[0]))
 
     return newlst
-
-
-
