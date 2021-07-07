@@ -311,7 +311,7 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     data.vtype = 'NUM'
     return data
 
-
+# TODO: change to this function
 def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
@@ -820,6 +820,7 @@ class PlotBuilder:
             data: DFType,
             latitude_field: str = None,
             longitude_field: str = None,
+            hex_resolution: int = None,
             hexbin_info: StrDict = None,
             manager: StrDict = None
     ):
@@ -831,13 +832,15 @@ class PlotBuilder:
         :type latitude_field: str
         :param longitude_field: The longitude column of the data
         :type longitude_field: str
+        :param hex_resolution: The hex resolution to use (this can also be passed via hexbin_info)
+        :type hex_resolution: int
         :param hexbin_info: A container for properties pertaining to hexagonal binning
         :type hexbin_info: StrDict
         :param manager: A container for the plotly properties for this dataset
         :type manager: StrDict
         """
 
-        hbin_info = dict(hex_resolution=self.default_hex_resolution)
+        hbin_info = dict(hex_resolution=(hex_resolution or self.default_hex_resolution))
         if hexbin_info is None:
             hexbin_info = {}
 
@@ -890,6 +893,13 @@ class PlotBuilder:
         """
         try:
             main = self._container.pop('main')
+
+            # remove the empty grid that may or may not have been added
+            try:
+                self.remove_grid('|*EMPTY*|')
+            except gce.DatasetNotFoundError:
+                pass
+
             if pop:
                 return main
         except KeyError:
@@ -1573,25 +1583,25 @@ class PlotBuilder:
         datasets = self._search(name)
         lst = []
 
-        if not datasets and not allow_empty:
+        if not allow_empty and not datasets:
             raise ValueError("The query submitted returned an empty result.")
         if 'data' in datasets:
             lst.append(fn(datasets, *args, **kwargs))
         else:
             for _, v in datasets.items():
-                if not v and not allow_empty:
+                if not allow_empty and not v:
                     raise ValueError("The query submitted returned an empty result.")
                 if 'data' in v:
                     lst.append(fn(v, *args, **kwargs))
                 else:
                     for _, vv in v.items():
-                        if not vv and not allow_empty:
+                        if not allow_empty and not vv:
                             raise ValueError("The query submitted returned an empty result.")
                         if 'data' in vv:
                             lst.append(fn(vv, *args, **kwargs))
                         else:
                             for _, vvv in vv.items():
-                                if not vvv and not allow_empty:
+                                if not allow_empty and not vvv:
                                     raise ValueError("The query submitted returned an empty result.")
                                 if 'data' in vvv:
                                     lst.append(fn(vvv, *args, **kwargs))
