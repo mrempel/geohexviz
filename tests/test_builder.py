@@ -75,11 +75,16 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.add_region('CCA1', 'CANADA')
         self.builder.add_grid('GGA1', 'FRANCE')
         self.builder.add_outline('OOA1', 'SOUTH AMERICA')
+        self.builder.adjust_focus('region:CCA1')
+        self.builder.adjust_colorbar_size()
 
         testdf = GeoDataFrame(dict(val=vals, geometry=geoms), crs='EPSG:4326')
         self.builder.add_point('PPA1', testdf)
         # self.builder.clip_datasets('main', 'region:CCA1')
-        self.builder.logify_scale()
+        self.builder.build_plot()
+
+        self.builder.output_figure('E:\\software\\testing.pdf')
+        self.builder.display_figure()
 
     def test_set_main_dataset_quantitative(self):
         """Tests quantitative dataset functionality.

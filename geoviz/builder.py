@@ -626,7 +626,7 @@ class PlotBuilder:
         ),
         layout=dict(
             title=dict(text='', x=0.5),
-            margin=dict(r=0, l=0, t=50, b=5),
+            margin=dict(r=0, l=0, t=0, b=0),
             width=800,
             height=600,
             autosize=False
@@ -662,7 +662,6 @@ class PlotBuilder:
         self._plot_status = PlotStatus.NO_DATA
 
         self._figure = Figure()
-
         if use_default_managers:
             self.update_figure(**self._default_figure_manager)
             # grids will all reference this manager
@@ -1712,14 +1711,38 @@ class PlotBuilder:
     PLOT ALTERING FUNCTIONS
     """
 
-    def adjust_colorscale(self):
+    def adjust_colorbar_size(self):
         """Adjusts the color scale position of the color bar to match the plot area size.
         """
-        bottompx = self._figure.layout.margin.b
-        toppx = self._figure.layout.margin.t
-        heightpx = self._figure.layout.height
+        dataset = self._get_main()
+        layout = self._figure.layout
+        layout.yaxis.automargin = False
+        margin_b, margin_t = layout.margin.b, layout.margin.t
+        fig_h, fig_w = layout.height, layout.width
 
-        self._figure.update_coloraxes(colorbar_lenmode='pixels', colorbar_yanchor='bottom', colorbar_len=heightpx)
+        barlen = fig_h-margin_t + 16
+        print(barlen)
+        print(margin_b, margin_t)
+        print(fig_h, fig_w)
+
+        up = dict(colorbar=dict(lenmode='pixels', yanchor='bottom', y=0, ypad=0))
+
+        _update_manager(dataset, updates=up)
+        # (2.1228468243122216, 50.73231097463263)
+        #
+        # (41.675105088867326, 83.23324000000001)
+        lrange = layout.geo.lataxis.range
+        print(lrange)
+
+
+        print(dataset['manager'])
+        self._figure.add_annotation(text='BL', xref='paper', yref='paper', x=0, y=0)
+        self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
+        self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
+        self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
+
+        self._figure.add_annotation(text='MT', xref='paper', yref='paper', x=0.8, y=(fig_h-margin_t)/fig_h)
+        self._figure.add_annotation(text='MB', xref='paper', yref='paper', x=0.8, y=margin_b/fig_h)
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
