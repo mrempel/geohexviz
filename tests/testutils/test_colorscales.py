@@ -76,11 +76,11 @@ class ColorscalesTestCase(unittest.TestCase):
 
         self.assertListEqual(
             [[0.250001, 'red'], [0.5, 'red'], [0.500001, 'blue'], [0.75, 'blue'], [0.750001, 'green'], [1.0, 'green']],
-            cli.discretize(testcolors, size_portion=testsizep, center_portion=testcenterp).as_list())
+            cli.discretize(testcolors, size_portion=testsizep, center_portion=testcenterp))
         self.assertListEqual(
             [[0.0, 'red'], [0.25, 'red'], [0.250001, 'blue'], [0.5, 'blue'], [0.500001, 'green'], [0.75, 'green'],
              [0.750001, 'yellow'], [1.0, 'yellow']],
-            cli.discretize(testcolors, size_portion=testsizep).as_list())
+            cli.discretize(testcolors, size_portion=testsizep))
 
     def test_discretize_sequential(self):
         self.assertTrue(nested_colorscale_equal([
