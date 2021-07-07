@@ -69,7 +69,6 @@ def run_simple_JSON(filepath: str):
 
     if adjust_opacity:
         args, kwargs = _parse_args_kwargs(adjust_opacity)
-        print(args, kwargs)
         builder.adjust_opacity(*args, **kwargs)
 
     builder.build_plot(**build_args)

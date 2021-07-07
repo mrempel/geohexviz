@@ -355,6 +355,7 @@ def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longi
         data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field, crs='EPSG:4326'))
     except (TypeError, ValueError):
         pass
+    gcg.conform_geogeometry(data)
     data.vtype = 'NUM'
     return data
 
@@ -398,7 +399,7 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
     vtype = get_column_type(data, 'value_field')
     if vtype == 'UNK':
         raise gce.BinValueTypeError("The result of the binning operation is a column of invalid type. Fatal Error.")
-
+    gcg.conform_geogeometry(data)
     data.VTYPE = vtype
     return data
 
@@ -2137,6 +2138,19 @@ class PlotBuilder:
 
         In the future we should alter these functions to
         allow trace order implementation.
+
+        :param plot_regions: Whether or not to plot region datasets
+        :type plot_regions: bool
+        :param plot_grids: Whether or not to plot grid datasets
+        :type plot_grids: bool
+        :param plot_main: Whether or not to plot the main dataset
+        :type plot_main: bool
+        :param plot_outlines: Whether or not to plot outline datasets
+        :type plot_outlines: bool
+        :param plot_points: Whether or not to plot point datasets
+        :type plot_points: bool
+        :param raise_errors: Whether or not to raise errors related to empty dataset collections
+        :type raise_errors: bool
         """
         if plot_regions:
             try:
