@@ -125,6 +125,8 @@ class ColorscalesTestCase(unittest.TestCase):
     def test_discretize_diverging(self):
         """Tests the module's ability to discretize a single diverging scale.
 
+        There are known bugs with this function.
+
         Tests:
         Input a bunch of colors and ensure the resulting colorscale is correct (spacing, colors).
         """
