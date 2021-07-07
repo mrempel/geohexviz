@@ -1,17 +1,19 @@
 import unittest
 import random
-
 import numpy as np
-
 import geoviz.utils.plot_util as butil
 
 
 class PlotUtilTestCase(unittest.TestCase):
-
-    def test_get_shapes_from_world(self):
-        print()
+    """Tests the functions within the plot_util module.
+    """
 
     def test_format_latex_exp10(self):
+        """Tests the module's ability to format a base 10 latex exponent.
+
+        Tests:
+        Invoke the function for each exponent type. Ensure the result is correct.
+        """
         with self.assertRaises(ValueError):
             butil.format_latex_exp10(1, 'l')
         self.assertEqual('$10^1$', butil.format_latex_exp10(1, '^'))
@@ -21,6 +23,11 @@ class PlotUtilTestCase(unittest.TestCase):
         self.assertEqual('$1000$', butil.format_latex_exp10(3, 'r'))
 
     def test_format_html_exp10(self):
+        """Tests the module's ability to format a base 10 html exponent.
+
+        Tests:
+        Invoke the function for each exponent type. Ensure the result is correct.
+        """
         with self.assertRaises(ValueError):
             butil.format_html_exp10(1, 'l')
         self.assertEqual('<span>10<sup>1</sup></span>', butil.format_html_exp10(1, '^'))
@@ -31,6 +38,11 @@ class PlotUtilTestCase(unittest.TestCase):
         self.assertEqual('<span>1000</span>', butil.format_html_exp10(3, 'n'))
 
     def test_format_raw_exp10(self):
+        """Tests the module's ability to format a base 10 raw exponent.
+
+        Tests:
+        Invoke the function for each exponent type. Ensure the result is correct.
+        """
         with self.assertRaises(ValueError):
             butil.format_raw_exp10(1, 'l')
         self.assertEqual('10^1', butil.format_raw_exp10(1, '^'))
@@ -40,6 +52,11 @@ class PlotUtilTestCase(unittest.TestCase):
         self.assertEqual('1000', butil.format_raw_exp10(3, 'r'))
 
     def test_logify_info(self):
+        """Tests the module's ability to retrieve a dict of logarithmic scale info for a set of values.
+
+        Tests:
+        Generate values and invoke the function. Ensure that the logarithmic info is correct (min, max, logged values).
+        """
         with self.assertRaises(ValueError):
             butil.logify_info([])
 
@@ -63,9 +80,6 @@ class PlotUtilTestCase(unittest.TestCase):
         self.assertTrue(all(x in result['scale-dict'] for x in range(1, int(lmax) + 1)))  # for include predecessors
         self.assertTrue(any('max' in x for x in result['scale-dict'].values()))  # check for max prefix
         self.assertTrue(any('min' in x for x in result['scale-dict'].values()))  # check for min prefix
-
-    def test_something(self):
-        self.assertEqual(True, False)
 
 
 if __name__ == '__main__':
