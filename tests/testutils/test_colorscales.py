@@ -123,7 +123,11 @@ class ColorscalesTestCase(unittest.TestCase):
                                      0, 1, choose_luminance=140, discrete_size=0.25)))
 
     def test_discretize_diverging(self):
+        """Tests the module's ability to discretize a single diverging scale.
 
+        Tests:
+        Input a bunch of colors and ensure the resulting colorscale is correct (spacing, colors).
+        """
         with self.assertRaises(ValueError):
             cli.discretize_diverging([], 0, 1, remove_middle=False)
 
@@ -183,11 +187,6 @@ class ColorscalesTestCase(unittest.TestCase):
         """
         self.assertEqual(((0.0, 'red'), (1.0, 'red')), cli.solid_scale('red'))
         self.assertEqual(((0.0, 'rgb(255,255,255)'), (1.0, 'rgb(255,255,255)')), cli.solid_scale('rgb(255,255,255)'))
-
-    def test_q(self):
-        cli.discretize_cscale('Viridis', 'diverging', 0, 5, discrete_size=1, center=2.5, remove_middle=True)
-
-
 
 
 if __name__ == '__main__':
