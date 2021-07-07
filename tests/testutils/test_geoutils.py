@@ -1,6 +1,5 @@
 import unittest
 from typing import List
-
 from pandas import DataFrame
 import geopandas as gpd
 from geoviz.utils import geoutils
@@ -478,7 +477,6 @@ class GeoUtilsTestCase(unittest.TestCase):
         testdf = GeoDataFrame(geometry=[Polygon.from_bounds(*inputdf.total_bounds)], crs='EPSG:4326')
         resultdf = geoutils.generate_grid_over(inputdf, 3)
         resulting = gpd.sjoin(resultdf, testdf, op='intersects')
-        print(resulting)
         self.assertEqual(len(resultdf), len(resulting))
         self.assertTrue(all(i == 0 for i in resulting['index_right']))
 
