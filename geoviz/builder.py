@@ -24,6 +24,7 @@ from geopandas import GeoDataFrame
 from pandas import DataFrame
 from collections import defaultdict
 import geoviz.errors as gce
+from html.parser import HTMLParser
 
 plotly.io.kaleido.scope.default_format = 'pdf'
 
@@ -554,7 +555,7 @@ class PlotBuilder:
     # default choropleth manager (includes properties for choropleth only)
     _default_quantitative_dataset_manager: ClassVar[StrDict] = dict(
         colorscale='Viridis',
-        colorbar=dict(title='COUNT'),
+        colorbar=dict(title=''),
         marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
         hoverinfo='location+z+text'
     )
@@ -627,8 +628,8 @@ class PlotBuilder:
         ),
         layout=dict(
             title=dict(text='', x=0.5),
-            margin=dict(r=0, l=0, t=0, b=0),
-            width=800,
+            margin=dict(r=0, l=0, t=0, b=0, autoexpand=False),
+            width=1085,
             height=600,
             autosize=False
         )
@@ -1725,35 +1726,14 @@ class PlotBuilder:
     def adjust_colorbar_size(self):
         """Adjusts the color scale position of the color bar to match the plot area size.
         """
-        dataset = self._get_main()
-        layout = self._figure.layout
-        layout.yaxis.automargin = False
-        margin_b, margin_t = layout.margin.b, layout.margin.t
-        fig_h, fig_w = layout.height, layout.width
 
-        barlen = fig_h-margin_t + 16
-        print(barlen)
-        print(margin_b, margin_t)
-        print(fig_h, fig_w)
-
-        up = dict(colorbar=dict(lenmode='pixels', yanchor='bottom', y=0, ypad=0))
-
-        _update_manager(dataset, updates=up)
-        # (2.1228468243122216, 50.73231097463263)
-        #
-        # (41.675105088867326, 83.23324000000001)
-        lrange = layout.geo.lataxis.range
-        print(lrange)
-
-
-        print(dataset['manager'])
+        htmlStr = self._figure.write_html()
+        print(htmlStr)
         self._figure.add_annotation(text='BL', xref='paper', yref='paper', x=0, y=0)
         self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
         self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
         self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
 
-        self._figure.add_annotation(text='MT', xref='paper', yref='paper', x=0.8, y=(fig_h-margin_t)/fig_h)
-        self._figure.add_annotation(text='MB', xref='paper', yref='paper', x=0.8, y=margin_b/fig_h)
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
@@ -2192,6 +2172,7 @@ class PlotBuilder:
             except gce.NoDatasetsError as e:
                 if raise_errors:
                     raise e
+
 
     def output_figure(self, filepath: str, clear_figure: bool = False, **kwargs):
         """Outputs the figure to a filepath.
