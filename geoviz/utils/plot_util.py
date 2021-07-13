@@ -145,14 +145,14 @@ def logify_info(values: Union[Sequence[float], Set[float]], text_type: str = 'ra
     except KeyError:
         raise ValueError(f"The 'text_type' argument must be one of {list(expmap10.keys())}.")
 
-    logged = list(np.log10(list(values)))
-    info = {'original-values': list(values), 'logged-values': logged, 'scale-min': round(min(logged), minmax_rounding),
-            'scale-max': round(max(logged), minmax_rounding), 'scale-dict': {}}
+    logged = np.array(list(np.log10(list(values))))
+    l = logged[logged >= 0]
+    info = {'original-values': list(values), 'logged-values': list(logged), 'scale-min': round(min(l), minmax_rounding),
+            'scale-max': round(max(l), minmax_rounding), 'scale-dict': {}}
 
     if fill_last:
         last = int(math.ceil(info['scale-max']))
         info['scale-dict'][last] = expfn(last, exp_type)
-
     start = int(info['scale-min'])
     end = int(info['scale-max']) + 1
     scale = list(range(0, start)) if include_predecessors else []

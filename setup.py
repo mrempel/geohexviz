@@ -21,5 +21,5 @@ setup(
     ],
     packages=find_packages(exclude=tuple("tests")),
     include_package_data=True,
-    install_requires=["h3", "geopandas", "pandas", "plotly", "kaleido", "pyproj", "shapely", "numpy"]
+    install_requires=["h3", "geopandas", "pandas", "plotly", "kaleido", "pyproj", "shapely", "numpy", "beautifulsoup4"]
 )

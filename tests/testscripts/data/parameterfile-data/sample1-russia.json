@@ -1,21 +1,31 @@
 {
 	"main_dataset": {
 		"data": "E:\\software\\cjoc_py\\geoviz\\tests\\data\\csv-data\\sample3-sarincidents.csv",
-		"latitude_field": "latitude",
-		"longitude_field": "longitude",
 		"hexbin_info": {
-			"hex_resolution": 4
+			"hex_resolution": 4,
+			"binning_fn": {
+				"fn": "min"
+			}
 		}
 	},
 	"regions": {
 		"CCA2": {
-			"data": "RUSSIA"
+			"data": "CANADA"
 		}
 	},
 	"adjustments": {
-			"focus": "region:CCA2"
+			"focus": {
+				"on": "region:CCA2"
+			}
 	},
 	"builder_functions": {
-		"logarithmic scale": true
-	}
+		"logarithmic scale": {
+			"text_type": "html"
+		},
+		"discrete scale": {
+			"choose_hues": [0, 4, 6, 7, 8, 9]
+		},
+		"simple clip": true
+	},
+	"output_figure": "E:\\software\\testing_mark13.pdf"
 }

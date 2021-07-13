@@ -1,21 +1,8 @@
 from typing import Dict, Any, Callable
+from geoviz.builder import builder_from_dict
 from geoviz.builder import PlotBuilder
+from geoviz.utils.util import parse_args_kwargs
 import json
-
-
-def _parse_args_kwargs(item):
-    if isinstance(item, dict):
-        try:
-            return item['args'], item['kwargs']
-        except KeyError:
-            return (), item
-    elif isinstance(item, str):
-        return [item], {}
-    elif isinstance(item, list):
-        return item, {}
-    else:
-        return (), {}
-
 
 fn_map: Dict[str, Callable] = {
     'adjust opacity': PlotBuilder.adjust_opacity,
@@ -52,33 +39,34 @@ def run_simple_JSON(filepath: str):
     display_fig = read.pop("display_figure", True)
     builder_fns = read.pop("builder_functions", {})
 
-    builder = PlotBuilder(**read)
+    builder = builder_from_dict(**read)
 
     for k, v in builder_fns.items():
         if v != False:
-            args, kwargs = _parse_args_kwargs(v)
+            args, kwargs = parse_args_kwargs(v)
             fn_map[k](builder, *args, **kwargs)
 
     if mapbox_fig:
-        args, kwargs = _parse_args_kwargs(mapbox_fig)
+        args, kwargs = parse_args_kwargs(mapbox_fig)
         builder.set_mapbox(*args, **kwargs)
 
     if adjust_focus:
-        args, kwargs = _parse_args_kwargs(adjust_focus)
+        args, kwargs = parse_args_kwargs(adjust_focus)
         builder.adjust_focus(*args, **kwargs)
 
     if adjust_opacity:
-        args, kwargs = _parse_args_kwargs(adjust_opacity)
+        args, kwargs = parse_args_kwargs(adjust_opacity)
         builder.adjust_opacity(*args, **kwargs)
 
     builder.build_plot(**build_args)
+    #builder.adjust_colorbar_size()
 
     if output_fig:
-        args, kwargs = _parse_args_kwargs(output_fig)
+        args, kwargs = parse_args_kwargs(output_fig)
         builder.output_figure(*args, **kwargs)
 
     if display_fig:
-        args, kwargs = _parse_args_kwargs(display_fig)
+        args, kwargs = parse_args_kwargs(display_fig)
         builder.display_figure(*args, **kwargs)
 
     return builder.get_plot_status()
