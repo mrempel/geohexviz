@@ -198,6 +198,7 @@ def apply_bin_function(hex_gdf: DataFrame, binning_field: str, binning_fn: Calla
         binning_args = []
     if result_name is None:
         result_name = '*COLLECTED VALUE*'
+    print(binning_args, binning_kw)
     hex_gdf[result_name] = (hex_gdf[binning_field].apply(binning_fn, args=binning_args, **binning_kw))
 
 

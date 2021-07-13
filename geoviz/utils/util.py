@@ -30,6 +30,27 @@ def get_percdiff(current, previous):
         return float('inf')
 
 
+def parse_args_kwargs(item, default_args=None, default_kwargs=None):
+    if default_args is None:
+        default_args = ()
+    if default_kwargs is None:
+        default_kwargs = {}
+
+    if isinstance(item, dict):
+        try:
+            return item['args'], item['kwargs']
+        except KeyError:
+            if item:
+                return default_args, item
+            return default_args, default_kwargs
+    elif isinstance(item, str):
+        return [item], default_kwargs
+    elif isinstance(item, list):
+        return item, default_kwargs
+    else:
+        return default_args, default_kwargs
+
+
 def fix_filepath(filepath: str, add_filename: str = '', add_ext: str = '') -> str:
     """Converts a directorypath, or filepath into a valid filepath.
 
@@ -110,7 +131,8 @@ def get_sorted_occ2(lst: list, allow_ties=False, join_ties=True, selector=None, 
     return occ[0]
 
 
-def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None, reverse: bool = True):
+def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None,
+                   reverse: bool = True):
     if selector is None:
         selector = []
 
@@ -124,7 +146,7 @@ def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, 
         return lst[0]
 
     for i in range(0, len(occ)):
-        group = [str(occ[i][j][0]) for j in range(len(occ[i]))]
+        group = [occ[i][j][0] for j in range(len(occ[i]))]
         while np.nan in group:
             group.remove(np.nan)
         while 'empty' in group:
@@ -132,8 +154,9 @@ def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, 
         if len(group) == 0:
             group = [np.nan]
 
-        occ[i] = (', '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group)\
+        occ[i] = (', '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group) \
             if len(group) > 1 else group[0]
+        print(occ[i])
     return occ[0]
 
 

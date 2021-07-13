@@ -1,3 +1,6 @@
+import base64
+import re
+import time
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Tuple, ClassVar, Dict, Union, Callable
@@ -10,21 +13,19 @@ from os.path import join as pjoin
 
 import plotly.colors
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
-from shapely.geometry import Point, Polygon
 
-from geoviz.utils.util import fix_filepath, get_sorted_occ, generate_dataframe_random_ids, get_column_type, \
-    simplify_dicts, dict_deep_update, get_percdiff
+from geoviz.utils.util import fix_filepath, get_sorted_occ, get_column_type, \
+    simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs
 from geoviz.utils import geoutils as gcg
 from geoviz.utils import plot_util as butil
 
-from geoviz.utils.colorscales import solid_scale, configure_color_opacity, configureScaleWithAlpha, discretize_cscale, \
+from geoviz.utils.colorscales import solid_scale, discretize_cscale, \
     get_scale
 
 from geopandas import GeoDataFrame
 from pandas import DataFrame
-from collections import defaultdict
 import geoviz.errors as gce
-from html.parser import HTMLParser
+from geoviz.templates import get_template
 
 plotly.io.kaleido.scope.default_format = 'pdf'
 
@@ -269,7 +270,7 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     return data
 
 
-def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
     :param data: The data that may or may not contain lat/long columns
@@ -312,8 +313,9 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     data.vtype = 'NUM'
     return data
 
+
 # TODO: change to this function
-def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
     :param data: The data that may or may not contain lat/long columns
@@ -382,11 +384,15 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
     """
     data = _hexify_data(data, hex_resolution)
 
+    if isinstance(binning_fn, dict):
+        fn = binning_fn.pop('fn', binning_fn)
+        binning_args, kwargs = parse_args_kwargs(binning_fn, default_args=binning_args, default_kwargs=kwargs)
+        binning_fn = fn
+
     try:
         binning_fn = _group_functions[str(binning_fn)]
     except KeyError:
         pass
-
     vtype = 'NUM' if binning_field is None else get_column_type(data, binning_field)
 
     if vtype == 'UNK':
@@ -437,102 +443,6 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
     return gcg.hexify_dataframe(data, hex_resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
-def _bin_by_hex_helper(data: Union[DataFrame, GeoDataFrame], binning_field: str = None, binning_fn=None) -> Tuple[
-    Callable, str]:
-    """Determines the binning function and preliminary value type for a dataframe which is to be binned.
-
-    :param data: The data which is to be binned
-    :type data: Union[DataFrame, GeoDataFrame]
-    :param binning_field: The binning field for the data
-    :type binning_field: str
-    :param binning_fn: The function which is to be performed on the data
-    :type binning_fn:
-    :return:
-    :rtype:
-    """
-    if binning_fn in _group_functions:
-        binning_fn = _group_functions[binning_fn]
-
-    if binning_field is None:
-        vtype = 'num'
-    else:
-        vtype = get_column_type(data, binning_field)
-
-    if vtype == 'unk':
-        raise TypeError("The binning field is not a valid type, must be string or numerical column.")
-
-    if binning_fn is None:
-        binning_fn = _group_functions['bestworst'] if vtype == 'str' else _group_functions['count']
-
-    return binning_fn, vtype
-
-
-def _bin_by_hex(data, *args, binning_field: str = None, binning_fn: Callable = None, **kwargs) -> Tuple[
-    GeoDataFrame, str]:
-    """Wrapper for binning hexagonal data, and adding geometry to it.
-
-    :param data: The data to be hexagonally binned
-    :type data: Union[DataFrame, GeoDataFrame]
-    :param args: Binning function arguments
-    :type args: *args
-    :param binning_field: The binning field of the data
-    :type binning_field: str
-    :param binning_fn: The function to be performed on the data while binning
-    :type binning_fn: Callable
-    :param kwargs: Keyword arguments for the binning function
-    :type kwargs: **kwargs
-    :return: The resulting geodataframe and the value type
-    :rtype: Tuple[GeoDataFrame, str]
-    """
-    binning_fn, vtype = _bin_by_hex_helper(data, binning_field=binning_field, binning_fn=binning_fn)
-
-    result = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, result_name='value_field',
-                              add_geoms=True, **kwargs)
-    vtype = get_column_type(result, 'value_field')
-    return result, vtype
-
-
-def _hexify_dataset(dataset: StrDict, hex_resolution: int):
-    """Wrapper for hexaifying a dataset.
-
-    :param dataset: The dataset to be hexified
-    :type dataset: StrDict
-    :param hex_resolution: The hexagonal resolution to be used
-    :type hex_resolution: int
-    """
-    hres = dataset.get('hex_resolution', None)
-    hexbin_info = dataset.get('hexbin_info')
-    if hexbin_info:
-        if 'resolution' in hexbin_info:
-            if hres:
-                raise ValueError("Received multiple arguments for hex resolution.")
-            hres = hexbin_info['resolution']
-    hres = hres if hres is not None else hex_resolution
-    dataset['hex_resolution'] = hres
-    dataset['data'] = _hexify_data(dataset['data'], hres)
-
-
-def _bin_dataset_by_hex(dataset: StrDict):
-    """Wrapper for hexagonally binning a dataset.
-
-    :param dataset: The dataset to be hexagonally binned
-    :type dataset: StrDict
-    """
-    binning_fn = dataset.pop('binning_fn', None)
-    binning_args = dataset.pop('binning_fn_args', ())
-    binning_kw = dataset.pop('binning_fn_kwargs', {})
-
-    if isinstance(binning_fn, dict):
-        binning_args = binning_fn.get('args', binning_args)
-        binning_kw = binning_fn.get('kwargs', binning_kw)
-        binning_fn = binning_fn.get('fn', None)
-
-    dataset['data'], dataset['VTYPE'] = _bin_by_hex(dataset['data'], *binning_args,
-                                                    binning_field=dataset.pop('binning_field', None),
-                                                    binning_fn=binning_fn,
-                                                    **binning_kw)
-
-
 def _split_name(name: str) -> Tuple[str, str]:
     lind = name.index(':')
     return name[:lind], name[lind + 1:]
@@ -551,89 +461,6 @@ class PlotStatus(Enum):
 class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
     """
-
-    # default choropleth manager (includes properties for choropleth only)
-    _default_quantitative_dataset_manager: ClassVar[StrDict] = dict(
-        colorscale='Viridis',
-        colorbar=dict(title=''),
-        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
-        hoverinfo='location+z+text'
-    )
-
-    _default_qualitative_dataset_manager: ClassVar[StrDict] = dict(
-        colorscale='Set3',
-        colorbar=dict(title='COUNT'),
-        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
-        hoverinfo='location+z+text'
-    )
-
-    # default scatter plot manager (includes properties for scatter plots only)
-    _default_point_manager: ClassVar[StrDict] = dict(
-        mode='markers+text',
-        marker=dict(
-            line=dict(color='black', width=0.3),
-            color='white',
-            symbol='circle-dot',
-            size=6
-        ),
-        showlegend=False,
-        textposition='top center',
-        textfont=dict(color='Black', size=5)
-    )
-
-    _default_grid_manager: ClassVar[StrDict] = dict(
-        colorscale=[[0, 'white'], [1, 'white']],
-        zmax=1,
-        zmin=0,
-        marker=dict(line=dict(color='black'), opacity=0.2),
-        showlegend=False,
-        showscale=False,
-        hoverinfo='text',
-        legendgroup='grids'
-    )
-
-    _default_region_manager: ClassVar[StrDict] = dict(
-        colorscale=[[0, 'rgba(255,255,255,0.525)'], [1, 'rgba(255,255,255,0.525)']],
-        marker=dict(line=dict(color="rgba(0,0,0,1)", width=0.65)),
-        legendgroup='regions',
-        zmin=0,
-        zmax=1,
-        showlegend=False,
-        showscale=False,
-        hoverinfo='text'
-    )
-
-    _default_outline_manager: ClassVar[StrDict] = dict(
-        mode='lines',
-        line=dict(color="black", width=1, dash='dash'),
-        legendgroup='outlines',
-        showlegend=False,
-        hoverinfo='text'
-    )
-
-    # contains the default properties for the figure
-    _default_figure_manager: ClassVar[StrDict] = dict(
-        geos=dict(
-            projection=dict(type='orthographic'),
-            showcoastlines=False,
-            showland=True,
-            landcolor="rgba(166,166,166,0.625)",
-            showocean=True,
-            oceancolor="rgb(222,222,222)",
-            showlakes=False,
-            showrivers=False,
-            showcountries=False,
-            lataxis=dict(showgrid=True),
-            lonaxis=dict(showgrid=True)
-        ),
-        layout=dict(
-            title=dict(text='', x=0.5),
-            margin=dict(r=0, l=0, t=0, b=0, autoexpand=False),
-            width=1085,
-            height=600,
-            autosize=False
-        )
-    )
 
     def __init__(
             self,
@@ -665,9 +492,9 @@ class PlotBuilder:
 
         self._figure = Figure()
         if use_default_managers:
-            self.update_figure(**self._default_figure_manager)
+            self._figure.update(get_template('figure'))
             # grids will all reference this manager
-            self._grid_manager = deepcopy(self._default_grid_manager)
+            self._grid_manager = deepcopy(get_template('grid'))
         else:
             self._grid_manager = {}
 
@@ -855,9 +682,9 @@ class PlotBuilder:
         dataset['manager'] = {}
         if self.use_default_managers:
             if dataset['VTYPE'] == 'NUM':
-                _update_manager(dataset, deepcopy(self._default_quantitative_dataset_manager))
+                _update_manager(dataset, deepcopy(get_template('main_quant')))
             else:
-                _update_manager(dataset, deepcopy(self._default_qualitative_dataset_manager))
+                _update_manager(dataset, deepcopy(get_template('main_qual')))
         _update_manager(dataset, **(manager if manager is not None else {}))
         self._container['main'] = dataset
 
@@ -959,7 +786,7 @@ class PlotBuilder:
         data = data[['value_field', 'geometry']]
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         if self.use_default_managers:
-            dataset['manager'] = deepcopy(self._default_region_manager)
+            dataset['manager'] = deepcopy(get_template('region'))
         else:
             dataset['manager'] = {}
         _update_manager(dataset, **(manager or {}))
@@ -1270,7 +1097,7 @@ class PlotBuilder:
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         if self.use_default_managers:
-            dataset['manager'] = deepcopy(self._default_outline_manager)
+            dataset['manager'] = deepcopy(get_template('outline'))
         else:
             dataset['manager'] = {}
         _update_manager(dataset, **(manager or {}))
@@ -1427,7 +1254,7 @@ class PlotBuilder:
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
         if self.use_default_managers:
-            dataset['manager'] = deepcopy(self._default_point_manager)
+            dataset['manager'] = deepcopy(get_template('point'))
         else:
             dataset['manager'] = {}
         _update_manager(dataset, **(manager or {}))
@@ -1723,17 +1550,57 @@ class PlotBuilder:
     PLOT ALTERING FUNCTIONS
     """
 
-    def adjust_colorbar_size(self):
+    def adjust_figure(self, width=600, height=450):
+
+        self._figure.update_traces(patch=dict(colorbar_ypad=0), selector=dict(type='choropleth'))
+        self._figure.update_layout(height=height, width=width, margin=dict(r=90, l=0, t=10, b=10), overwrite=True)
+
+    def adjust_colorbar_size(self, width=700, height=450, t=20, b=20):
         """Adjusts the color scale position of the color bar to match the plot area size.
+
+        Does not work.
         """
+        calc = width - 50 + (t + b) * 2 / 10
+        self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
+        self._figure.update_layout(width=width + 50,
+                                   margin=dict(l=0, r=100, t=t, b=b))
 
-        htmlStr = self._figure.write_html()
-        print(htmlStr)
-        self._figure.add_annotation(text='BL', xref='paper', yref='paper', x=0, y=0)
-        self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
-        self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
-        self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
+        # driverOptions = Options()
+        # driverOptions.add_argument('--headless')
+        # driverOptions.add_argument('--no-sandbox')
+        # driverOptions.add_argument('--disable-dev-shm-usage')
+        # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driverOptions)
 
+        # from plotly.offline import plot
+        # plot_div = plot(self._figure, filename='temp')
+        # print(plot_div)
+
+        # res = re.search('<div id="([^"]*)"', plot_div)
+        # div_id = res.groups()[0]
+
+        # self._figure.show()
+        # self._figure.write_html("new2.html", post_script=post_script)
+        # driver.get('chrome://settings/clearBrowserData')
+        # driver.get(f"file://new.html")
+        # driver.implicitly_wait(1)
+        # print(driver.page_source)
+        # elem = driver.find_element_by_xpath("")
+
+        # dct = self._figure.full_figure_for_development(as_dict=True, warn=False)
+        # print(list(dct.keys()))
+        # print(dct['frames'])
+
+        # with open("new.html", "r") as fe:
+        #    parser = BeautifulSoup(fe, 'html.parser')
+        # elem = parser.find("g", {"class": "geolayer"})
+        # elem2 = elem.find("rect")
+        # print(elem2['height'], elem2['width'])
+
+        # self._figure.add_annotation(text='BL', xref='paper', yref='paper', x=0, y=0)
+        # self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
+        # self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
+        # self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
+        print()
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
@@ -1773,7 +1640,6 @@ class PlotBuilder:
         :param validate: Whether or not to validate the ranges
         :type validate: bool
         """
-
         geoms = []
         self.apply_to_query(on, lambda ds: geoms.extend(list(ds['data'].geometry)))
 
@@ -1808,6 +1674,7 @@ class PlotBuilder:
             geos['center'] = center
 
         self._figure.update_geos(**geos)
+        print(geos)
 
     def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = None):
         """Makes a grid over the queried datasets.
@@ -1998,6 +1865,8 @@ class PlotBuilder:
             raise gce.NoDatasetsError("There is no main dataset to plot.")
         df = gcg.conform_geogeometry(dataset['data'])
 
+        # TODO: use plotly express to simplify this process.
+
         # qualitative dataset
         if dataset['VTYPE'] == 'STR':
             df['text'] = 'BEST OPTION: ' + df['value_field']
@@ -2173,7 +2042,6 @@ class PlotBuilder:
                 if raise_errors:
                     raise e
 
-
     def output_figure(self, filepath: str, clear_figure: bool = False, **kwargs):
         """Outputs the figure to a filepath.
 
@@ -2228,9 +2096,9 @@ class PlotBuilder:
         self._figure = Figure()
 
         if self.use_default_managers:
-            self.update_figure(**self._default_figure_manager)
+            self._figure.update(get_template('figure'))
             # grids will all reference this manager
-            self._grid_manager = deepcopy(self._default_grid_manager)
+            self._grid_manager = deepcopy(get_template('grid'))
         else:
             self._grid_manager = {}
 
