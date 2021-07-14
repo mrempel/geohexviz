@@ -176,10 +176,7 @@ class BuilderTestCase(unittest.TestCase):
                 binning_field='val'
             ),
             manager=dict(
-                colorscale={
-                    'EVENDS': 'red',
-                    'ODDDS': 'yellow'
-                }
+                colorscale=['blue', 'pink']
             )
         )
         getmain = self.builder._get_main()  # internal version does not return a deepcopy
@@ -192,6 +189,8 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual(getmain['VTYPE'], 'STR')
         # ensure the main dataframe does not reference the dame input dataframe
         self.assertFalse(testdf.equals(getmain['data']))
+        self.builder.build_plot()
+        self.builder.display_figure()
 
     def test_add_region(self):
         self.builder.add_region('RRA1', 'CANADA')

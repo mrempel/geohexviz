@@ -1854,18 +1854,42 @@ class PlotBuilder:
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
-    def plot_main(self):
-        """Plots the main dataset within the builder.
+    def plot_main(self, labels: bool = True):
+        # TODO: new version using plotly express (less guessing on our part)
 
-        If qualitative, the dataset is split into uniquely labelled plot traces.
-        """
+        import plotly.express as px
+
         try:
             dataset = self._get_main()
         except gce.MainDatasetNotFoundError:
             raise gce.NoDatasetsError("There is no main dataset to plot.")
         df = gcg.conform_geogeometry(dataset['data'])
+        manager = dataset['manager']
 
-        # TODO: use plotly express to simplify this process.
+        cs = manager.get('colorscale')
+        fig = px.choropleth(data_frame=df, color='value_field', color_continuous_scale=cs,
+                            color_discrete_map=cs if isinstance(cs, dict) else None, color_discrete_sequence=cs,
+                            geojson=gcg.simple_geojson(df, 'value_field'), locations=df.index,
+                            labels={'HEX': 'hid', 'value_field': 'val'} if labels else None)
+
+        pm = deepcopy(manager)
+        pm.pop('colorscale')
+        for d in fig.data:
+            d.update(pm)
+            self._figure.add_trace(d)
+        self._plot_status = PlotStatus.DATA_PRESENT
+
+    def plot_main2(self):
+        """Plots the main dataset within the builder.
+
+        If qualitative, the dataset is split into uniquely labelled plot traces.
+        """
+
+        try:
+            dataset = self._get_main()
+        except gce.MainDatasetNotFoundError:
+            raise gce.NoDatasetsError("There is no main dataset to plot.")
+        df = gcg.conform_geogeometry(dataset['data'])
 
         # qualitative dataset
         if dataset['VTYPE'] == 'STR':
