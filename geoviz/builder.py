@@ -1855,6 +1855,10 @@ class PlotBuilder:
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_main(self, labels: bool = True):
+        """Plots the main dataset within the builder.
+
+        If qualitative, the dataset is split into uniquely labelled plot traces.
+        """
         # TODO: new version using plotly express (less guessing on our part)
 
         import plotly.express as px
