@@ -1870,6 +1870,10 @@ class PlotBuilder:
         df = gcg.conform_geogeometry(dataset['data'])
         manager = dataset['manager']
         cs = manager.get('colorscale')
+        try:
+            cs = get_scale(cs)
+        except AttributeError:
+            pass
         fig = px.choropleth(data_frame=df, color='value_field', color_continuous_scale=cs,
                             color_discrete_map=cs if isinstance(cs, dict) else None, color_discrete_sequence=cs,
                             geojson=gcg.simple_geojson(df, 'value_field'), locations=df.index,
