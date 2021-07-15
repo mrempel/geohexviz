@@ -1869,18 +1869,15 @@ class PlotBuilder:
             raise gce.NoDatasetsError("There is no main dataset to plot.")
         df = gcg.conform_geogeometry(dataset['data'])
         manager = dataset['manager']
-
         cs = manager.get('colorscale')
         fig = px.choropleth(data_frame=df, color='value_field', color_continuous_scale=cs,
                             color_discrete_map=cs if isinstance(cs, dict) else None, color_discrete_sequence=cs,
                             geojson=gcg.simple_geojson(df, 'value_field'), locations=df.index,
                             labels={'HEX': 'hid', 'value_field': 'val'} if labels else None)
-
         pm = deepcopy(manager)
         pm.pop('colorscale')
         for d in fig.data:
-            d.update(pm)
-            self._figure.add_trace(d)
+            self._figure.add_trace(d.update(pm))
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_main2(self):
