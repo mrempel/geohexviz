@@ -1879,7 +1879,7 @@ class PlotBuilder:
                             geojson=gcg.simple_geojson(df, 'value_field'), locations=df.index,
                             labels={'HEX': 'hid', 'value_field': 'val'} if labels else None)
         pm = deepcopy(manager)
-        pm.pop('colorscale')
+        pm.pop('colorscale', None)
         for d in fig.data:
             self._figure.add_trace(d.update(pm))
         self._plot_status = PlotStatus.DATA_PRESENT
