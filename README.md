@@ -1,15 +1,7 @@
-# GeoViz
+# GeoHexViz
 
 GeoVis is a package for the simple and repeatable visualization of hexagon-ally binned data sets.\
 The package's main feature is a PlotBuilder class which utilizes tools to hexagon-ally bin your dataset and then display it.
-
-## Installation
-
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install GeoHexViz.
-
-```bash
-pip install geoviz
-```
 
 ## Command Line / JSON Usage
 The GeoHexViz distribution includes a module that can allow the reading of JSON files
@@ -19,9 +11,7 @@ for quick and easy plots.
 {
   "main_dataset": {
     "data": "<sample csv file>",
-    "hexbin_info": {
-      "hex_resolution": 4
-    }
+    "hex_resolution": 4
   },
   "output_figure": {
     "filepath": "<sample filepath>",
@@ -115,7 +105,56 @@ Data:
 When the data is eventually plotted, a GeoJSON format of the data is passed
 alongside plotly properties are passed to the Plotly graphing library.
 
+## Installation
+As of right now the GeoHexViz package can be cloned on GitHub, and install
+by using the `setup.py` file.
+
+In the near future the package will be available via pip:\
+Use the package manager [pip](https://pip.pypa.io/en/stable/) to install GeoHexViz.
+```bash
+pip install geohexviz
+```
+
+## Further Documentation
+There is further documentation contained within the Reference Document published
+alongside this software package, which is available {HERE}. The official API
+documentation is also available {HERE}.
+
+## Acknowledgements
+Thank you to Nicholi Shiell for his input in testing, and providing advice for
+the development of this package.
+
+## Limitations
+This package uses GeoJSON format to plot data sets. With GeoJSON comes
+difficulties when geometries cross the 180th meridian \cite[]{MERIDIAN}.
+The issue appears to cause a color that bleeds through the entire plot
+and leaves a hexagon empty. In the final plot, this issue may or may not appear as
+it only occurs at certain angles of rotation. In this package a simple
+solution to the problem is implemented, in the future it would be best
+to provide a more robust solution. The solution that is used works generally,
+however, when hexagons containing either the north or south pole are present,
+the solution to the 180th meridian issue persists. 
+This pole issue can be seen in \autoref{fig:sar-issue}.
+
+There also exists some issues with the generation of discrete color scales
+under rare circumstances. These circumstances include generating discrete
+color scales with not enough hues to fill the scale, and generating diverging discrete
+colorscales with the center hue in a weird position. These issues have been
+noted and will be fixed in the near future. 
+
+There exists issues with the positioning and height of the color bar
+with respect to the plot area of the figure. Although the user is capable of altering
+the dimensions and positioning of the color bar, this should be done automatically
+as it is a common feature of publication quality choropleth maps.
+
 ## Contributing
 For major changes, please open an issue first to discuss what you would like to change.
 
-## License
+## Contact
+For any questions, feedback, bug reports, feature requests, etc please first
+present your thoughts via GitHub issues. For further assistance please
+contact tonyabouzeidan@cmail.carleton.ca
+
+## Copyright and License
+Copyright (c) Her Majesty the Queen in Right of Canada, as represented by
+the Minister of National Defence, 2021.

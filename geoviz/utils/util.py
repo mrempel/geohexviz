@@ -40,8 +40,14 @@ def parse_args_kwargs(item, default_args=None, default_kwargs=None):
         try:
             return item['args'], item['kwargs']
         except KeyError:
-            if item:
-                return default_args, item
+            try:
+                return default_args, item['kwargs']
+            except KeyError:
+                try:
+                    return item['args'], default_kwargs
+                except KeyError:
+                    if item:
+                        return default_args, item
             return default_args, default_kwargs
     elif isinstance(item, str):
         return [item], default_kwargs
@@ -156,7 +162,6 @@ def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, 
 
         occ[i] = (', '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group) \
             if len(group) > 1 else group[0]
-        print(occ[i])
     return occ[0]
 
 

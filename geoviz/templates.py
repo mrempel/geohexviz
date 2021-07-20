@@ -22,7 +22,7 @@ templates = dict(
     main_quant=dict(
         colorscale='Viridis',
         colorbar=dict(title='', ypad=0),
-        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
+        marker=dict(line=dict(color='white', width=0.60), opacity=0.68),
         showscale=True,
         showlegend=False,
         hoverinfo='location+z+text'
@@ -30,7 +30,7 @@ templates = dict(
     main_qual=dict(
         colorscale='Set3',
         colorbar=dict(title='COUNT', ypad=0),
-        marker=dict(line=dict(color='white', width=0.60), opacity=0.8),
+        marker=dict(line=dict(color='white', width=0.60), opacity=0.68),
         showscale=False,
         showlegend=True,
         hoverinfo='location+z+text'
