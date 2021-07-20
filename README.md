@@ -134,7 +134,9 @@ solution to the problem is implemented, in the future it would be best
 to provide a more robust solution. The solution that is used works generally,
 however, when hexagons containing either the north or south pole are present,
 the solution to the 180th meridian issue persists. 
-This pole issue can be seen in \autoref{fig:sar-issue}.
+This pole issue can be seen below.
+
+
 
 There also exists some issues with the generation of discrete color scales
 under rare circumstances. These circumstances include generating discrete
