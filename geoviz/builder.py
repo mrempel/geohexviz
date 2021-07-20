@@ -1674,7 +1674,6 @@ class PlotBuilder:
             geos['center'] = center
 
         self._figure.update_geos(**geos)
-        print(geos)
 
     def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = None):
         """Makes a grid over the queried datasets.
@@ -1854,7 +1853,7 @@ class PlotBuilder:
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
-    def plot_main(self, labels: bool = True):
+    def plot_main2(self, labels: bool = True):
         """Plots the main dataset within the builder.
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
@@ -1884,7 +1883,7 @@ class PlotBuilder:
             self._figure.add_trace(d.update(pm))
         self._plot_status = PlotStatus.DATA_PRESENT
 
-    def plot_main2(self):
+    def plot_main(self):
         """Plots the main dataset within the builder.
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
@@ -1946,9 +1945,17 @@ class PlotBuilder:
                 raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
+            import matplotlib.pyplot as plt
+            import geoplot as gpt
+            print('HERE')
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
                 text=df['text']).update(dataset['manager']))
+            ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
+            gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
+
+            #df.plot(column='value_field', cmap='viridis')
+            plt.show()
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
