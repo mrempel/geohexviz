@@ -443,17 +443,31 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
     return gcg.hexify_dataframe(data, hex_resolution=hex_resolution, add_geom=False, keep_geom=False, as_index=True)
 
 
-def _split_name(name: str) -> Tuple[str, str]:
-    lind = name.index(':')
-    return name[:lind], name[lind + 1:]
+def _split_query(query: str) -> Tuple[str, str]:
+    """Splits a query into the dataset type and dataset name.
+
+    :param query: The query to split
+    :type query: str
+    :return: The split query (type, name)
+    :rtype: Tuple[str, str]
+    """
+    lind = query.index(':')
+    return query[:lind], query[lind + 1:]
 
 
 def _check_name(name: str):
+    """Checks if the given dataset name is valid, and throws an error if it is not.
+
+    :param name: The name of the dataset
+    :type name: str
+    """
     if any(not i.isalnum() and i != '_' for i in name):
         raise gce.DatasetNamingError("NERR001 - Non-alphanumeric found (besides underscores)")
 
 
 class PlotStatus(Enum):
+    """An enumeration of different plot status.
+    """
     DATA_PRESENT = 0
     NO_DATA = 1
 
@@ -509,6 +523,8 @@ class PlotBuilder:
 
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
+        self.output_destination = None
+        self._last_output_location = None   # for future use?
 
         if main_dataset is not None:
             self.set_main(**main_dataset)
@@ -594,7 +610,7 @@ class PlotBuilder:
             self.set_main(**value)
         else:
             try:
-                typer, name = _split_name(key)
+                typer, name = _split_query(key)
             except ValueError:
                 raise ValueError("The given string should be in the form of '<type>:<name>'.")
 
@@ -620,7 +636,7 @@ class PlotBuilder:
             self._container[key] = {}
         else:
             try:
-                typer, name = _split_name(key)
+                typer, name = _split_query(key)
 
             except ValueError:
                 raise ValueError("The given string should be one of ['regions', 'grids', 'outlines', 'points', "
@@ -635,8 +651,14 @@ class PlotBuilder:
             except KeyError:
                 raise ValueError(f"The dataset with the name ({name}) could not be found within {typer}s.")
 
-    # we don't have to use getattr
     def __getitem__(self, item):
+        """getitem method works like search method.
+
+        :param item: The item to search for
+        :type item: str
+        :return: The retrieved dataset(s)
+        :rtype: StrDict
+        """
         return self.search(item)
 
     """
@@ -1794,7 +1816,7 @@ class PlotBuilder:
                 raise gce.BuilderQueryInvalidError("The given query should not refer to a collection of datasets.")
 
         try:
-            typer, name = _split_name(query)
+            typer, name = _split_query(query)
         except ValueError:
             raise gce.BuilderQueryInvalidError(
                 "The given query should be one of ['regions', 'grids', 'outlines', 'points', "
@@ -2078,7 +2100,7 @@ class PlotBuilder:
                 if raise_errors:
                     raise e
 
-    def output_figure(self, filepath: str, clear_figure: bool = False, **kwargs):
+    def output_figure(self, filepath: str = None, clear_figure: bool = False, **kwargs):
         """Outputs the figure to a filepath.
 
         The figure is output via Plotly's write_image() function.
@@ -2091,6 +2113,12 @@ class PlotBuilder:
         :param kwargs: Keyword arguments for the write_image function
         :type kwargs: **kwargs
         """
+        if filepath is None:
+            if self.output_destination is None:
+                raise gce.NoFilepathError("There must either be a filepath given directly or one stored in"
+                                          " the builder's 'output_destination' property.")
+            filepath = self.output_destination
+
         self._figure.write_image(filepath, **kwargs)
         if clear_figure:
             self.clear_figure()

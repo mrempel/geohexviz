@@ -94,3 +94,10 @@ class NoDatasetsError(Exception):
     def __init__(self, message: str = "There were no datasets found."):
         self.message = message
         super().__init__(self.message)
+
+
+class NoFilepathError(Exception):
+
+    def __init__(self, message: str = "There was no filepath provided."):
+        self.message = message
+        super().__init__(self.message)
