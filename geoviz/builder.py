@@ -2120,6 +2120,7 @@ class PlotBuilder:
             filepath = self.output_destination
 
         self._figure.write_image(filepath, **kwargs)
+        self._last_output_location = filepath
         if clear_figure:
             self.clear_figure()
 
