@@ -48,6 +48,11 @@ _group_functions = {
 StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
+"""
+Future Versions should use a more Object-Oriented model
+for creation and storage of datasets.
+"""
+
 
 def _reset_to_odata(dataset: StrDict):
     """Resets the odata parameter of a dataset.
