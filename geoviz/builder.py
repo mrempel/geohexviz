@@ -14,8 +14,8 @@ from os.path import join as pjoin
 import plotly.colors
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
 
-from geoviz.utils.util import fix_filepath, get_sorted_occ, get_column_type, \
-    simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs
+from geoviz.utils.util import fix_filepath, get_column_type, \
+    simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
 from geoviz.utils import geoutils as gcg
 from geoviz.utils import plot_util as butil
 
@@ -42,7 +42,8 @@ _group_functions = {
     'min': lambda lst: min(lst),
     'max': lambda lst: max(lst),
     'count': lambda lst: len(lst),
-    'bestworst': get_sorted_occ
+    'best': get_best,
+    'worst': get_worst
 }
 
 StrDict = Dict[str, Any]
@@ -367,7 +368,6 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     data.vtype = 'NUM'
     return data
 
-
 def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
@@ -404,7 +404,7 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
         raise gce.BinValueTypeError("The binning field is not a valid type, must be string or numerical column.")
 
     if binning_fn is None:
-        binning_fn = _group_functions['bestworst'] if vtype == 'STR' else _group_functions['count']
+        binning_fn = _group_functions['best'] if vtype == 'STR' else _group_functions['count']
 
     data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
                             result_name='value_field', add_geoms=True, **kwargs)
@@ -488,7 +488,7 @@ class PlotBuilder:
             grids: Dict[str, StrDict] = None,
             outlines: Dict[str, StrDict] = None,
             points: Dict[str, StrDict] = None,
-            use_default_managers: bool = True
+            use_templates: bool = True
     ):
         """Initializer for instances of PlotBuilder.
 
@@ -510,14 +510,14 @@ class PlotBuilder:
         self._plot_status = PlotStatus.NO_DATA
 
         self._figure = Figure()
-        if use_default_managers:
+        if use_templates:
             self._figure.update(get_template('figure'))
             # grids will all reference this manager
             self._grid_manager = deepcopy(get_template('grid'))
         else:
             self._grid_manager = {}
 
-        self.use_default_managers = use_default_managers
+        self.use_templates = use_templates
 
         self._container = {
             'regions': {},
@@ -529,7 +529,7 @@ class PlotBuilder:
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
         self.output_destination = None
-        self._last_output_location = None   # for future use?
+        self._last_output_location = None   # for future use
 
         if main_dataset is not None:
             self.set_main(**main_dataset)
@@ -707,7 +707,7 @@ class PlotBuilder:
         data = _convert_to_hexbin_data(data, **hbin_info)
         dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
         dataset['manager'] = {}
-        if self.use_default_managers:
+        if self.use_templates:
             if dataset['VTYPE'] == 'NUM':
                 _update_manager(dataset, deepcopy(get_template('main_quant')))
             else:
@@ -812,7 +812,7 @@ class PlotBuilder:
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        if self.use_default_managers:
+        if self.use_templates:
             dataset['manager'] = deepcopy(get_template('region'))
         else:
             dataset['manager'] = {}
@@ -1123,7 +1123,7 @@ class PlotBuilder:
             data = gcg.unify_geodataframe(data)
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        if self.use_default_managers:
+        if self.use_templates:
             dataset['manager'] = deepcopy(get_template('outline'))
         else:
             dataset['manager'] = {}
@@ -1280,7 +1280,7 @@ class PlotBuilder:
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        if self.use_default_managers:
+        if self.use_templates:
             dataset['manager'] = deepcopy(get_template('point'))
         else:
             dataset['manager'] = {}
@@ -2165,7 +2165,7 @@ class PlotBuilder:
         self._plot_status = PlotStatus.NO_DATA
         self._figure = Figure()
 
-        if self.use_default_managers:
+        if self.use_templates:
             self._figure.update(get_template('figure'))
             # grids will all reference this manager
             self._grid_manager = deepcopy(get_template('grid'))
