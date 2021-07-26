@@ -39,18 +39,18 @@ class UtilTestCase(unittest.TestCase):
         Tests:
         Take a list and get the best occurrence from it. Ensure that the result is correct.
         """
-        result = util.get_sorted_occ(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'])
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'])
         self.assertEqual('deny', result)
-        result = util.get_sorted_occ(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['allow', 'deny'])
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['allow', 'deny'])
         self.assertEqual('allow', result)
-        result = util.get_sorted_occ(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
-                                     allow_ties=True, join_ties=True)
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
+                                      allow_ties=True, join_ties=True)
         self.assertEqual(', '.join(['allow', 'deny']), result)
-        result = util.get_sorted_occ(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
-                                     allow_ties=True, join_ties=False)
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
+                                      allow_ties=True, join_ties=False)
         self.assertEqual('tie', result)
-        result = util.get_sorted_occ(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
-                                     reverse=False)
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
+                                      reverse=False)
         self.assertEqual('permit', result)
 
     def test_get_column_or_default(self):
