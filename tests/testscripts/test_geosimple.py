@@ -10,7 +10,7 @@ PARAM_PATH = pjoin(DATA_PATH, 'parameterfile-data')
 
 class GeoSimpleCase(unittest.TestCase):
     def test_run_simple_JSON(self):
-        self.assertEqual(PlotStatus.DATA_PRESENT, util.run_simple_JSON(pjoin(PARAM_PATH, 'sample1-russia.json')))
+        self.assertEqual(PlotStatus.DATA_PRESENT, util.run_json(pjoin(PARAM_PATH, 'sample1-russia.json')))
 
 
 if __name__ == '__main__':

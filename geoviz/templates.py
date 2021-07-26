@@ -78,6 +78,13 @@ templates = dict(
 
 
 def get_template(name: str) -> dict:
+    """Retrieves a template from the module.
+
+    :param name: The name of the template
+    :type name: str
+    :return: The retrieved template
+    :rtype: dict
+    """
     try:
         return templates[name]
     except KeyError:
