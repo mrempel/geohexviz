@@ -155,11 +155,7 @@ def builder_from_dict(builder_dict: StrDict = None, **kwargs):
     :param kwargs: Keyword arguments for the builder
     :type kwargs: **kwargs
     """
-    settings = {}
-    if builder_dict:
-        settings.update(builder_dict)
-    settings.update(kwargs)
-
+    settings = simplify_dicts(builder_dict, **kwargs)
     plotly_managers = settings.pop('builder_managers', {})
 
     builder = PlotBuilder(**settings)
