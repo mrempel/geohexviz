@@ -1,31 +1,26 @@
-import base64
-import re
-import time
+from copy import deepcopy
 from copy import deepcopy
 from enum import Enum
-from typing import Any, Tuple, ClassVar, Dict, Union, Callable
+from os import path
+from os.path import join as pjoin
+from typing import Any, Tuple, Dict, Union, Callable
 
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-from os import path
-from os.path import join as pjoin
-
 import plotly.colors
-from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
-
-from geoviz.utils.util import fix_filepath, get_column_type, \
-    simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
-from geoviz.utils import geoutils as gcg
-from geoviz.utils import plot_util as butil
-
-from geoviz.utils.colorscales import solid_scale, discretize_cscale, \
-    get_scale
-
 from geopandas import GeoDataFrame
 from pandas import DataFrame
+from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
+
 import geoviz.errors as gce
 from geoviz.templates import get_template
+from geoviz.utils import geoutils as gcg
+from geoviz.utils import plot_util as butil
+from geoviz.utils.colorscales import solid_scale, discretize_cscale, \
+    get_scale
+from geoviz.utils.util import fix_filepath, get_column_type, \
+    simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
 
 plotly.io.kaleido.scope.default_format = 'pdf'
 
