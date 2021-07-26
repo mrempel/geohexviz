@@ -1,5 +1,4 @@
 from typing import Dict, Any, Callable
-from geoviz.builder import builder_from_dict
 from geoviz.builder import PlotBuilder
 from geoviz.utils.util import parse_args_kwargs
 import json
@@ -17,7 +16,14 @@ fn_map: Dict[str, Callable] = {
 output_fns = ['display figure', 'output figure']
 
 
-def run_simple_JSON(filepath: str):
+def run_json(filepath: str):
+    """Runs a json file representation of a plot scheme.
+
+    :param filepath: The filepath to the json file
+    :type filepath: str
+    :return: The status of the plot after building
+    :rtype: PlotStatus
+    """
     with open(filepath) as jse:
         read = json.load(jse)
 
@@ -39,7 +45,7 @@ def run_simple_JSON(filepath: str):
     display_fig = read.pop("display_figure", True)
     builder_fns = read.pop("builder_functions", {})
 
-    builder = builder_from_dict(**read)
+    builder = PlotBuilder.builder_from_dict(**read)
 
     for k, v in builder_fns.items():
         if v != False:

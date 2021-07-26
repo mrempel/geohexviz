@@ -1,5 +1,4 @@
 from copy import deepcopy
-from copy import deepcopy
 from enum import Enum
 from os import path
 from os.path import join as pjoin
@@ -43,11 +42,6 @@ _group_functions = {
 
 StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
-
-"""
-Future Versions should use a more Object-Oriented model
-for creation and storage of datasets.
-"""
 
 
 def _reset_to_odata(dataset: StrDict):
@@ -145,32 +139,6 @@ def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint
             lat=lats,
             lon=lons
         )
-
-
-def builder_from_dict(builder_dict: StrDict = None, **kwargs):
-    """Makes a builder from a dictionary.
-
-    :param builder_dict: The dictionary to build from
-    :type builder_dict: StrDict
-    :param kwargs: Keyword arguments for the builder
-    :type kwargs: **kwargs
-    """
-    settings = simplify_dicts(builder_dict, **kwargs)
-    plotly_managers = settings.pop('builder_managers', {})
-
-    builder = PlotBuilder(**settings)
-    builder.update_main_manager(plotly_managers.get('main_dataset', {}))
-    builder.update_grid_manager(plotly_managers.get('grids', {}))
-    builder.update_figure(plotly_managers.get('figure', {}))
-
-    for k, v in plotly_managers.get('regions', {}):
-        builder.update_region_manager(v, name=k)
-    for k, v in plotly_managers.get('outlines', {}):
-        builder.update_outline_manager(v, name=k)
-    for k, v in plotly_managers.get('points', {}):
-        builder.update_point_manager(v, name=k)
-
-    return builder
 
 
 def _validate_dataset(dataset: StrDict):
@@ -2070,3 +2038,29 @@ class PlotBuilder:
         self.reset_grid_data()
         self.reset_outline_data()
         self.reset_point_data()
+
+    @staticmethod
+    def builder_from_dict(builder_dict: StrDict = None, **kwargs):
+        """Makes a builder from a dictionary.
+
+        :param builder_dict: The dictionary to build from
+        :type builder_dict: StrDict
+        :param kwargs: Keyword arguments for the builder
+        :type kwargs: **kwargs
+        """
+        settings = simplify_dicts(builder_dict, **kwargs)
+        plotly_managers = settings.pop('builder_managers', {})
+
+        builder = PlotBuilder(**settings)
+        builder.update_main_manager(plotly_managers.get('main_dataset', {}))
+        builder.update_grid_manager(plotly_managers.get('grids', {}))
+        builder.update_figure(plotly_managers.get('figure', {}))
+
+        for k, v in plotly_managers.get('regions', {}):
+            builder.update_region_manager(v, name=k)
+        for k, v in plotly_managers.get('outlines', {}):
+            builder.update_outline_manager(v, name=k)
+        for k, v in plotly_managers.get('points', {}):
+            builder.update_point_manager(v, name=k)
+
+        return builder

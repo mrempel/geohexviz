@@ -1,6 +1,6 @@
 from typing import Dict, Any, Callable
 from geoviz.builder import PlotBuilder
-from util import run_simple_JSON
+from util import run_json
 import json
 import os
 import sys
@@ -22,7 +22,7 @@ def plot():
                         'your builder parameter file.')
     if not fp:
         return
-    run_simple_JSON(fp)
+    run_json(fp)
 
 
 def plotDir():
@@ -34,7 +34,7 @@ def plotDir():
 
         try:
             for file in os.listdir(fp):
-                run_simple_JSON(os.path.join(fp, file))
+                run_json(os.path.join(fp, file))
             break
         except NotADirectoryError:
             print('That was not a directory. Try again or exit.')

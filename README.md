@@ -26,9 +26,9 @@ running the JSON script will allow you to input a JSON file via command line
 You may also use the functions that allow the executing of a JSON file from a python module.
 
 ```python
-from scripts.geosimple.util import run_simple_JSON
+from scripts.geosimple.util import run_json
 
-run_simple_JSON("<filepath here>")
+run_json("<filepath here>")
 ```
 
 ## Python Module Usage (PlotBuilder)

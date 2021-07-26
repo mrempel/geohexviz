@@ -1,9 +1,3 @@
-"""
-Notes for refactoring:
-
-We can perhaps integrate this with the builder class.
-"""
-
 
 class BuilderPlotBuildError(Exception):
 
