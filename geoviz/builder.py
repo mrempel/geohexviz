@@ -542,51 +542,6 @@ class PlotBuilder:
             raise ValueError("The output service must be one of ['plotly', 'mapbox'].")
         self._output_service = service
 
-    def __setitem__(self, key: str, value: StrDict):
-        """Overwritten setitem method.
-
-        Does one of the following:
-        1) Sets the main dataset
-        2) Adds a region dataset
-        3) Adds a grid dataset
-        4) Adds an outline dataset
-        5) Adds a point dataset
-
-        The key must be in the form:
-        <main> or <region|grid|outline|point>:<name>
-
-        :param key: The key as shown above
-        :type key: str
-        :param value: A dict representing a valid dataset
-        :type value: StrDict
-        """
-
-        if not isinstance(key, str):
-            raise KeyError("You may not use a non-string key.")
-
-        if not isinstance(value, dict):
-            raise ValueError("The value must be a string dictionary (Dict[str, Any])")
-
-        if key == 'main':
-            self.set_main(**value)
-        else:
-            try:
-                typer, name = _split_query(key)
-            except ValueError:
-                raise ValueError("The given string should be in the form of '<type>:<name>'.")
-
-            if typer == 'region':
-                self.add_region(name, **value)
-            elif typer == 'grid':
-                self.add_grid(name, **value)
-            elif typer == 'outline':
-                self.add_outline(name, **value)
-            elif typer == 'point':
-                self.add_point(name, **value)
-            else:
-                raise ValueError(f"The given dataset type does not exist. Must be one of ['region', 'grid', "
-                                 f"'outline', 'point']. Received {typer}.")
-
     def __getitem__(self, item):
         """getitem method works like search method.
 
