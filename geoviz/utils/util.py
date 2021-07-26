@@ -137,8 +137,23 @@ def get_sorted_occ2(lst: list, allow_ties=False, join_ties=True, selector=None, 
     return occ[0]
 
 
-def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None,
-                   reverse: bool = True):
+def get_sorted_best(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None,
+                    reverse: bool = True) -> object:
+    """Retrieves the best entry or entries from a list of labels based on occurrences.
+
+    :param lst: The list of labels to parse the best or worst option from
+    :type lst: list
+    :param allow_ties: Whether to allow ties between labels or not
+    :type allow_ties: bool
+    :param join_ties: Whether to join the labels of the tie if present or not
+    :type join_ties: bool
+    :param selector: If multiple items are tied, this determines the order of which they will be selected as the best
+    :type selector: Iterable
+    :param reverse: Whether to reverse the list or not (reversed=best, !reversed=worst)
+    :type reverse: bool
+    :return: The best or worst option from the list
+    :rtype: object
+    """
     if selector is None:
         selector = []
 
@@ -165,254 +180,34 @@ def get_sorted_occ(lst: list, allow_ties: bool = False, join_ties: bool = True, 
     return occ[0]
 
 
-def sorted_indices(data: Iterable, **kwargs) -> List:
-    """Sorts indices of a list, ignoring zeroes.
+def get_best(*args, **kwargs) -> object:
+    """Gets the best option from a list of labels.
 
-    :param data: The data to sort by index
-    :type data: Iterable
-    :param kwargs: Keyword arguments to pass into the sorted function
+    see get_sorted_best()
+
+    :param args: Arguments to be passed into the get_sorted_best() function
+    :type args: *args
+    :param kwargs: Keywords to be passed into the get_sorted_best() function
     :type kwargs: **kwargs
-    :return: A list of sorted indices
-    :rtype: List
+    :return: The best option in the list
+    :rtype: object
     """
-    indices = defaultdict(list)
-    for i, x in enumerate(data):
-        indices[x].append(i)
-    unique_sorted_data = sorted({x for x in data if x != 0}, **kwargs)
-    return [y[0] if len(y) == 1 else y for y in (indices[x] for x in unique_sorted_data)]
+    return get_sorted_best(*args, reverse=True, **kwargs)
 
 
-def collapse_dataframe2(df: DataFrame, by: str):
-    grouper = df.groupby(by)
-    newdf = DataFrame(columns=df.columns)
+def get_worst(*args, **kwargs) -> object:
+    """Gets the worst option from a list of labels.
 
-    def list_helper(lsts):
-        lst = []
-        for item in lsts:
-            if isinstance(item, tuple):
-                lst.extend(list(item))
-            else:
-                lst.append(item)
-        return lst
+    see get_sorted_best()
 
-    for col in df.columns:
-        newdf[col] = np.array(grouper[col].agg(list_helper))
-
-
-def combine_dataframes(original: DataFrame, toadd: DataFrame, original_name: str = None, toadd_name: str = None,
-                       as_index: bool = False):
-    idnames = list(toadd.index.names)
-    toadd.reset_index(inplace=True)
-
-    if 'ORIGIN_INDEX' not in toadd.columns:
-        if len(idnames) == 1:
-            if idnames[0] is None:
-                toadd.rename({'index': 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-            else:
-                toadd.rename({idnames[0]: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-        elif len(idnames) == 2:
-            if 'ORIGIN' not in toadd.columns:
-                if idnames[0] is None:
-                    toadd.rename({'level_0': 'ORIGIN'}, axis=1, inplace=True, errors='raise')
-                else:
-                    toadd.rename({idnames[0]: 'ORIGIN'}, axis=1, inplace=True, errors='raise')
-                if idnames[1] is None:
-                    toadd.rename({'level_1': 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-                else:
-                    toadd.rename({idnames[1]: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-
-    if 'ORIGIN' not in toadd.columns:
-        if toadd_name is None:
-            raise ValueError("When you pass a dataframe without a 'ORIGIN' column or index level, you must pass a "
-                             "name for the dataframe. Received None for toadd_name.")
-        toadd['ORIGIN'] = toadd_name
-
-    idnames = list(original.index.names)
-    original.reset_index(inplace=True)
-
-    if 'ORIGIN_INDEX' not in original.columns:
-        if len(idnames) == 1:
-            if idnames[0] is None:
-                original.rename({'index': 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-            else:
-                original.rename({idnames[0]: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-        elif len(idnames) == 2:
-            if 'ORIGIN' not in original.columns:
-                if idnames[0] is None:
-                    original.rename({'level_0': 'ORIGIN'}, axis=1, inplace=True, errors='raise')
-                else:
-                    original.rename({idnames[0]: 'ORIGIN'}, axis=1, inplace=True, errors='raise')
-                if idnames[1] is None:
-                    original.rename({'level_1': 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-                else:
-                    original.rename({idnames[1]: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='raise')
-
-    if 'ORIGIN' not in original.columns:
-        if original_name is None:
-            raise ValueError("When you pass a dataframe without a 'ORIGIN' column or index level, you must pass a "
-                             "name for the dataframe. Received None for original_name.")
-        original['ORIGIN'] = original_name
-
-    return original.append(toadd, ignore_index=False).reset_index(drop=True).set_index(['ORIGIN', 'ORIGIN_INDEX']) \
-        if as_index else original.append(toadd, ignore_index=False)
-
-
-def combine_dataframesX(original: DataFrame, original_name: str = None,
-                        toadd: DataFrame = None, toadd_name: str = None,
-                        as_index: bool = False):
-    idname = toadd.index.name if toadd.index.name is not None else 'index'
-    toadd.reset_index(inplace=True)
-    if 'ORIGIN_INDEX' not in toadd.columns:
-        toadd.rename({idname: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='ignore')
-
-    idname = original.index.name if original.index.name is not None else 'index'
-    original.reset_index(inplace=True)
-    if 'ORIGIN_INDEX' not in original.columns:
-        original.rename({idname: 'ORIGIN_INDEX'}, axis=1, inplace=True, errors='ignore')
-
-    if 'ORIGIN' not in toadd.columns:
-        if toadd_name is not None:
-            toadd['ORIGIN'] = toadd_name
-        else:
-            try:
-                toadd['ORIGIN'] = toadd.name
-            except AttributeError:
-                toadd['ORIGIN'] = 'NEW'
-    if 'ORIGIN' not in original.columns:
-        print('NAME CHANGED')
-        if original_name is not None:
-            original['ORIGIN'] = original_name
-        else:
-            try:
-                original['ORIGIN'] = original.name
-            except AttributeError:
-                original['ORIGIN'] = 'OLD'
-
-    print('COLS', toadd.columns.values)
-    print(original[['ORIGIN', 'ORIGIN_INDEX']], '\nVERSUS:\n', toadd[['ORIGIN', 'ORIGIN_INDEX']])
-
-    return original.append(toadd, ignore_index=False).reset_index(drop=True).set_index(['ORIGIN', 'ORIGIN_INDEX']) \
-        if as_index else original.append(toadd, ignore_index=False)
-
-
-def collapse_dataframe_by(df: DataFrame, by=None, level=None):
-    df = expand_dataframe(df)
-    grouper = df.groupby(by=by, level=level, dropna=False)
-    df: DataFrame = grouper.agg(list)
-    df['OLEN'] = grouper.size()
-
-    return df
-
-
-def collapse_dataframe(df: DataFrame):
-    df = expand_dataframe(df)
-    olen = []
-
-    def helper(items):
-        olen.append(np.sum(items.count()))
-        return np.array(items)
-
-    df = DataFrame({x: [helper(df[x])] for x in df.columns})
-    df['OLEN'] = [np.array(olen)]
-    return df
-
-
-def expand_dataframe(df: DataFrame) -> DataFrame:
-    return df.apply(pd.Series.explode, ignore_index=True)
-
-
-def make_multi_dataframe(datasets: dict, crs=None, errors: str = 'raise') -> DataFrame:
-    vals = []
-    for k, v in datasets.items():
-        v['adata']['*DS_NAME*'] = k
-        vals.append(v['adata'])
-    try:
-        resultdf = concat(vals, ignore_index=False)  # will throw ValueError if empty
-        # resultdf_g = (resultdf
-        #             .groupby(resultdf.index)['*DS_NAME*']
-        #             .agg(list)
-        #             .to_frame('*DS_NAMES*')).set_index('*DS_NAMES*')
-
-        cols = list(resultdf.columns.values)
-        resultdf = resultdf.groupby(resultdf.index)
-        newdf = DataFrame(columns=cols)
-        for col in cols:
-            newdf[col] = np.array(resultdf[col].agg(list)).astype('object')
-        return newdf
-    except ValueError as e:
-        if errors == 'raise':
-            raise e
-        return DataFrame()
-
-
-def make_multi_geodataframe(datasets: dict, crs=None, errors: str = 'raise'):
-    resultdf = make_multi_dataframe(datasets, errors=errors)
-    resultdf['geometry'] = resultdf['geometry'].apply(lambda g: GeometryCollection(g))
-    return GeoDataFrame(resultdf, geometry='geometry', crs=crs)
-
-
-def make_multi_dataset3(dss, errors: str = 'raise'):
-    vals = []
-    for dsname, ds in dss.items():
-        ds['data']['*DS_NAME*'] = dsname
-        vals.append(ds['adata'])
-    try:
-        return GeoDataFrame(concat(vals, ignore_index=True), geometry='geometry', crs='EPSG:4326')
-    except ValueError as e:
-        if errors == 'raise':
-            raise e
-        data = GeoDataFrame()
-        data['*DS_NAME*'] = ''
-        return data
-
-
-def make_multi_dataset2(dss, errors: str = 'raise'):
-    vals = []
-    for dsname, ds in dss.items():
-        ds['data']['*DS_NAME*'] = dsname
-        vals.append(ds['data'])
-    try:
-        return {'data': GeoDataFrame(concat(vals, ignore_index=True), geometry='geometry', crs='EPSG:4326')}
-    except ValueError as e:
-        if errors == 'raise':
-            raise e
-        data = GeoDataFrame()
-        data['*DS_NAME*'] = ''
-        return {'data': data}
-
-
-def dissolve_multi_dataset(mds, ds_col: str = '*DS_NAME*', errors: str = 'ignore'):
-    try:
-        return {x: mds[mds[ds_col] == x] for x in mds[ds_col].unique()}
-    except KeyError as e:
-        if errors == 'raise':
-            raise e
-        return mds
-
-
-def dissolve_multi_dataset2(mds, properties, dropmds: bool = True, mdsname: str = '*COMBINED*', errors: str = 'raise'):
-    mds = mds['data']
-    dss = {}
-    for un in mds['*DS_NAME*'].unique():
-        try:
-            try:
-                dss[un] = deepcopy(properties[un])
-            except KeyError:
-                dss[un] = {}
-            dss[un].update({'data': mds[mds['*DS_NAME*'] == un]})
-        except KeyError as e:
-            if errors == 'raise':
-                raise e
-            pass
-
-    if dropmds:
-        try:
-            properties.pop(mdsname)
-        except KeyError as e:
-            if errors == 'raise':
-                raise e
-            pass
-    return dss
+    :param args: Arguments to be passed into the get_sorted_best() function
+    :type args: *args
+    :param kwargs: Keywords to be passed into the get_sorted_best() function
+    :type kwargs: **kwargs
+    :return: The worst option in the list
+    :rtype: object
+    """
+    return get_sorted_best(*args, reverse=False, **kwargs)
 
 
 def get_total_hex_area(gdf: GeoDataFrame, assume: bool = True):
@@ -457,22 +252,6 @@ def simplify_dicts(fields: dict = None, **kwargs):
 def get_hex_stats(gdf: GeoDataFrame, assume_same_size: bool = True):
     info = {'hex-count': len(gdf), 'hex-total-area': get_total_hex_area(gdf, assume=assume_same_size)}
     return info
-
-
-def geom_all_type(gdf: GeoDataFrame, wanted_type: str):
-    types = set(list(gdf.geom_type))
-    if len(types) == 1:
-        return True if str(types.pop()) == wanted_type else False
-    return False
-
-
-def rename_dataset(dataset: DataSet):
-    df = dataset.pop('data')
-    for item in dataset.items():
-        if is_hashable(item[1]) and item[1] in df.columns:
-            df.rename({item[1]: item[0]}, axis=1, inplace=True)
-
-    dataset['data'] = df
 
 
 def get_column_or_default(df: DataFrame, col: str, default_val=None):
