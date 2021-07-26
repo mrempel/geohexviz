@@ -323,6 +323,7 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     data.vtype = 'NUM'
     return data
 
+
 def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
@@ -484,7 +485,7 @@ class PlotBuilder:
         self._output_service = 'plotly'
         self.default_hex_resolution = 3
         self.output_destination = None
-        self._last_output_location = None   # for future use
+        self._last_output_location = None  # for future use
 
         if main_dataset is not None:
             self.set_main(**main_dataset)
@@ -585,31 +586,6 @@ class PlotBuilder:
             else:
                 raise ValueError(f"The given dataset type does not exist. Must be one of ['region', 'grid', "
                                  f"'outline', 'point']. Received {typer}.")
-
-    # may not be necessary (needs to be fixed)
-    def __delitem__(self, key):
-
-        if key == 'main':
-            self.remove_main()
-
-        if key in ['regions', 'grids', 'outlines', 'points', 'main']:
-            self._container[key] = {}
-        else:
-            try:
-                typer, name = _split_query(key)
-
-            except ValueError:
-                raise ValueError("The given string should be one of ['regions', 'grids', 'outlines', 'points', "
-                                 "'main'] or in the form of '<type>:<name>'.")
-            try:
-                cont = self._container[f'{typer}s']
-            except KeyError:
-                raise ValueError(f"The given dataset type does not exist. Must be one of ['region', 'grid', "
-                                 f"'outline', 'point']. Received {typer}.")
-            try:
-                del cont[name]
-            except KeyError:
-                raise ValueError(f"The dataset with the name ({name}) could not be found within {typer}s.")
 
     def __getitem__(self, item):
         """getitem method works like search method.
@@ -1936,7 +1912,7 @@ class PlotBuilder:
             ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
             gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
 
-            #df.plot(column='value_field', cmap='viridis')
+            # df.plot(column='value_field', cmap='viridis')
             plt.show()
 
         self._plot_status = PlotStatus.DATA_PRESENT
