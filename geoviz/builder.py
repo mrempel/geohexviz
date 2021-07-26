@@ -276,51 +276,6 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     return data
 
 
-def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
-    """Converts lat/long columns into a proper geometry column, if present.
-
-    :param data: The data that may or may not contain lat/long columns
-    :type data: GeoDataFrame
-    :param latitude_field: The latitude column within the dataframe
-    :type latitude_field: str
-    :param longitude_field: The longitude column within the dataframe
-    :type longitude_field: str
-    :return: The converted dataframe
-    :rtype: GeoDataFrame
-    """
-    if data.empty:
-        raise ValueError("If the data passed is a DataFrame, it must not be empty.")
-
-    data = data.copy(deep=True)
-
-    if 'geometry' not in data.columns:
-
-        try:
-            latitude_field = data[latitude_field]
-        except KeyError:
-            if 'latitude' in data.columns:
-                latitude_field = data['latitude']
-            else:
-                raise ValueError(
-                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                    "and longitude_field entries. Missing latitude_field member.")
-
-        try:
-            longitude_field = data[longitude_field]
-        except KeyError:
-            if 'longitude' in data.columns:
-                longitude_field = data['longitude']
-            else:
-                raise ValueError(
-                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                    "and longitude_field entries. Missing longitude_field member.")
-        data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field,
-                                                              crs='EPSG:4326'))
-    data.vtype = 'NUM'
-    return data
-
-
-# TODO: change to this function
 def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
