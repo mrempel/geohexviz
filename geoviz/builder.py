@@ -1817,17 +1817,16 @@ class PlotBuilder:
                 raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
-            import matplotlib.pyplot as plt
-            import geoplot as gpt
-            print('HERE')
+            #import matplotlib.pyplot as plt
+            #import geoplot as gpt
+            #print('HERE')
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
                 text=df['text']).update(dataset['manager']))
-            ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
-            gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
-
+            #ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
+            #gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
             # df.plot(column='value_field', cmap='viridis')
-            plt.show()
+            #plt.show()
 
         self._plot_status = PlotStatus.DATA_PRESENT
 

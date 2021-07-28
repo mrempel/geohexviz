@@ -348,6 +348,13 @@ def logify_scale_dep(df: DataFrame, **kwargs) -> Dict[str, Any]:
 
 
 def opacify_colorscale(dataset: dict, alpha: float = None):
+    """Plot wrapper for adjusting the opacity of a colorscale.
+
+    :param dataset: The dataset whose colorscale to adjust
+    :type dataset: dict
+    :param alpha: The alpha to adjust by (if not, then the alpha within the dataset is used)
+    :type alpha: float
+    """
     colorscale = dataset['manager'].get('colorscale')
 
     try:
@@ -359,7 +366,20 @@ def opacify_colorscale(dataset: dict, alpha: float = None):
     dataset['manager']['colorscale'] = cli.configure_cscale_opacity(colorscale, alpha)
 
 
-def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'intersects', validate: bool = False):
+def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'intersects', validate: bool = False) -> GeoDataFrame:
+    """Plot wrapper for the spatial join clip operation.
+
+    :param clip: The data to clip
+    :type clip: GeoDataFrame
+    :param to: The list of data to act as the clip
+    :type to: List[GeoDataFrame]
+    :param operation: The operation to be performed in the spatial join
+    :type operation: str
+    :param validate: Whether or not to validate the result or not (throws)
+    :type validate: bool
+    :return: The result of the clip
+    :rtype: GeoDataFrame
+    """
     if len(to) == 0:
         raise ValueError("There are no datasets to clip to.")
 
@@ -376,6 +396,17 @@ def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'int
 
 
 def gpd_clip(clip: GeoDataFrame, to: List[GeoDataFrame], validate: bool = True):
+    """Plot wrapper for the geopandas clip operation.
+
+    :param clip: The data to clip
+    :type clip: GeoDataFrame
+    :param to: The list of data to act as the clip
+    :type to: List[GeoDataFrame]
+    :param validate: Whether or not to validate the result or not (throws)
+    :type validate: bool
+    :return: The result of the clip
+    :rtype: GeoDataFrame
+    """
     if len(to) == 0:
         raise ValueError("There are no datasets to clip to.")
 
