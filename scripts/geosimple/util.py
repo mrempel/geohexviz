@@ -4,10 +4,9 @@ from geoviz.utils.util import parse_args_kwargs
 import json
 
 fn_map: Dict[str, Callable] = {
-    'adjust opacity': PlotBuilder.adjust_opacity,
+    'remove empties': PlotBuilder.remove_empties,
     'logarithmic scale': PlotBuilder.logify_scale,
     'generate grid': PlotBuilder.auto_grid,
-    'adjust focus': PlotBuilder.adjust_focus,
     'simple clip': PlotBuilder.simple_clip,
     'clip datasets': PlotBuilder.clip_datasets,
     'discrete scale': PlotBuilder.discretize_scale,
