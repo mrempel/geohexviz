@@ -223,7 +223,7 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
                 data, rtype = butil.get_shapes_from_world(data), 'builtin'
             except (KeyError, ValueError, TypeError):
                 err_msg = "The data must be a valid country or continent name, filepath, DataFrame, or GeoDataFrame."
-
+    print
     if isinstance(data, DataFrame):
         data = GeoDataFrame(data)
         data['value_field'] = 0
@@ -1097,6 +1097,7 @@ class PlotBuilder:
             data: DFType,
             latitude_field: str = None,
             longitude_field: str = None,
+            text_field: str = None,
             manager: StrDict = None
     ):
         """Adds a outline-type dataset to the builder.
@@ -1114,6 +1115,8 @@ class PlotBuilder:
         :type latitude_field: str
         :param longitude_field: The longitude column of the data
         :type longitude_field: str
+        :param text_field: The column containing text for data entries
+        :type text_field: str
         :param manager: Plotly properties for this dataset
         :type manager: StrDict
         """
@@ -1121,14 +1124,20 @@ class PlotBuilder:
         _check_name(name)
         data = _read_data(data, allow_builtin=False)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
-        data = _convert_latlong_data(data, latitude_field=latitude_field,
-                                     longitude_field=longitude_field)[['value_field', 'geometry']]
+        if text_field:
+            data = _convert_latlong_data(data, latitude_field=latitude_field,
+                                         longitude_field=longitude_field)[[text_field, 'value_field', 'geometry']]
+        else:
+            data = _convert_latlong_data(data, latitude_field=latitude_field,
+                                         longitude_field=longitude_field)[['value_field', 'geometry']]
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        dataset['tfield'] = text_field
         if self.use_templates:
             dataset['manager'] = deepcopy(get_template('point'))
         else:
             dataset['manager'] = {}
+
         _update_manager(dataset, **(manager or {}))
         self._get_points()[name] = dataset
 
@@ -1817,16 +1826,16 @@ class PlotBuilder:
                 raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
-            #import matplotlib.pyplot as plt
-            #import geoplot as gpt
-            #print('HERE')
+            # import matplotlib.pyplot as plt
+            # import geoplot as gpt
+            # print('HERE')
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
                 text=df['text']).update(dataset['manager']))
-            #ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
-            #gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
+            # ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
+            # gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
             # df.plot(column='value_field', cmap='viridis')
-            #plt.show()
+            # plt.show()
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
@@ -1865,11 +1874,13 @@ class PlotBuilder:
 
         mapbox = self.plot_output_service == 'mapbox'
         for poiname, poids in self._get_points().items():
+            print(poids['data'])
             self._figure.add_trace(_prepare_scattergeo_trace(
                 poids['data'],
                 separate=False,
                 disjoint=False,
-                mapbox=mapbox).update(poids['manager']))
+                mapbox=mapbox).update(text=poids['data'][poids['tfield']] if poids['tfield'] else None)
+                                   .update(poids['manager']))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
