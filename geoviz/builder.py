@@ -7,7 +7,7 @@ from typing import Any, Tuple, Dict, Union, Callable
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import plotly.colors
+import plotly.io as pio
 from geopandas import GeoDataFrame
 from pandas import DataFrame
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
@@ -21,7 +21,7 @@ from geoviz.utils.colorscales import solid_scale, discretize_cscale, \
 from geoviz.utils.util import fix_filepath, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
 
-plotly.io.kaleido.scope.default_format = 'pdf'
+pio.kaleido.scope.default_format = 'pdf'
 
 _extension_mapping = {
     '.csv': pd.read_csv,
@@ -30,14 +30,32 @@ _extension_mapping = {
     '': gpd.read_file
 }
 
-_group_functions = {
+_group_functions_short = {
     'sum': lambda lst: sum(lst),
     'avg': lambda lst: sum(lst) / len(lst),
     'min': lambda lst: min(lst),
     'max': lambda lst: max(lst),
-    'count': lambda lst: len(lst),
     'best': get_best,
     'worst': get_worst
+}
+
+_group_functions = {
+    'sum': _group_functions_short['sum'],
+    'summation': _group_functions_short['sum'],
+    'avg': _group_functions_short['avg'],
+    'average': _group_functions_short['avg'],
+    'min': _group_functions_short['min'],
+    'minimum': _group_functions_short['min'],
+    'max': _group_functions_short['max'],
+    'maximum': _group_functions_short['max'],
+    'best': _group_functions_short['best'],
+    'best_option': _group_functions_short['best'],
+    'mfreq': _group_functions_short['best'],
+    'most_frequent': _group_functions_short['best'],
+    'worst': _group_functions_short['worst'],
+    'worst_option': _group_functions_short['worst'],
+    'lfreq': _group_functions_short['worst'],
+    'least_frequent': _group_functions_short['worst']
 }
 
 StrDict = Dict[str, Any]
