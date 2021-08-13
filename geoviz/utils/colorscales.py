@@ -95,11 +95,13 @@ def configure_cscale_opacity(colorscale, alpha: float):
         colorscale = cli.convert_colors_to_same_type(colorscale, 'rgb')[0]
         return [configure_color_opacity(color, alpha) for color in colorscale]
     elif f == 'dict':
-
-        return {k: configure_color_opacity(v, alpha) for k, v in colorscale.items()}
+        return {k: configure_color_opacity(v, alpha) for k, v in
+                cli.convert_dict_colors_to_same_type(colorscale, colortype="rgb").items()}
     else:
         raise ValueError(
-            "The colorscale is not of proper format for this function. It must be in iterable, nested-iterable or map format.")
+            "The colorscale is not of proper format for this function."
+            " It must be in iterable, nested-iterable or map format."
+        )
 
 
 def configureScaleWithAlpha(scale, alpha: float = 0.4):
