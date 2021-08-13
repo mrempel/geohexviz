@@ -241,7 +241,7 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
                 data, rtype = butil.get_shapes_from_world(data), 'builtin'
             except (KeyError, ValueError, TypeError):
                 err_msg = "The data must be a valid country or continent name, filepath, DataFrame, or GeoDataFrame."
-    print
+
     if isinstance(data, DataFrame):
         data = GeoDataFrame(data)
         data['value_field'] = 0
