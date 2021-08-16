@@ -1,11 +1,9 @@
 # imports
 import json
-import math
 import operator
 import warnings
 from typing import Callable, List, Optional, Dict, Any, Union, Tuple, Iterable
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 from pyproj import Geod
 from geojson import Feature, FeatureCollection
@@ -14,7 +12,6 @@ from h3 import h3
 from pandas import DataFrame
 from shapely.geometry import Polygon, Point, polygon, LineString, LinearRing, \
     MultiPoint, MultiPolygon, MultiLineString, GeometryCollection
-from .util import get_occurrences
 from functools import reduce
 
 '''
@@ -389,7 +386,6 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True, raise_erro
     def shape_to_points(shape: AnyGeom) -> List[Point]:
         """A semi-recursive function for the retrieving of hex ids.
         """
-
         if isinstance(shape, Point):
             return [shape]
         elif isinstance(shape, Polygon):
