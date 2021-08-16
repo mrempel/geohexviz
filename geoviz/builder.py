@@ -4,6 +4,7 @@ from os import path
 from os.path import join as pjoin
 from typing import Any, Tuple, Dict, Union, Callable
 
+import fiona.errors
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -23,6 +24,13 @@ from geoviz.utils.util import fix_filepath, get_column_type, \
 
 pio.kaleido.scope.default_format = 'pdf'
 
+_read_method_mapping = {
+    'geopandas': gpd.read_file,
+    'csv': pd.read_csv,
+    'shapefile': gpd.read_file,
+    'excel': pd.read_excel
+}
+
 _extension_mapping = {
     '.csv': pd.read_csv,
     '.xlsx': pd.read_excel,
@@ -31,6 +39,7 @@ _extension_mapping = {
 }
 
 _group_functions_short = {
+    'count': lambda lst: len(lst),
     'sum': lambda lst: sum(lst),
     'avg': lambda lst: sum(lst) / len(lst),
     'min': lambda lst: min(lst),
@@ -40,6 +49,9 @@ _group_functions_short = {
 }
 
 _group_functions = {
+    'count': _group_functions_short['count'],
+    'occ': _group_functions_short['count'],
+    'occurrences': _group_functions_short['count'],
     'sum': _group_functions_short['sum'],
     'summation': _group_functions_short['sum'],
     'avg': _group_functions_short['avg'],
@@ -189,8 +201,38 @@ def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manage
     elif input_manager:
         raise ValueError("This dataset may not have a custom manager.")
 
+def get_reader_function_from_method(method: str):
+    try:
+        return _read_method_mapping[method]
+    except KeyError:
+        raise ValueError("The input read method was not valid.")
 
-def _read_data_file(data: str) -> DataFrame:
+
+def get_reader_function_from_path(ext: str):
+    try:
+        return _extension_mapping[ext]
+    except KeyError:
+        raise ValueError("The input filepath had an incorrect extension,"
+                         " this project only supports some types of files.")
+
+
+def _read_data_file_dict(data):
+    try:
+        try:
+            dpath = data.pop("path")
+        except KeyError:
+            raise gce.DataReadError("There must be a 'path' parameter"
+                                    " present when passing the 'data' parameter as a dict.")
+        read_method = data.pop("method", None)
+        normal_errors = data.pop("normal_errors", False)
+        read_args, read_kwargs = parse_args_kwargs(data)
+        return _read_data_file(dpath, read_method=read_method,
+                               read_args=read_args, normal_errors=normal_errors, **read_kwargs)
+    except AttributeError:
+        return _read_data_file(data)
+
+
+def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: bool = False, **kwargs) -> DataFrame:
     """Reads data from a file, based on extension.
 
     If the file extension is unknown the file is passed
@@ -206,16 +248,30 @@ def _read_data_file(data: str) -> DataFrame:
     :return: The read data
     :rtype: DataFrame
     """
+    if read_args is None:
+        read_args = ()
     try:
         filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
         filepath = fix_filepath(filepath, add_ext=extension)
 
         try:
-            data = _extension_mapping[extension](filepath)
-        except KeyError:
+            read_fn = get_reader_function_from_method(read_method)
+        except ValueError:
+            read_fn = get_reader_function_from_path(extension)
+        try:
+            print(read_fn, read_args, kwargs)
+            data = read_fn(filepath, *read_args, **kwargs)
+        except TypeError:
+            raise gce.DataFileReadError("The read function is not a callable object.")
+        try:
+            if not data.crs:
+                data.crs = 'EPSG:4326'
+            else:
+                data.to_crs(crs='EPSG:4326', inplace=True)
+        except AttributeError:
             pass
     except Exception as e:
-        raise gce.DataFileReadError(str(e))
+        raise e if normal_errors else gce.DataFileReadError(str(e))
         # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
 
     return data
@@ -234,8 +290,8 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     err_msg = "The data must be a valid filepath, DataFrame, or GeoDataFrame."
     rtype = 'frame'
     try:
-        data, rtype = _read_data_file(data), 'file'
-    except gce.DataFileReadError:
+        data, rtype = _read_data_file_dict(data), 'file'
+    except (gce.DataFileReadError, fiona.errors.DriverError):
         if allow_builtin:
             try:
                 data, rtype = butil.get_shapes_from_world(data), 'builtin'
@@ -249,7 +305,6 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
         data.VTYPE = 'NUM'
     else:
         raise gce.DataReadError(err_msg)
-
     return data
 
 
