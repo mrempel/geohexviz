@@ -49,7 +49,7 @@ templates = dict(
         colorscale=[[0, 'white'], [1, 'white']],
         zmax=1,
         zmin=0,
-        marker=dict(line=dict(color='black'), opacity=0.2),
+        marker=dict(line=dict(color='white', width=0.60), opacity=0.3),
         showlegend=False,
         showscale=False,
         hoverinfo='text',
