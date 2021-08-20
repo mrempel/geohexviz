@@ -46,10 +46,10 @@ templates = dict(
         hoverinfo='text'
     ),
     grid=dict(
-        colorscale=[[0, 'white'], [1, 'white']],
+        colorscale=[[0, 'rgba(255,255,255,0.01)'], [1, 'rgba(255,255,255,0.01)']],
         zmax=1,
         zmin=0,
-        marker=dict(line=dict(color='white', width=0.60), opacity=0.3),
+        marker=dict(line=dict(color='rgba(255,255,255,1)', width=0.60), opacity=1),
         showlegend=False,
         showscale=False,
         hoverinfo='text',
