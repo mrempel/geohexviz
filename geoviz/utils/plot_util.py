@@ -409,7 +409,6 @@ def gpd_clip(clip: GeoDataFrame, to: List[GeoDataFrame], validate: bool = True):
     """
     if len(to) == 0:
         raise ValueError("There are no datasets to clip to.")
-
     result = pd.concat(
         [gcg.gpdclip(clip, item) for item in to]).drop_duplicates()
 

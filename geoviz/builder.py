@@ -259,7 +259,6 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
         except ValueError:
             read_fn = get_reader_function_from_path(extension)
         try:
-            print(read_fn, read_args, kwargs)
             data = read_fn(filepath, *read_args, **kwargs)
         except TypeError:
             raise gce.DataFileReadError("The read function is not a callable object.")
@@ -454,7 +453,7 @@ def _check_name(name: str):
     :param name: The name of the dataset
     :type name: str
     """
-    if any(not i.isalnum() and i != '_' for i in name):
+    if any(not i.isalnum() and i not in ('_', ' ') for i in name):
         raise gce.DatasetNamingError("NERR001 - Non-alphanumeric found (besides underscores)")
 
 
@@ -1037,6 +1036,8 @@ class PlotBuilder:
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
         data = _convert_latlong_data(data, latitude_field=latitude_field,
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
+        # TODO: there exists errors with the representation of outlines (given lfields)
+
         if as_boundary:
             data = gcg.unify_geodataframe(data)
 
@@ -1483,6 +1484,7 @@ class PlotBuilder:
         """
 
         self.clip_datasets('main+grids', 'regions+outlines', method=method, operation='intersects')
+        #self.clip_datasets('main+grids', 'outlines', method=method, operation='intersects')
         self.clip_datasets('points', 'main+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
@@ -1902,6 +1904,16 @@ class PlotBuilder:
             # import matplotlib.pyplot as plt
             # import geoplot as gpt
             # print('HERE')
+
+            #from h3 import h3
+            #df['center'] = pd.Series(df.index.map(lambda x: tuple(h3.h3_to_geo(x))))
+            #lst = []
+            #for i, _ in df.iterrows():
+            #    lst.append(h3.h3_to_geo(i))
+            #df['center'] = lst
+            #cf = df['center']
+            #print(df)
+
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
                 text=df['text']).update(dataset['manager']))
@@ -1947,13 +1959,13 @@ class PlotBuilder:
 
         mapbox = self.plot_output_service == 'mapbox'
         for poiname, poids in self._get_points().items():
-            print(poids['data'])
             self._figure.add_trace(_prepare_scattergeo_trace(
                 poids['data'],
                 separate=False,
                 disjoint=False,
-                mapbox=mapbox).update(text=poids['data'][poids['tfield']] if poids['tfield'] else None)
-                                   .update(poids['manager']))
+                mapbox=mapbox).update(name=poiname,
+                                      text=poids['data'][poids['tfield']] if poids['tfield'] else None)
+                                      .update(poids['manager']))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
@@ -2135,7 +2147,10 @@ class PlotBuilder:
         plotly_managers = settings.pop('builder_managers', {})
 
         builder = PlotBuilder(**settings)
-        builder.update_main_manager(plotly_managers.get('main_dataset', {}))
+        try:
+            builder.update_main_manager(plotly_managers.get('main_dataset', {}))
+        except gce.MainDatasetNotFoundError:
+            pass
         builder.update_grid_manager(plotly_managers.get('grids', {}))
         builder.update_figure(plotly_managers.get('figure', {}))
 
