@@ -1,4 +1,3 @@
-
 class BuilderPlotBuildError(Exception):
 
     def __init__(self, message: str = "An error occurred while plotting."):
@@ -62,18 +61,20 @@ class DatasetNamingError(Exception):
         super().__init__(self.message)
 
 
-class MainDatasetNotFoundError(Exception):
+class DatasetNotFoundError(Exception):
+
+    def __init__(self, name: str, dstype: str, message: str = None):
+        if message is None:
+            message = f"The {dstype} type dataset named '{name}' could not be found."
+        self.message = message
+        super().__init__(self.message)
+
+
+class MainDatasetNotFoundError(DatasetNotFoundError):
 
     def __init__(self):
         self.message = 'The main dataset could not be found.'
-        super().__init__(self.message)
-
-
-class DatasetNotFoundError(Exception):
-
-    def __init__(self, name: str, dstype: str):
-        self.message = f"The {dstype} type dataset named '{name}' could not be found."
-        super().__init__(self.message)
+        super().__init__('main', 'main', message=self.message)
 
 
 class BuilderQueryInvalidError(Exception):
