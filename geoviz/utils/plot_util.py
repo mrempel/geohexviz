@@ -366,6 +366,8 @@ def opacify_colorscale(dataset: dict, alpha: float = None):
     dataset['manager']['colorscale'] = cli.configure_cscale_opacity(colorscale, alpha)
 
 
+# TODO: monitor bugs with the clipping functions (maybe merge "to" before)
+
 def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'intersects', validate: bool = False) -> GeoDataFrame:
     """Plot wrapper for the spatial join clip operation.
 

@@ -4,12 +4,28 @@ from geoviz.utils.util import parse_args_kwargs
 import json
 
 fn_map: Dict[str, Callable] = {
-    'remove empties': PlotBuilder.remove_empties,
-    'logarithmic scale': PlotBuilder.logify_scale,
-    'generate grid': PlotBuilder.auto_grid,
-    'simple clip': PlotBuilder.simple_clip,
-    'clip datasets': PlotBuilder.clip_datasets,
-    'discrete scale': PlotBuilder.discretize_scale,
+    'remove_empties': PlotBuilder.remove_empties,
+    'logify_scale': PlotBuilder.logify_scale,
+    'generate_grid': PlotBuilder.auto_grid,
+    'simple_clip': PlotBuilder.simple_clip,
+    'clip_datasets': PlotBuilder.clip_datasets,
+    'discretize_scale': PlotBuilder.discretize_scale,
+}
+
+data_adjustments_map: Dict[str, Callable] = {
+    'remove_empties': PlotBuilder.remove_empties,
+    'logify_scale': PlotBuilder.logify_scale,
+    'generate_grid': PlotBuilder.auto_grid,
+    'simple_clip': PlotBuilder.simple_clip,
+    'clip_datasets': PlotBuilder.clip_datasets,
+    'discretize_scale': PlotBuilder.discretize_scale,
+}
+
+plot_adjustments_map: Dict[str, Callable] = {
+    'adjust_focus': PlotBuilder.adjust_focus,
+    'adjust_opacity': PlotBuilder.adjust_opacity,
+    'adjust_positioning': PlotBuilder.adjust_colorbar_size,
+    'set_mapbox': PlotBuilder.set_mapbox
 }
 
 output_fns = ['display figure', 'output figure']
@@ -42,24 +58,51 @@ def run_json(filepath: str, debug: bool = False):
         debugprint = lambda x: None
 
     mapbox_fig = read.pop("mapbox_token", False)
-    adjustments = read.pop("adjustments", {})
-    adjust_opacity = adjustments.pop("opacity", True)
-    adjust_colorbar = adjustments.pop("colorbar_size", True)
-    adjust_focus = adjustments.pop("focus", True)
-    build_args.update(adjustments.pop("build", {}))
+    plot_adjustments = read.pop("plot_adjustments", {})
+    adjust_opacity = plot_adjustments.pop("opacity", True)
+    adjust_colorbar = plot_adjustments.pop("colorbar_size", True)
+    adjust_focus = plot_adjustments.pop("focus", True)
+    build_args.update(plot_adjustments.pop("build", {}))
     output_fig = read.pop("output_figure", False)
     display_fig = read.pop("display_figure", True)
-    builder_fns = read.pop("builder_functions", {})
+    data_adjustments = read.pop("data_adjustments", {})
 
     builder = PlotBuilder.builder_from_dict(**read)
     debugprint("* Datasets loaded")
 
-    for k, v in builder_fns.items():
+    for k, v in data_adjustments.items():
         if v != False:
             args, kwargs = parse_args_kwargs(v)
-            fn_map[k](builder, *args, **kwargs)
-            debugprint(f"* Invoked '{fn_map[k].__name__}'")
+            try:
+                data_adjustments_map[k](builder, *args, **kwargs)
+                debugprint(f"* Invoked '{data_adjustments_map[k].__name__}'.")
+            except Exception:
+                try:
+                    debugprint(f"* Error while performing '{plot_adjustments_map[k].__name__}'.")
+                except KeyError:
+                    debugprint(f"* No such data adjustment as: {k}")
 
+
+    if 'adjust_focus' not in plot_adjustments:
+        plot_adjustments['adjust_focus'] = True
+    if 'adjust_opacity' not in plot_adjustments:
+        plot_adjustments['adjust_opacity'] = True
+    if 'adjust_positioning' not in plot_adjustments:
+        plot_adjustments['adjust_positioning'] = True
+
+    for k, v in plot_adjustments.items():
+        if v != False:
+            args, kwargs = parse_args_kwargs(v)
+            try:
+                plot_adjustments_map[k](builder, *args, **kwargs)
+                debugprint(f"* Invoked '{plot_adjustments_map[k].__name__}'.")
+            except Exception:
+                try:
+                    debugprint(f"* Error while performing '{plot_adjustments_map[k].__name__}'.")
+                except KeyError:
+                    debugprint(f"* No such plot adjustment as: {k}")
+
+    '''
     if mapbox_fig:
         args, kwargs = parse_args_kwargs(mapbox_fig)
         builder.set_mapbox(*args, **kwargs)
@@ -80,18 +123,19 @@ def run_json(filepath: str, debug: bool = False):
             debugprint("* Colorscale opacity adjusted")
         except Exception:
             print("* Error when adjusting colorscale opacity")
+    '''
+
 
     builder.build_plot(**build_args)
-    #builder.adjust_colorbar_size()
 
     if output_fig:
         args, kwargs = parse_args_kwargs(output_fig)
         builder.output_figure(*args, **kwargs)
-        debugprint("* Figure output")
+        debugprint("* Figure output.")
 
     if display_fig:
         args, kwargs = parse_args_kwargs(display_fig)
         builder.display_figure(*args, **kwargs)
-        debugprint("* Figure displayed")
+        debugprint("* Figure displayed.")
 
     return builder.get_plot_status()

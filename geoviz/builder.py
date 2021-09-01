@@ -611,7 +611,7 @@ class PlotBuilder:
         :param manager: A container for the plotly properties for this dataset
         :type manager: StrDict
         """
-
+        self._get_grids().pop('|*EMPTY*|', None)
         hbin_info = dict(hex_resolution=(hex_resolution or self.default_hex_resolution))
         if hexbin_info is None:
             hexbin_info = {}
@@ -1516,10 +1516,10 @@ class PlotBuilder:
 
         Does not work.
         """
-        calc = width - 50 + (t + b) * 2 / 10
-        self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
-        self._figure.update_layout(width=width + 50,
-                                   margin=dict(l=0, r=100, t=t, b=b))
+        #calc = width - 50 + (t + b) * 2 / 10
+        #self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
+        #self._figure.update_layout(width=width + 50,
+        #                           margin=dict(l=0, r=100, t=t, b=b))
 
         # driverOptions = Options()
         # driverOptions.add_argument('--headless')
@@ -1556,7 +1556,7 @@ class PlotBuilder:
         # self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
         # self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
         # self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
-        print()
+        return
 
     # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
