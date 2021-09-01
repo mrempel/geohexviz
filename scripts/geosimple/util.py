@@ -59,10 +59,10 @@ def run_json(filepath: str, debug: bool = False):
 
     mapbox_fig = read.pop("mapbox_token", False)
     plot_adjustments = read.pop("plot_adjustments", {})
-    adjust_opacity = plot_adjustments.pop("opacity", True)
-    adjust_colorbar = plot_adjustments.pop("colorbar_size", True)
-    adjust_focus = plot_adjustments.pop("focus", True)
-    build_args.update(plot_adjustments.pop("build", {}))
+    # adjust_opacity = plot_adjustments.pop("opacity", True)
+    # adjust_colorbar = plot_adjustments.pop("colorbar_size", True)
+    # adjust_focus = plot_adjustments.pop("focus", True)
+    # build_args.update(plot_adjustments.pop("build", {}))
     output_fig = read.pop("output_figure", False)
     display_fig = read.pop("display_figure", True)
     data_adjustments = read.pop("data_adjustments", {})
@@ -126,7 +126,8 @@ def run_json(filepath: str, debug: bool = False):
     '''
 
 
-    builder.build_plot(**build_args)
+    # builder.build_plot(**build_args)
+    builder.build_plot(raise_errors=False)
 
     if output_fig:
         args, kwargs = parse_args_kwargs(output_fig)
