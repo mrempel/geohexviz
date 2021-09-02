@@ -1,7 +1,7 @@
 import unittest
 import random
 import numpy as np
-import geoviz.utils.plot_util as butil
+import geohexviz.utils.plot_util as butil
 
 
 class PlotUtilTestCase(unittest.TestCase):

@@ -1,6 +1,6 @@
 from typing import Dict, Any, Callable
-from geoviz.builder import PlotBuilder
-from geoviz.utils.util import parse_args_kwargs
+from geohexviz.builder import PlotBuilder
+from geohexviz.utils.util import parse_args_kwargs
 import json
 
 fn_map: Dict[str, Callable] = {

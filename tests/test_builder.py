@@ -16,8 +16,8 @@ import unittest
 from geopandas import GeoDataFrame
 from shapely.geometry import Polygon
 
-from geoviz import builder as builder
-from geoviz import errors as err
+from geohexviz import builder as builder
+from geohexviz import errors as err
 from shapely import wkt
 from pandas import DataFrame
 from os.path import join as pjoin

@@ -2,7 +2,7 @@ import unittest
 from os.path import join as pjoin
 import os
 from scripts.geosimple import util
-from geoviz.builder import PlotStatus
+from geohexviz.builder import PlotStatus
 
 DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
 PARAM_PATH = pjoin(DATA_PATH, 'parameterfile-data')

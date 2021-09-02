@@ -1,6 +1,6 @@
 import unittest
 from pandas import DataFrame
-import geoviz.utils.util as util
+import geohexviz.utils.util as util
 
 
 class UtilTestCase(unittest.TestCase):
