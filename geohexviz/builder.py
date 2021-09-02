@@ -13,13 +13,13 @@ from geopandas import GeoDataFrame
 from pandas import DataFrame
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
 
-import geoviz.errors as gce
-from geoviz.templates import get_template
-from geoviz.utils import geoutils as gcg
-from geoviz.utils import plot_util as butil
-from geoviz.utils.colorscales import solid_scale, discretize_cscale, \
+import geohexviz.errors as gce
+from geohexviz.templates import get_template
+from geohexviz.utils import geoutils as gcg
+from geohexviz.utils import plot_util as butil
+from geohexviz.utils.colorscales import solid_scale, discretize_cscale, \
     get_scale
-from geoviz.utils.util import fix_filepath, get_column_type, \
+from geohexviz.utils.util import fix_filepath, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
 
 pio.kaleido.scope.default_format = 'pdf'

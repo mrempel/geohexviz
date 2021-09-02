@@ -1,5 +1,5 @@
 import unittest
-import geoviz.utils.colorscales as cli
+import geohexviz.utils.colorscales as cli
 
 roughly_equal = lambda x, y: round(x) == round(y)
 

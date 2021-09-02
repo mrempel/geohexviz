@@ -7,7 +7,7 @@ from geopandas import GeoDataFrame
 from pandas import DataFrame
 from . import colorscales as cli
 from .colorscales import get_scale, configureScaleWithAlpha, configure_color_opacity
-import geoviz.utils.geoutils as gcg
+import geohexviz.utils.geoutils as gcg
 import pandas as pd
 
 world_shape_definitions = gpd.read_file(gpd.datasets.get_path('naturalearth_lowres'))

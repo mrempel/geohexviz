@@ -32,9 +32,10 @@ run_json("<filepath here>")
 ```
 
 ## Python Module Usage (PlotBuilder)
+
 ```python
 from pandas import DataFrame
-from geoviz.builder import PlotBuilder
+from geohexviz.builder import PlotBuilder
 
 # Creating an example dataset
 inputdf = DataFrame(dict(

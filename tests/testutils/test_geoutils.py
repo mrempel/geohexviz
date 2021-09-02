@@ -2,7 +2,7 @@ import unittest
 from typing import List
 from pandas import DataFrame
 import geopandas as gpd
-from geoviz.utils import geoutils
+from geohexviz.utils import geoutils
 from geopandas import GeoDataFrame
 from shapely.geometry import GeometryCollection, MultiPoint, Point, MultiLineString, LineString, Polygon
 from shapely import wkt
