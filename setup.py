@@ -21,5 +21,5 @@ setup(
     ],
     packages=find_packages(exclude=tuple("tests")),
     include_package_data=True,
-    install_requires=["h3", "shapely", "pyproj", "numpy", "pandas", "gdal", "fiona", "geopandas", "plotly", "kaleido"]
+    install_requires=["h3", "shapely", "pyproj", "numpy", "pandas", "plotly", "kaleido"]
 )
