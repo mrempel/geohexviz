@@ -1,4 +1,5 @@
-from typing import Dict, Any, Callable
+from typing import Dict, Callable
+
 from geohexviz.builder import PlotBuilder
 from geohexviz.utils.util import parse_args_kwargs
 import json
@@ -27,8 +28,6 @@ plot_adjustments_map: Dict[str, Callable] = {
     'adjust_positioning': PlotBuilder.adjust_colorbar_size,
     'set_mapbox': PlotBuilder.set_mapbox
 }
-
-output_fns = ['display figure', 'output figure']
 
 
 def run_json(filepath: str, debug: bool = False):
