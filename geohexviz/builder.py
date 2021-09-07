@@ -217,7 +217,7 @@ def get_reader_function_from_path(ext: str):
 
 
 def _read_data_file_dict(data):
-    try:
+    if isinstance(data, dict):
         try:
             dpath = data.pop("path")
         except KeyError:
@@ -228,8 +228,7 @@ def _read_data_file_dict(data):
         read_args, read_kwargs = parse_args_kwargs(data)
         return _read_data_file(dpath, read_method=read_method,
                                read_args=read_args, normal_errors=normal_errors, **read_kwargs)
-    except AttributeError:
-        return _read_data_file(data)
+    return _read_data_file(data)
 
 
 def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: bool = False, **kwargs) -> DataFrame:
