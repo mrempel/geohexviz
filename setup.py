@@ -4,6 +4,7 @@ from setuptools import setup, find_packages
 HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
+VERSION = "1.0.0"
 print("HERE:", HERE)
 
 setup(
@@ -31,3 +32,4 @@ setup(
 )
 
 print('PACKAGES:', find_packages(exclude=tuple("tests")))
+print(f"GeoHexViz v{VERSION} has been installed.")
