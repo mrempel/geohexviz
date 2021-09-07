@@ -23,7 +23,11 @@ setup(
     python_requires=">=3.1",
     packages=find_packages(exclude=tuple("tests")),
     include_package_data=True,
-    install_requires=["h3", "shapely", "pyproj", "numpy", "geojson", "pandas", "plotly", "kaleido"]
+    install_requires=["h3", "shapely", "pyproj", "numpy", "geojson", "pandas", "plotly", "kaleido"],
+    entry_points="""
+    [console_scripts]
+    geosimple = scripts.geosimple.simple:main
+    """,
 )
 
 print('PACKAGES:', find_packages(exclude=tuple("tests")))

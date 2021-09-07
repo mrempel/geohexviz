@@ -55,7 +55,6 @@ def run_json(filepath: str, debug: bool = False):
     debugprint(f"Path: {filepath}")
     debugprint("-------------- Plotting ---------------")
 
-
     with open(filepath) as jse:
         read = json.load(jse)
 
@@ -91,7 +90,6 @@ def run_json(filepath: str, debug: bool = False):
                     debugprint(f"* Error while performing '{plot_adjustments_map[k].__name__}'.")
                 except KeyError:
                     debugprint(f"* No such data adjustment as: {k}")
-
 
     if 'adjust_focus' not in plot_adjustments:
         plot_adjustments['adjust_focus'] = True
@@ -135,7 +133,6 @@ def run_json(filepath: str, debug: bool = False):
             print("* Error when adjusting colorscale opacity")
     '''
 
-
     # builder.build_plot(**build_args)
     builder.build_plot(raise_errors=False)
 
@@ -158,6 +155,8 @@ def run_json(filepath: str, debug: bool = False):
 
 
 def get_json_filepath(message: str = ''):
+    """Retrieves the path to a file from the user.
+    """
     while True:
         filepath = input(message)
         if filepath == 'exit':
@@ -168,17 +167,27 @@ def get_json_filepath(message: str = ''):
 
 
 def get_json_directory(message: str = ''):
+    """Retrieves a directory from the user.
+    """
     while True:
         filepath = input(message)
         return filepath if filepath != 'exit' else None
 
 
 def plot():
+    """Plots a JSON file representing a plot.
+
+    Asks the user for the required input.
+    """
     filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON).")
     run_json(filepath, debug=True)
 
 
 def plotDir():
+    """Plots a directory of JSON files representing separate plots.
+
+    Asks the user for the required input.
+    """
     directory = get_json_directory("Please input the location of a directory"
                                    " containing parameterized builder files (JSON).")
     try:
@@ -194,10 +203,15 @@ main_options = {
     'plotdir': plotDir
 }
 
-if __name__ == '__main__':
-    while (option_input := input('Select option.\nAvailable options: plot, plotDir, exit').lower()) != 'exit':
+
+def main():
+    while (option_input := input('Select option.\nAvailable options: plot, plotDir, exit:\n').lower()) != 'exit':
         if option_input in main_options:
             main_options[option_input]()
         else:
-            print('That was an incorrect option, try again.')
+            print('That was an incorrect option, try again.\n')
     sys.exit()
+
+
+if __name__ == '__main__':
+    main()
