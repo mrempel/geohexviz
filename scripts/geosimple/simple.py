@@ -179,7 +179,7 @@ def plot():
 
     Asks the user for the required input.
     """
-    filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON).")
+    filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON):\n")
     run_json(filepath, debug=True)
 
 
@@ -189,7 +189,7 @@ def plotDir():
     Asks the user for the required input.
     """
     directory = get_json_directory("Please input the location of a directory"
-                                   " containing parameterized builder files (JSON).")
+                                   " containing parameterized builder files (JSON):\n")
     try:
         for file in os.listdir(directory):
             if file.endswith('.json'):
@@ -209,7 +209,7 @@ def main():
         if option_input in main_options:
             main_options[option_input]()
         else:
-            print('That was an incorrect option, try again.\n')
+            print('That was an incorrect option, try again.')
     sys.exit()
 
 
