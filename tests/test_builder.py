@@ -14,7 +14,7 @@ import math
 import unittest
 
 from geopandas import GeoDataFrame
-from shapely.geometry import Polygon
+from shapely.geometry import Polygon, Point
 
 from geohexviz import builder as builder
 from geohexviz import errors as err
@@ -40,51 +40,59 @@ class BuilderTestCase(unittest.TestCase):
     def setUp(self):
         self.builder = builder.PlotBuilder()
 
-    def test_quick(self):
-        testpoints = [
-            'POINT(-196.171875 47.040182144806664)',
-            'POINT(-135 56.17002298293205)',
-            'POINT(-144.140625 52.908902047770255)',
-            'POINT(-130.078125 33.7243396617476)',
-            'POINT(-157.5 39.90973623453719)',
-            'POINT(-175.78125 33.137551192346145)',
-            'POINT(-143.4375 24.5271348225978)',
-            'POINT(-202.5 27.059125784374068)',
-            'POINT(-93.515625 31.952162238024975)',
-            'POINT(-137.109375 23.885837699862005)',
-            'POINT(-139.21874999999997 25.799891182088334)',
-            'POINT(-145.546875 29.53522956294847)',
-            'POINT(-140.2734375 24.5271348225978)',
-            'POINT(-174.0234375 33.43144133557529)',
-            'POINT(-156.97265625 39.90973623453719)',
-            'POINT(-139.5703125 29.6880527498568)',
-            'POINT(-143.08593749999997 28.304380682962783)',
-            'POINT(-140.2734375 29.84064389983441)',
-            'POINT(-143.61328125 53.12040528310657)',
-            'POINT(-144.66796875 52.908902047770255)',
-            'POINT(-143.96484375 53.85252660044951)',
-            'POINT(-133.06640625 56.9449741808516)',
-            'POINT(-195.29296875 47.040182144806664)',
-            'POINT(-202.5 26.745610382199022)'
-        ]
+    def test_load_input(self):
+        """Tests the functions behind loading input data into the correct form.
 
-        vg = [(10, wkt.loads(p)) for p in testpoints]
-        vals, geoms = zip(*vg)
-        testdf = GeoDataFrame(dict(val=vals, geometry=geoms), crs='EPSG:4326')
-        self.builder.set_main(testdf, hexbin_info=dict(hex_resolution=3, binning_fn=min, binning_field='val'))
-        self.builder.add_region('CCA1', 'CANADA')
-        self.builder.add_grid('GGA1', 'FRANCE')
-        self.builder.add_outline('OOA1', 'SOUTH AMERICA')
-        self.builder.adjust_focus('region:CCA1')
-        self.builder.adjust_colorbar_size()
+        Note that this effectively tests the methods used in:
+        add_region;
+        add_grid;
+        add_outline; and
+        add_point.
+        """
 
-        testdf = GeoDataFrame(dict(val=vals, geometry=geoms), crs='EPSG:4326')
-        self.builder.add_point('PPA1', testdf)
-        # self.builder.clip_datasets('main', 'region:CCA1')
-        self.builder.build_plot()
+        # test empty inputs
+        testdf = DataFrame()
+        testgdf = GeoDataFrame()
+        with self.assertRaises(ValueError):
+            self.builder.set_main(testdf)
+        with self.assertRaises(ValueError):
+            self.builder.set_main(testgdf)
 
-        self.builder.output_figure('E:\\software\\testing.pdf')
-        self.builder.display_figure()
+        # test with missing latitude/longitude entries
+        testdf['latitude'] = [1, 2, 3, 4, np.nan, 5]
+        testdf['longitude'] = [1, 2, 3, 4, 5, 6]
+        self.builder.set_main(testdf)
+        self.assertNotEqual(len(testdf), len(self.builder._get_main()['data']))
+
+        # test with no geometry present, and no latitude/longitude columns
+        testdf = DataFrame({"value_1": [1, 2, 3, 4, 5], "value_2": [1, 2, 3, 4, 5]})
+        self.builder.reset()
+        with self.assertRaises(ValueError):
+            self.builder.set_main(testdf)
+        testgdf = GeoDataFrame({"value_1": [1, 2, 3, 4, 5], "value_2": [1, 2, 3, 4, 5]})
+        self.builder.reset()
+        with self.assertRaises(ValueError):
+            self.builder.set_main(testgdf)
+
+        # test with valid GeoDataFrame input
+        testpoints = [Point(0, 0), Point(0, 1), Point(1, 0), Point(1, 1)]
+        testgdf = GeoDataFrame(geometry=testpoints)
+        self.builder.reset()
+        self.builder.set_main(testgdf)
+        self.assertEqual(len(testpoints), sum(self.builder._get_main()['data']['value_field']))
+
+        # test with invalid latitude/longitude column type
+        testdf['latitude'] = [1, 2, 3, 4, 5]
+        testdf['longitude'] = [{}, {}, {}, [], {}]
+        self.builder.reset()
+        with self.assertRaises(TypeError):
+            self.builder.set_main(testdf)
+
+        # test with empty dataframe but columns present
+        testdf = DataFrame(columns=['latitude', 'longitude'])
+        self.builder.reset()
+        with self.assertRaises(ValueError):
+            self.builder.set_main(testdf)
 
     def test_set_main_dataset_quantitative(self):
         """Tests quantitative dataset functionality.
@@ -189,8 +197,6 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual(getmain['VTYPE'], 'STR')
         # ensure the main dataframe does not reference the dame input dataframe
         self.assertFalse(testdf.equals(getmain['data']))
-        self.builder.build_plot()
-        self.builder.display_figure()
 
     def test_add_region(self):
         self.builder.add_region('RRA1', 'CANADA')
@@ -546,7 +552,6 @@ class BuilderTestCase(unittest.TestCase):
             )))
         self.builder.update_main_manager(colorscale='Picnic')
         self.assertEqual('Picnic', self.builder._get_main()['manager']['colorscale'])
-
 
     def test_clear_main_manager(self):
         """Tests the builder's ability to clear the manager of the main dataset.
