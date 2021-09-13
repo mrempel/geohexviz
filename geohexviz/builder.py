@@ -21,8 +21,7 @@ from geohexviz.utils.colorscales import solid_scale, discretize_cscale, \
     get_scale
 from geohexviz.utils.util import fix_filepath, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
-
-pio.kaleido.scope.default_format = 'pdf'
+import warnings
 
 _read_method_mapping = {
     'geopandas': gpd.read_file,
@@ -306,6 +305,67 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     return data
 
 
+def _parse_latlong_fields(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None):
+
+    latitude_aliases = ["latitude", "latitudes", "lat", "lats", "latitude_field"]
+    longitude_aliases = ["longitude", "longitudes", "lon", "lons", "longitude_field"]
+
+    if "geometry" in data.columns and latitude_field is None and longitude_field is None:
+        return None, None
+
+    try:
+        latitude_field = data[latitude_field]
+    except KeyError:
+        for col in data.columns:
+            col = col.lower()
+            if col in latitude_aliases:
+                latitude_field = data[col]
+                break
+        if latitude_field is None:
+            raise ValueError(
+                "There was no geometry passed.\n"
+                "In these cases, the columns containing latitudes and longitudes must be specified;\n"
+                "unless the naming of these columns follow builtin naming conventions.\n"
+                f"Valid latitude column names: {latitude_aliases},\nValid longitude column names: {longitude_aliases}"
+            )
+
+    try:
+        longitude_field = data[longitude_field]
+    except KeyError:
+        for col in data.columns:
+            col = col.lower()
+            if col in longitude_aliases:
+                longitude_field = data[col]
+                break
+        if longitude_field is None:
+            raise ValueError(
+                "There was no geometry passed.\n"
+                "In these cases, the columns containing latitudes and longitudes must be specified;\n"
+                "unless the naming of these columns follow builtin naming conventions.\n"
+                f"Valid latitude column names: {latitude_aliases},\nValid longitude column names: {longitude_aliases}"
+            )
+
+    if get_column_type(data, latitude_field.name) != "NUM":
+        try:
+            latitude_field = latitude_field.astype(float)
+        except (ValueError, TypeError):
+            raise TypeError(
+                "A latitude column was passed or parsed.\n"
+                "The column does not contain numeric entries, and could not be converted to numerical format."
+            )
+
+    if get_column_type(data, longitude_field.name) != "NUM":
+        try:
+            longitude_field = longitude_field.astype(float)
+        except (ValueError, TypeError):
+            raise TypeError(
+                "A longitude column was passed or parsed.\n"
+                "The column does not contain numeric entries, and could not be converted to numerical format."
+            )
+
+    return latitude_field, longitude_field
+
+
 def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
@@ -319,7 +379,41 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     :rtype: GeoDataFrame
     """
     if data.empty:
-        raise ValueError("If the data passed is a DataFrame, it must not be empty.")
+        raise ValueError("If the data passed is a DataFrame/GeoDataFrame, it must not be empty.")
+
+    data = data.copy(deep=True)
+
+    latitude_field, longitude_field = _parse_latlong_fields(
+        data, latitude_field=latitude_field, longitude_field=longitude_field)
+
+    try:
+        data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field, crs='EPSG:4326'))
+    except (TypeError, ValueError):
+        pass
+
+    # TODO: test this with empty dataframes
+    # removes empty latitude and longitude entries that cause errors in the final product
+    if latitude_field is not None and longitude_field is not None:
+        data.dropna(subset=[latitude_field.name, longitude_field.name], inplace=True)
+
+    gcg.conform_geogeometry(data)
+    data.vtype = 'NUM'
+    return data
+
+def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+    """Converts lat/long columns into a proper geometry column, if present.
+
+    :param data: The data that may or may not contain lat/long columns
+    :type data: GeoDataFrame
+    :param latitude_field: The latitude column within the dataframe
+    :type latitude_field: str
+    :param longitude_field: The longitude column within the dataframe
+    :type longitude_field: str
+    :return: The converted dataframe
+    :rtype: GeoDataFrame
+    """
+    if data.empty:
+        raise ValueError("If the data passed is a DataFrame/GeoDataFrame, it must not be empty.")
 
     data = data.copy(deep=True)
 
@@ -331,7 +425,7 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
         except KeyError:
             if 'geometry' not in data.columns:
                 raise ValueError(
-                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
+                    "If no geometry is passed, there must be latitude_field, "
                     "and longitude_field entries. Missing latitude_field member.")
 
     try:
@@ -349,9 +443,20 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
         data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field, crs='EPSG:4326'))
     except (TypeError, ValueError):
         pass
+
+    # TODO: test this with empty dataframes
+    # removes empty latitude and longitude entries that cause errors in the final product
+    if latitude_field is not None and longitude_field is not None:
+        data.dropna(subset=[latitude_field.name, longitude_field.name], inplace=True)
+
     gcg.conform_geogeometry(data)
     data.vtype = 'NUM'
     return data
+
+
+def _validate_input_geometry(df):
+    if 'geometry' not in df.columns:
+        raise ValueError("There was an issue with the geometry column.")
 
 
 def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
@@ -1900,26 +2005,9 @@ class PlotBuilder:
                 raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
-            # import matplotlib.pyplot as plt
-            # import geoplot as gpt
-            # print('HERE')
-
-            #from h3 import h3
-            #df['center'] = pd.Series(df.index.map(lambda x: tuple(h3.h3_to_geo(x))))
-            #lst = []
-            #for i, _ in df.iterrows():
-            #    lst.append(h3.h3_to_geo(i))
-            #df['center'] = lst
-            #cf = df['center']
-            #print(df)
-
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
                 text=df['text']).update(dataset['manager']))
-            # ax = gpt.polyplot(butil.get_shapes_from_world(), projection=gpt.crs.Mercator())
-            # gpt.choropleth(df, ax=ax, hue='value_field', cmap='viridis')
-            # df.plot(column='value_field', cmap='viridis')
-            # plt.show()
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
