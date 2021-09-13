@@ -34,8 +34,10 @@ def alterer(dataset):
     dataset['data']['value_field'] = -1
 
 
-# TODO: see how long it will take to get new model implemented.
 class BuilderTestCase(unittest.TestCase):
+    """Test cases for the builder module.
+    Mainly tests the PlotBuilder class functions.
+    """
 
     def setUp(self):
         self.builder = builder.PlotBuilder()
