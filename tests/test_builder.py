@@ -48,6 +48,10 @@ class BuilderTestCase(unittest.TestCase):
         add_grid;
         add_outline; and
         add_point.
+
+        Tests:
+        Input varying valid and invalid dataframes to the builder.
+        Ensure correct errors are thrown (if applicable).
         """
 
         # test empty inputs
@@ -147,6 +151,13 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(val == 10 for val in getmain['data']['value_field']))
 
     def test_set_main_dataset_qualitative(self):
+        """Tests the builder's ability to set the main hexbin dataset (qualitative).
+
+        Tests:
+        Set the main dataset with qualitative data.
+        Determine if it was stored correctly.
+        """
+
         testpoints = [
             'POINT(-196.171875 47.040182144806664)',
             'POINT(-135 56.17002298293205)',
@@ -199,6 +210,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertFalse(testdf.equals(getmain['data']))
 
     def test_add_region(self):
+        """Tests the builder's ability to add region-like datasets.
+
+        Tests:
+        Add a region-type dataset to the builder and determine if it was stored properly.
+        """
+
         self.builder.add_region('RRA1', 'CANADA')
         getreg = self.builder._get_region('RRA1')
         self.assertEqual(getreg['DSTYPE'], 'RGN')
@@ -212,6 +229,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getreg['data']['value_field']))
 
     def test_add_grid(self):
+        """Tests the builder's ability to add grid-like datasets.
+
+        Tests:
+        Add a grid-type dataset to the builder and determine if it was stored properly.
+        """
+
         self.builder.add_grid('GGA1', 'FRANCE')
         getgr = self.builder._get_grid('GGA1')
         self.assertEqual(getgr['DSTYPE'], 'GRD')
@@ -225,6 +248,11 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getgr['data']['value_field']))
 
     def test_add_outline(self):
+        """Tests the builder's ability to add outline-like datasets.
+
+        Tests:
+        Add a outline-type dataset to the builder and determine if it was stored properly.
+        """
         self.builder.add_outline('OOA1', 'SOUTH AMERICA')
         getout = self.builder._get_outline('OOA1')
         self.assertEqual(getout['DSTYPE'], 'OUT')
@@ -238,6 +266,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getout['data']['value_field']))
 
     def test_add_points(self):
+        """Tests the builder's ability to add point-like datasets.
+
+        Tests:
+        Add a point-type dataset to the builder and determine if it was stored properly.
+        """
+
         testpoints = shapes_from_wkt(*[
             'POINT (10.0634765625 51.26191485308451)',
             'POINT (10.283203125 51.01375465718821)',
