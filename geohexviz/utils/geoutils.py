@@ -158,6 +158,7 @@ def hexify_dataframe(gdf: GeoDataFrame, hex_resolution: int, add_geom: bool = Fa
     try:
         cdf = pd.DataFrame.explode(cdf[cdf['*HEXLEN*'] != 0].drop(columns='*HEXLEN*').reset_index(drop=True),
                                    'HEX', ignore_index=True)
+
         if as_index:
             cdf.set_index('HEX', inplace=True)
     except KeyError:
@@ -230,10 +231,10 @@ def bin_by_hexid(hex_gdf: Union[DataFrame, GeoDataFrame], binning_field: str = N
         binning_fn = lambda lst: len(lst)
 
     if binning_field is None:
-        hex_gdf['binby'] = list(range(0, len(hex_gdf)))
+        hex_gdf['binby'] = 1
         binning_field = 'binby'
 
-    hex_gdf = hex_gdf.groupby(hex_field if hex_field is not None else hex_gdf.index)
+    hex_gdf = hex_gdf.groupby(by=hex_field if hex_field is not None else hex_gdf.index)
 
     # group by ids aggregate into list
     if loss_method:
