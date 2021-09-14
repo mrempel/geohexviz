@@ -504,6 +504,8 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
         raise gce.BinValueTypeError("The result of the binning operation is a column of invalid type. Fatal Error.")
     gcg.conform_geogeometry(data)
     data.VTYPE = vtype
+    if data.empty:
+        raise ValueError("There was no hexagonal tiling generated for the given data.")
     return data
 
 
@@ -716,12 +718,13 @@ class PlotBuilder:
         :type manager: StrDict
         """
         self._get_grids().pop('|*EMPTY*|', None)
-        hbin_info = dict(hex_resolution=(hex_resolution or self.default_hex_resolution))
+        selected_res = (hex_resolution or self.default_hex_resolution)
+        hbin_info = dict(hex_resolution=selected_res)
         if hexbin_info is None:
             hexbin_info = {}
 
         data = _read_data(data)
-        dataset = dict(NAME='MAIN', RTYPE=data.RTYPE, DSTYPE='MN')
+        dataset = dict(NAME='MAIN', RTYPE=data.RTYPE, DSTYPE='MN', HRES=selected_res)
         data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
 
         hbin_info.update(hexbin_info)
@@ -979,13 +982,20 @@ class PlotBuilder:
         :param longitude_field: The longitude column within the data
         :type longitude_field: str
         """
+        if hex_resolution is None:
+            try:
+                hex_resolution = self._get_main()['HRES']
+            except gce.MainDatasetNotFoundError():
+                pass
+
+        selected_res = hex_resolution or self.default_hex_resolution
 
         _check_name(name)
         data = _read_data(data, allow_builtin=True)
-        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE)
+        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
         data = _convert_to_hexbin_data(
             _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field),
-            hex_resolution=hex_resolution or self.default_hex_resolution,
+            hex_resolution=selected_res,
             binning_fn=lambda lst: 0
         )
         data = data[['value_field', 'geometry']]
@@ -1904,6 +1914,8 @@ class PlotBuilder:
 
         merged = gcg.conform_geogeometry(
             pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
+
+        print(merged)
 
         if remove_underlying:
             merged = self._remove_underlying_grid(self._get_main()['data'], merged)
