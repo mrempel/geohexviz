@@ -308,7 +308,7 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
 def _parse_latlong_fields(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None):
 
     latitude_aliases = ["latitude", "latitudes", "lat", "lats", "latitude_field"]
-    longitude_aliases = ["longitude", "longitudes", "lon", "lons", "longitude_field"]
+    longitude_aliases = ["longitude", "longitudes", "lon", "lons", "long", "longs", "longitude_field"]
 
     if "geometry" in data.columns and latitude_field is None and longitude_field is None:
         return None, None
