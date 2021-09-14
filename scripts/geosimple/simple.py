@@ -6,6 +6,7 @@ from geohexviz.builder import PlotBuilder
 from geohexviz.utils.util import parse_args_kwargs
 import json
 
+
 fn_map: Dict[str, Callable] = {
     'remove_empties': PlotBuilder.remove_empties,
     'logify_scale': PlotBuilder.logify_scale,
@@ -159,7 +160,9 @@ def get_json_filepath(message: str = ''):
     """
     while True:
         filepath = input(message)
-        if filepath == 'exit':
+        if filepath.lower() == 'exit':
+            sys.exit()
+        elif filepath.lower() == 'back':
             return None
         elif filepath.endswith(".json"):
             return filepath
@@ -171,7 +174,11 @@ def get_json_directory(message: str = ''):
     """
     while True:
         filepath = input(message)
-        return filepath if filepath != 'exit' else None
+        if filepath.lower() == 'exit':
+            sys.exit()
+        elif filepath.lower() == 'back':
+            return None
+        return filepath
 
 
 def plot():
@@ -179,7 +186,10 @@ def plot():
 
     Asks the user for the required input.
     """
-    filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON):\n")
+    filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON).\n"
+                                 "Options: json file path, back, exit.")
+    if filepath is None:
+        return
     run_json(filepath, debug=True)
 
 
@@ -189,7 +199,10 @@ def plotDir():
     Asks the user for the required input.
     """
     directory = get_json_directory("Please input the location of a directory"
-                                   " containing parameterized builder files (JSON):\n")
+                                   " containing parameterized builder files (JSON).\n"
+                                   "Options: json directory path, back, exit.\n")
+    if directory is None:
+        return
     try:
         for file in os.listdir(directory):
             if file.endswith('.json'):
@@ -205,7 +218,11 @@ main_options = {
 
 
 def main():
-    while (option_input := input('Select option.\nAvailable options: plot, plotDir, exit:\n').lower()) != 'exit':
+    print("✨==================GeoSimple==================✨\n"
+          " A script for the simple creation of\n"
+          " hexagonally binned geospatial visualizations.\n"
+          "✨=============================================✨")
+    while (option_input := input("✨Main Menu✨\nOptions: plot, plotDir, exit\n").lower()) != 'exit':
         if option_input in main_options:
             main_options[option_input]()
         else:
