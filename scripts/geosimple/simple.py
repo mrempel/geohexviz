@@ -187,7 +187,7 @@ def plot():
     Asks the user for the required input.
     """
     filepath = get_json_filepath("Please input the location of your parameterized builder file (JSON).\n"
-                                 "Options: json file path, back, exit.")
+                                 "Options: json file path, back, exit.\n")
     if filepath is None:
         return
     run_json(filepath, debug=True)
@@ -208,7 +208,7 @@ def plotDir():
             if file.endswith('.json'):
                 run_json(os.path.join(directory, file), debug=True)
     except NotADirectoryError:
-        print('That was not a directory. Try again or exit.')
+        print('That was not a directory. Try again or exit.\n')
 
 
 main_options = {
