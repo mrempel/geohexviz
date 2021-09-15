@@ -13,7 +13,6 @@ from geopandas import GeoDataFrame
 from pandas import DataFrame
 from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
 
-import geohexviz.errors as gce
 from geohexviz.templates import get_template
 from geohexviz.utils import geoutils as gcg
 from geohexviz.utils import plot_util as butil
@@ -21,6 +20,8 @@ from geohexviz.utils.colorscales import solid_scale, discretize_cscale, \
     get_scale
 from geohexviz.utils.util import fix_filepath, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
+from geohexviz.errors import *
+
 import warnings
 
 _read_method_mapping = {
@@ -179,27 +180,6 @@ def _validate_dataset(dataset: StrDict):
     if 'data' not in dataset:
         raise ValueError("There must be a 'data' member present in the dataset.")
 
-
-def _set_manager(dataset: StrDict, default_manager: StrDict = None, allow_manager_updates: bool = True):
-    """Sets the manager of a dataset at the beginning.
-
-    :param dataset: The dataset whose manager to set
-    :type dataset: StrDict
-    :param default_manager: The default manager for this dataset
-    :type default_manager: StrDict
-    :param allow_manager_updates: Whether to allow the default manager to be updated for individual datasets or not
-    :type allow_manager_updates: bool
-    """
-    if default_manager is None:
-        default_manager = {}
-    input_manager = dataset.pop('manager', {})
-    dataset['manager'] = {}
-    _update_manager(dataset, **default_manager)
-    if allow_manager_updates:
-        _update_manager(dataset, **input_manager)
-    elif input_manager:
-        raise ValueError("This dataset may not have a custom manager.")
-
 def get_reader_function_from_method(method: str):
     try:
         return _read_method_mapping[method]
@@ -220,8 +200,8 @@ def _read_data_file_dict(data):
         try:
             dpath = data.pop("path")
         except KeyError:
-            raise gce.DataReadError("There must be a 'path' parameter"
-                                    " present when passing the 'data' parameter as a dict.")
+            raise DataReadError("There must be a 'path' parameter"
+                                " present when passing the 'data' parameter as a dict.")
         read_method = data.pop("method", None)
         normal_errors = data.pop("normal_errors", False)
         read_args, read_kwargs = parse_args_kwargs(data)
@@ -259,7 +239,7 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
         try:
             data = read_fn(filepath, *read_args, **kwargs)
         except TypeError:
-            raise gce.DataFileReadError("The read function is not a callable object.")
+            raise DataFileReadError("The read function is not a callable object.")
         try:
             if not data.crs:
                 data.crs = 'EPSG:4326'
@@ -268,13 +248,12 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
         except AttributeError:
             pass
     except Exception as e:
-        raise e if normal_errors else gce.DataFileReadError(str(e))
-        # logger.warning("The general file formats accepted by this application are (.csv, .shp). Be careful.")
+        raise e if normal_errors else DataFileReadError(str(e))
 
     return data
 
 
-def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
+def _read_data(name: str, dstype: DataSetType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     """Reads the data into a usable type for the builder.
 
     :param data: The data to be read
@@ -284,16 +263,15 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     :return: A proper geodataframe from the input data
     :rtype: GeoDataFrame
     """
-    err_msg = "The data must be a valid filepath, DataFrame, or GeoDataFrame."
     rtype = 'frame'
     try:
         data, rtype = _read_data_file_dict(data), 'file'
-    except (gce.DataFileReadError, fiona.errors.DriverError):
+    except (DataFileReadError, fiona.errors.DriverError):
         if allow_builtin:
             try:
                 data, rtype = butil.get_shapes_from_world(data), 'builtin'
             except (KeyError, ValueError, TypeError):
-                err_msg = "The data must be a valid country or continent name, filepath, DataFrame, or GeoDataFrame."
+                pass
 
     if isinstance(data, DataFrame):
         data = GeoDataFrame(data)
@@ -301,14 +279,23 @@ def _read_data(data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
         data.RTYPE = rtype
         data.VTYPE = 'NUM'
     else:
-        raise gce.DataReadError(err_msg)
+        raise DataReadError(name, dstype, allow_builtin)
     return data
 
 
-def _parse_latlong_fields(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None):
+def _parse_latlong_fields(name: str, dstype: DataSetType, data: GeoDataFrame,
+                          latitude_field: str = None, longitude_field: str = None) -> Tuple[pd.Series, pd.Series]:
+    """Parses the lat/long columns from a GeoDataFrame (called upon loading).
 
-    latitude_aliases = ["latitude", "latitudes", "lat", "lats", "latitude_field"]
-    longitude_aliases = ["longitude", "longitudes", "lon", "lons", "long", "longs", "longitude_field"]
+    :param data: The data to parse columns from
+    :type data: GeoDataFrame
+    :param latitude_field: The name of the latitude column (or none)
+    :type latitude_field: str
+    :param longitude_field: The name of the longitude column (or none)
+    :type longitude_field: str
+    :return: The two columns if applicable (or none, none)
+    :rtype: Tuple[pd.Series, pd.Series]
+    """
 
     if "geometry" in data.columns and latitude_field is None and longitude_field is None:
         return None, None
@@ -322,12 +309,7 @@ def _parse_latlong_fields(data: GeoDataFrame, latitude_field: str = None, longit
                 latitude_field = data[col]
                 break
         if latitude_field is None:
-            raise ValueError(
-                "There was no geometry passed.\n"
-                "In these cases, the columns containing latitudes and longitudes must be specified;\n"
-                "unless the naming of these columns follow builtin naming conventions.\n"
-                f"Valid latitude column names: {latitude_aliases},\nValid longitude column names: {longitude_aliases}"
-            )
+            raise GeometryParseLatLongError(name, dstype, True)
 
     try:
         longitude_field = data[longitude_field]
@@ -338,35 +320,25 @@ def _parse_latlong_fields(data: GeoDataFrame, latitude_field: str = None, longit
                 longitude_field = data[col]
                 break
         if longitude_field is None:
-            raise ValueError(
-                "There was no geometry passed.\n"
-                "In these cases, the columns containing latitudes and longitudes must be specified;\n"
-                "unless the naming of these columns follow builtin naming conventions.\n"
-                f"Valid latitude column names: {latitude_aliases},\nValid longitude column names: {longitude_aliases}"
-            )
+            raise GeometryParseLatLongError(name, dstype, False)
 
     if get_column_type(data, latitude_field.name) != "NUM":
         try:
             latitude_field = latitude_field.astype(float)
         except (ValueError, TypeError):
-            raise TypeError(
-                "A latitude column was passed or parsed.\n"
-                "The column does not contain numeric entries, and could not be converted to numerical format."
-            )
+            raise LatLongParseTypeError(name, dstype, True)
 
     if get_column_type(data, longitude_field.name) != "NUM":
         try:
             longitude_field = longitude_field.astype(float)
         except (ValueError, TypeError):
-            raise TypeError(
-                "A longitude column was passed or parsed.\n"
-                "The column does not contain numeric entries, and could not be converted to numerical format."
-            )
+            raise LatLongParseTypeError(name, dstype, False)
 
     return latitude_field, longitude_field
 
 
-def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
+def _convert_latlong_data(name: str, dstype: DataSetType, data: GeoDataFrame,
+                          latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
     :param data: The data that may or may not contain lat/long columns
@@ -379,11 +351,12 @@ def _convert_latlong_data(data: GeoDataFrame, latitude_field: str = None, longit
     :rtype: GeoDataFrame
     """
     if data.empty:
-        raise ValueError("If the data passed is a DataFrame/GeoDataFrame, it must not be empty.")
+        raise DataEmptyError("If the data passed is a DataFrame/GeoDataFrame, it must not be empty.")
 
     data = data.copy(deep=True)
 
     latitude_field, longitude_field = _parse_latlong_fields(
+        name, dstype,
         data, latitude_field=latitude_field, longitude_field=longitude_field)
 
     try:
@@ -454,12 +427,7 @@ def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longi
     return data
 
 
-def _validate_input_geometry(df):
-    if 'geometry' not in df.columns:
-        raise ValueError("There was an issue with the geometry column.")
-
-
-def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_args=None,
+def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
 
@@ -492,7 +460,8 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
     vtype = 'NUM' if binning_field is None else get_column_type(data, binning_field)
 
     if vtype == 'UNK':
-        raise gce.BinValueTypeError("The binning field is not a valid type, must be string or numerical column.")
+        raise BinValueTypeError("An invalid binning column was passed.\n"
+                                "The binning field must be string or numerical column.")
 
     if binning_fn is None:
         binning_fn = _group_functions['best'] if vtype == 'STR' else _group_functions['count']
@@ -500,12 +469,17 @@ def _convert_to_hexbin_data(data: GeoDataFrame, hex_resolution: int, binning_arg
     data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
                             result_name='value_field', add_geoms=True, **kwargs)
     vtype = get_column_type(data, 'value_field')
+
+    # if the resulting column is of unknown type, the binning function did not produce a viable result
     if vtype == 'UNK':
-        raise gce.BinValueTypeError("The result of the binning operation is a column of invalid type. Fatal Error.")
+        raise BinValueTypeError("The result of the binning operation was invalid.\n"
+                                "The binning operation must produce a column that contains either string, or numbers.")
     gcg.conform_geogeometry(data)
     data.VTYPE = vtype
+
+    # if there is no data after the above process, there was no grid generated
     if data.empty:
-        raise ValueError("There was no hexagonal tiling generated for the given data.")
+        raise NoHexagonalTilingError(name, dstype)
     return data
 
 
@@ -553,14 +527,14 @@ def _split_query(query: str) -> Tuple[str, str]:
     return query[:lind], query[lind + 1:]
 
 
-def _check_name(name: str):
+def _check_name(name: str, dstype: DataSetType):
     """Checks if the given dataset name is valid, and throws an error if it is not.
 
     :param name: The name of the dataset
     :type name: str
     """
     if any(not i.isalnum() and i not in ('_', ' ') for i in name):
-        raise gce.DatasetNamingError("NERR001 - Non-alphanumeric found (besides underscores)")
+        raise DatasetNamingError(name, dstype, "Non-alphanumeric found (besides underscores)")
 
 
 class PlotStatus(Enum):
@@ -574,22 +548,16 @@ class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
     """
 
-    def __init__(
-            self,
-            main_dataset: StrDict = None,
-            regions: Dict[str, StrDict] = None,
-            grids: Dict[str, StrDict] = None,
-            outlines: Dict[str, StrDict] = None,
-            points: Dict[str, StrDict] = None,
-            use_templates: bool = True
-    ):
+    def __init__(self, hexbin_dataset: StrDict = None, regions: Dict[str, StrDict] = None,
+                 grids: Dict[str, StrDict] = None, outlines: Dict[str, StrDict] = None,
+                 points: Dict[str, StrDict] = None, use_templates: bool = True):
         """Initializer for instances of PlotBuilder.
 
         Initializes a new PlotBuilder with the given main dataset
         alongside any region, grid, outline, point type datasets.
 
-        :param main_dataset: The main dataset for this builder
-        :type main_dataset: StrDict
+        :param hexbin_dataset: The main dataset for this builder
+        :type hexbin_dataset: StrDict
         :param regions: A set of region-type datasets for this builder
         :type regions: Dict[str, StrDict]
         :param grids: A sed of grid-type datasets for this builder
@@ -624,8 +592,8 @@ class PlotBuilder:
         self.output_destination = None
         self._last_output_location = None  # for future use
 
-        if main_dataset is not None:
-            self.set_main(**main_dataset)
+        if hexbin_dataset is not None:
+            self.set_hexbin(**hexbin_dataset)
 
         if regions is not None:
             for k, v in regions.items():
@@ -693,7 +661,7 @@ class PlotBuilder:
     MAIN DATASET FUNCTIONS
     """
 
-    def set_main(
+    def set_hexbin(
             self,
             data: DFType,
             latitude_field: str = None,
@@ -702,7 +670,7 @@ class PlotBuilder:
             hexbin_info: StrDict = None,
             manager: StrDict = None
     ):
-        """Sets the main dataset to plot.
+        """Sets the hexbin dataset to plot.
 
         :param data: The data for this set
         :type data: DFType
@@ -723,12 +691,13 @@ class PlotBuilder:
         if hexbin_info is None:
             hexbin_info = {}
 
-        data = _read_data(data)
-        dataset = dict(NAME='MAIN', RTYPE=data.RTYPE, DSTYPE='MN', HRES=selected_res)
-        data = _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field)
+        data = _read_data('hexbin', DataSetType.HEXBIN, data)
+        dataset = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
+        data = _convert_latlong_data('hexbin', DataSetType.HEXBIN, data,
+                                     latitude_field=latitude_field, longitude_field=longitude_field)
 
         hbin_info.update(hexbin_info)
-        data = _convert_to_hexbin_data(data, **hbin_info)
+        data = _convert_to_hexbin_data("hexbin", DataSetType.HEXBIN, data, **hbin_info)
         dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
         dataset['manager'] = {}
         if self.use_templates:
@@ -737,9 +706,9 @@ class PlotBuilder:
             else:
                 _update_manager(dataset, deepcopy(get_template('main_qual')))
         _update_manager(dataset, **(manager if manager is not None else {}))
-        self._container['main'] = dataset
+        self._container['hexbin'] = dataset
 
-    def _get_main(self) -> StrDict:
+    def _get_hexbin(self) -> StrDict:
         """Retrieves the main dataset.
 
         Internal version.
@@ -748,11 +717,11 @@ class PlotBuilder:
         :rtype: StrDict
         """
         try:
-            return self._container['main']
+            return self._container['hexbin']
         except KeyError:
-            raise gce.MainDatasetNotFoundError()
+            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
 
-    def get_main(self):
+    def get_hexbin(self):
         """Retrieves the main dataset.
 
         External version, returns a deepcopy.
@@ -760,7 +729,7 @@ class PlotBuilder:
         :return: The main dataset
         :rtype: StrDict
         """
-        return deepcopy(self._get_main())
+        return deepcopy(self._get_hexbin())
 
     def remove_main(self, pop: bool = False) -> StrDict:
         """Removes the main dataset.
@@ -771,18 +740,18 @@ class PlotBuilder:
         :rtype: StrDict
         """
         try:
-            main = self._container.pop('main')
+            main = self._container.pop('hexbin')
 
             # remove the empty grid that may or may not have been added
             try:
                 self.remove_grid('|*EMPTY*|')
-            except gce.DatasetNotFoundError:
+            except DatasetNotFoundError:
                 pass
 
             if pop:
                 return main
         except KeyError:
-            raise gce.MainDatasetNotFoundError()
+            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
 
     def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager the main dataset.
@@ -794,20 +763,20 @@ class PlotBuilder:
         :param kwargs: Other updates for the dataset(s)
         :type kwargs: **kwargs
         """
-        _update_manager(self._get_main(), updates=updates, overwrite=overwrite, **kwargs)
+        _update_manager(self._get_hexbin(), updates=updates, overwrite=overwrite, **kwargs)
 
-    def clear_main_manager(self):
+    def clear_hexbin_manager(self):
         """Clears the manager of the main dataset.
         """
         try:
-            self._get_main()['manager'] = {}
+            self._get_hexbin()['manager'] = {}
         except ValueError:
-            raise gce.MainDatasetNotFoundError()
+            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
 
-    def reset_main_data(self):
+    def reset_hexbin_data(self):
         """Resets the data within the main dataset to the data that was input at the beginning.
         """
-        _reset_to_odata(self._get_main())
+        _reset_to_odata(self._get_hexbin())
 
     """
     REGION FUNCTIONS
@@ -831,8 +800,8 @@ class PlotBuilder:
         :param manager: The plotly properties for this dataset.
         :type manager: StrDict
         """
-        _check_name(name)
-        data = _read_data(data, allow_builtin=True)
+        _check_name(name, DataSetType.REGION)
+        data = _read_data(name, DataSetType.REGION, data, allow_builtin=True)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
@@ -856,7 +825,7 @@ class PlotBuilder:
         try:
             return self._get_regions()[name]
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "region")
+            raise NoDataSetError(name, DataSetType.REGION)
 
     def get_region(self, name: str) -> StrDict:
         """Retrieves a region dataset from the builder.
@@ -905,7 +874,7 @@ class PlotBuilder:
             if pop:
                 return region
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "region")
+            raise NoDataSetError(name, DataSetType.REGION)
 
     def update_region_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a region or regions.
@@ -984,17 +953,19 @@ class PlotBuilder:
         """
         if hex_resolution is None:
             try:
-                hex_resolution = self._get_main()['HRES']
-            except gce.MainDatasetNotFoundError():
+                hex_resolution = self._get_hexbin()['HRES']
+            except NoDataSetError:
                 pass
 
         selected_res = hex_resolution or self.default_hex_resolution
 
-        _check_name(name)
-        data = _read_data(data, allow_builtin=True)
+        _check_name(name, DataSetType.GRID)
+        data = _read_data(name, DataSetType.GRID, data, allow_builtin=True)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
         data = _convert_to_hexbin_data(
-            _convert_latlong_data(data, latitude_field=latitude_field, longitude_field=longitude_field),
+            name, DataSetType.GRID,
+            _convert_latlong_data(name, DataSetType.GRID, data,
+                                  latitude_field=latitude_field, longitude_field=longitude_field),
             hex_resolution=selected_res,
             binning_fn=lambda lst: 0
         )
@@ -1016,7 +987,7 @@ class PlotBuilder:
         try:
             return self._get_grids()[name]
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "grid")
+            raise NoDataSetError(name, DataSetType.GRID)
 
     def get_grid(self, name: str) -> StrDict:
         """Retrieves a grid dataset from the builder.
@@ -1070,7 +1041,7 @@ class PlotBuilder:
             if pop:
                 return grid
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "grid")
+            raise NoDataSetError(name, DataSetType.GRID)
 
     def update_grid_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the general grid manager.
@@ -1145,10 +1116,10 @@ class PlotBuilder:
         :param manager: Plotly properties for this dataset
         :type manager: StrDict
         """
-        _check_name(name)
-        data = _read_data(data, allow_builtin=True)
+        _check_name(name, DataSetType.OUTLINE)
+        data = _read_data(name, DataSetType.OUTLINE, data, allow_builtin=True)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
-        data = _convert_latlong_data(data, latitude_field=latitude_field,
+        data = _convert_latlong_data(name, DataSetType.OUTLINE, data, latitude_field=latitude_field,
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
         # TODO: there exists errors with the representation of outlines (given lfields)
 
@@ -1176,7 +1147,7 @@ class PlotBuilder:
         try:
             return self._get_outlines()[name]
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "outline")
+            raise NoDataSetError(name, DataSetType.OUTLINE)
 
     def get_outline(self, name: str) -> StrDict:
         """Retrieves a outline dataset from the builder.
@@ -1225,7 +1196,7 @@ class PlotBuilder:
             if pop:
                 return outline
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "outline")
+            raise NoDataSetError(name, DataSetType.OUTLINE)
 
     def update_outline_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a outline or outlines.
@@ -1288,7 +1259,7 @@ class PlotBuilder:
             text_field: str = None,
             manager: StrDict = None
     ):
-        """Adds a outline-type dataset to the builder.
+        """Adds a point-type dataset to the builder.
 
         Ideally the dataset's 'data' member should contain
         lat/long columns or point like geometry column. If the geometry column
@@ -1309,14 +1280,14 @@ class PlotBuilder:
         :type manager: StrDict
         """
 
-        _check_name(name)
-        data = _read_data(data, allow_builtin=False)
+        _check_name(name, DataSetType.POINT)
+        data = _read_data(name, DataSetType.POINT, data, allow_builtin=False)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
         if text_field:
-            data = _convert_latlong_data(data, latitude_field=latitude_field,
+            data = _convert_latlong_data(name, DataSetType.POINT, data, latitude_field=latitude_field,
                                          longitude_field=longitude_field)[[text_field, 'value_field', 'geometry']]
         else:
-            data = _convert_latlong_data(data, latitude_field=latitude_field,
+            data = _convert_latlong_data(name, DataSetType.POINT, data, latitude_field=latitude_field,
                                          longitude_field=longitude_field)[['value_field', 'geometry']]
 
         dataset['data'], dataset['odata'] = data, data.copy(deep=True)
@@ -1342,7 +1313,7 @@ class PlotBuilder:
         try:
             return self._get_points()[name]
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "point")
+            raise NoDataSetError(name, DataSetType.POINT)
 
     def get_point(self, name: str) -> StrDict:
         """Retrieves a point dataset from the builder.
@@ -1391,7 +1362,7 @@ class PlotBuilder:
             if pop:
                 return point
         except KeyError:
-            raise gce.DatasetNotFoundError(name, "point")
+            raise NoDataSetError(name, DataSetType.POINT)
 
     def update_point_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a point or points.
@@ -1516,11 +1487,7 @@ class PlotBuilder:
         :param add_to_plot: Whether to add the empty cells to the plot or not
         :type add_to_plot: bool
         """
-
-        try:
-            dataset = self.get_main()
-        except ValueError:
-            raise gce.MainDatasetNotFoundError()
+        dataset = self._get_hexbin()
 
         if add_to_plot:
             empties = dataset['data'][dataset['data']['value_field'] == empty_symbol]
@@ -1542,10 +1509,7 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
 
-        try:
-            dataset = self._get_main()
-        except ValueError:
-            raise gce.MainDatasetNotFoundError()
+        dataset = self._get_hexbin()
 
         if dataset['VTYPE'] == 'STR':
             raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
@@ -1597,9 +1561,9 @@ class PlotBuilder:
         :type method: str
         """
 
-        self.clip_datasets('main+grids', 'regions+outlines', method=method, operation='intersects')
+        self.clip_datasets('hexbin+grids', 'regions+outlines', method=method, operation='intersects')
         #self.clip_datasets('main+grids', 'outlines', method=method, operation='intersects')
-        self.clip_datasets('points', 'main+regions+outlines+grids', method=method, operation='within')
+        self.clip_datasets('points', 'hexbin+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
         """Removes the pieces of a GeoDataFrame that lie under another.
@@ -1672,7 +1636,6 @@ class PlotBuilder:
         # self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
         return
 
-    # TODO: This function should only apply to the main dataset (maybe, think more)
     def adjust_opacity(self, alpha: float = None):
         """Conforms the opacity of the color bar of the main dataset to an alpha value.
 
@@ -1683,10 +1646,10 @@ class PlotBuilder:
         :type alpha: float
         """
 
-        dataset = self._get_main()
+        dataset = self._get_hexbin()
         butil.opacify_colorscale(dataset, alpha=alpha)
 
-    def adjust_focus(self, on: str = 'main', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
+    def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
                      buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
         """Focuses on dataset(s) within the plot.
 
@@ -1745,7 +1708,7 @@ class PlotBuilder:
 
         self._figure.update_geos(**geos)
 
-    def auto_grid(self, on: str = 'main', by_bounds: bool = False, hex_resolution: int = None):
+    def auto_grid(self, on: str = 'hexbin', by_bounds: bool = False, hex_resolution: int = None):
         """Makes a grid over the queried datasets.
 
         :param on: The query for the datasets to have a grid generated over them
@@ -1784,10 +1747,7 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
 
-        try:
-            dataset = self._get_main()
-        except ValueError:
-            raise gce.MainDatasetNotFoundError()
+        dataset = self._get_hexbin()
 
         if dataset['VTYPE'] == 'STR':
             raise ValueError(f"You can not discretize a qualitative dataset.")
@@ -1807,7 +1767,7 @@ class PlotBuilder:
         """Query the builder for specific dataset(s).
 
         Each query argument should be formatted like:
-        <regions|grids|outlines|points|main|all>
+        <regions|grids|outlines|points|main|hexbin|all>
         OR
         <region|grid|outline|point>:<name>
 
@@ -1854,33 +1814,28 @@ class PlotBuilder:
         :return: The result of the query
         :rtype: StrDict
         """
+        type_ret = dict(region=self._get_region, grid=self._get_grid, outline=self.get_outline, point=self._get_point)
 
-        if query == 'main':
-            return self._get_main()
+        if query in ['main', 'hexbin']:
+            return self._get_hexbin()
         elif query in ['regions', 'grids', 'outlines', 'points', 'all']:
             if big_query:
                 return self._container if query == 'all' else self._container[query]
             else:
-                raise gce.BuilderQueryInvalidError("The given query should not refer to a collection of datasets.")
+                raise BuilderQueryInvalidError("The given query should not refer to a collection of datasets.")
 
         try:
             typer, name = _split_query(query)
         except ValueError:
-            raise gce.BuilderQueryInvalidError(
+            raise BuilderQueryInvalidError(
                 "The given query should be one of ['regions', 'grids', 'outlines', 'points', "
-                f"'main'] or in the form of '<type>:<name>'. Received item: {query}.")
+                f"'main', 'hexbin'] or in the form of '<type>:<name>'.\nReceived: {query}.")
 
-        if typer == 'region':
-            return self._get_region(name)
-        elif typer == 'grid':
-            return self._get_grid(name)
-        elif typer == 'outline':
-            return self._get_outline(name)
-        elif typer == 'point':
-            return self._get_point(name)
-        else:
-            raise gce.BuilderQueryInvalidError("The given dataset type does not exist. Must be one of ['region', "
-                                               f"'grid', 'outline', 'point']. Received {typer}.")
+        try:
+            return type_ret[typer](name)
+        except KeyError:
+            raise BuilderQueryInvalidError("The given dataset type does not exist.\nMust be one of ['region', "
+                                           f"'grid', 'outline', 'point'].\n Received: {typer}")
 
     get_query_data = lambda self, name: self.apply_to_query(name, lambda ds: ds['data'])
 
@@ -1896,7 +1851,7 @@ class PlotBuilder:
         # logger.debug('adding regions to plot.')
         mapbox = self.plot_output_service == 'mapbox'
         if not self._get_regions():
-            raise gce.NoDatasetsError("There are no region-type datasets to plot.")
+            raise NoDataSetsError(DataSetType.REGION)
         for regname, regds in self._get_regions().items():
             self._figure.add_trace(_prepare_choropleth_trace(
                 gcg.conform_geogeometry(regds['data']),
@@ -1910,61 +1865,27 @@ class PlotBuilder:
         Merges all of the datasets together, and plots it as a single plot trace.
         """
         if not self._get_grids():
-            raise gce.NoDatasetsError("There are no grid-type datasets to plot.")
+            raise NoDataSetsError(DataSetType.GRID)
 
         merged = gcg.conform_geogeometry(
             pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
 
-        print(merged)
-
         if remove_underlying:
-            merged = self._remove_underlying_grid(self._get_main()['data'], merged)
+            merged = self._remove_underlying_grid(self._get_hexbin()['data'], merged)
         self._figure.add_trace(_prepare_choropleth_trace(
             merged,
             mapbox=self.plot_output_service == 'mapbox').update(text='GRID').update(self._grid_manager))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
-    def plot_main2(self, labels: bool = True):
-        """Plots the main dataset within the builder.
 
-        If qualitative, the dataset is split into uniquely labelled plot traces.
-        """
-        # TODO: new version using plotly express (less guessing on our part)
-
-        import plotly.express as px
-
-        try:
-            dataset = self._get_main()
-        except gce.MainDatasetNotFoundError:
-            raise gce.NoDatasetsError("There is no main dataset to plot.")
-        df = gcg.conform_geogeometry(dataset['data'])
-        manager = dataset['manager']
-        cs = manager.get('colorscale')
-        try:
-            cs = get_scale(cs)
-        except AttributeError:
-            pass
-        fig = px.choropleth(data_frame=df, color='value_field', color_continuous_scale=cs,
-                            color_discrete_map=cs if isinstance(cs, dict) else None, color_discrete_sequence=cs,
-                            geojson=gcg.simple_geojson(df, 'value_field'), locations=df.index,
-                            labels={'HEX': 'hid', 'value_field': 'val'} if labels else None)
-        pm = deepcopy(manager)
-        pm.pop('colorscale', None)
-        for d in fig.data:
-            self._figure.add_trace(d.update(pm))
-        self._plot_status = PlotStatus.DATA_PRESENT
-
-    def plot_main(self):
+    def plot_hexbin(self):
         """Plots the main dataset within the builder.
 
         If qualitative, the dataset is split into uniquely labelled plot traces.
         """
 
-        try:
-            dataset = self._get_main()
-        except gce.MainDatasetNotFoundError:
-            raise gce.NoDatasetsError("There is no main dataset to plot.")
+        dataset = self._get_hexbin()
         df = gcg.conform_geogeometry(dataset['data'])
 
         # qualitative dataset
@@ -1993,7 +1914,7 @@ class PlotBuilder:
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise gce.ColorscaleError(
+                        raise ColorscaleError(
                             "If the colorscale is a map, you must provide hues for each option.")
                     self._figure.add_trace(_prepare_choropleth_trace(
                         v,
@@ -2014,7 +1935,7 @@ class PlotBuilder:
                         _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True,
                                                                            text=v['text']).update(manager))
             else:
-                raise gce.ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
+                raise ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
         # quantitative dataset
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
@@ -2033,7 +1954,7 @@ class PlotBuilder:
         :type raise_errors: bool
         """
         if not self._get_outlines():
-            raise gce.NoDatasetsError("There are no outline-type datasets to plot.")
+            raise NoDataSetsError(DataSetType.OUTLINE)
 
         mapbox = self.plot_output_service == 'mapbox'
         for outname, outds in self._get_outlines().items():
@@ -2054,7 +1975,7 @@ class PlotBuilder:
         """
 
         if not self._get_points():
-            raise gce.NoDatasetsError("There are no point-type datasets to plot.")
+            raise NoDataSetsError(DataSetType.POINT)
 
         mapbox = self.plot_output_service == 'mapbox'
         for poiname, poids in self._get_points().items():
@@ -2079,11 +2000,12 @@ class PlotBuilder:
         self.plot_output_service = 'mapbox'
         self._figure.update_layout(mapbox_accesstoken=accesstoken)
 
-    def build_plot(
+
+    def finalize(
             self,
             plot_regions: bool = True,
             plot_grids: bool = True,
-            plot_main: bool = True,
+            plot_hexbin: bool = True,
             plot_outlines: bool = True,
             plot_points: bool = True,
             raise_errors: bool = False
@@ -2104,8 +2026,8 @@ class PlotBuilder:
         :type plot_regions: bool
         :param plot_grids: Whether or not to plot grid datasets
         :type plot_grids: bool
-        :param plot_main: Whether or not to plot the main dataset
-        :type plot_main: bool
+        :param plot_hexbin: Whether or not to plot the main dataset
+        :type plot_hexbin: bool
         :param plot_outlines: Whether or not to plot outline datasets
         :type plot_outlines: bool
         :param plot_points: Whether or not to plot point datasets
@@ -2116,35 +2038,35 @@ class PlotBuilder:
         if plot_regions:
             try:
                 self.plot_regions()
-            except gce.NoDatasetsError as e:
+            except NoDataSetsError as e:
                 if raise_errors:
-                    raise e
+                    raise e from None
         if plot_grids:
             try:
                 self.plot_grids(remove_underlying=True)
-            except gce.NoDatasetsError as e:
+            except NoDataSetsError as e:
                 if raise_errors:
-                    raise e
-        if plot_main:
+                    raise e from None
+        if plot_hexbin:
             try:
-                self.plot_main()
-            except gce.NoDatasetsError as e:
+                self.plot_hexbin()
+            except NoDataSetError as e:
                 if raise_errors:
-                    raise e
+                    raise e from None
         if plot_outlines:
             try:
                 self.plot_outlines()
-            except gce.NoDatasetsError as e:
+            except NoDataSetsError as e:
                 if raise_errors:
-                    raise e
+                    raise e from None
         if plot_points:
             try:
                 self.plot_points()
-            except gce.NoDatasetsError as e:
+            except NoDataSetsError as e:
                 if raise_errors:
-                    raise e
+                    raise e from None
 
-    def output_figure(self, filepath: str = None, clear_figure: bool = False, **kwargs):
+    def output(self, filepath: str = None, clear_figure: bool = False, **kwargs):
         """Outputs the figure to a filepath.
 
         The figure is output via Plotly's write_image() function.
@@ -2159,8 +2081,8 @@ class PlotBuilder:
         """
         if filepath is None:
             if self.output_destination is None:
-                raise gce.NoFilepathError("There must either be a filepath given directly or one stored in"
-                                          " the builder's 'output_destination' property.")
+                raise NoFilepathError("There must either be a filepath given directly or one stored in"
+                                      " the builder's 'output_destination' property.")
             filepath = self.output_destination
 
         self._figure.write_image(filepath, **kwargs)
@@ -2168,7 +2090,7 @@ class PlotBuilder:
         if clear_figure:
             self.clear_figure()
 
-    def display_figure(self, clear_figure: bool = False, **kwargs):
+    def display(self, clear_figure: bool = False, **kwargs):
         """Displays the figure.
 
         The figure is displayed via Plotly's show() function.
@@ -2225,8 +2147,8 @@ class PlotBuilder:
         """Resets the datasets of the builder to their original state.
         """
         try:
-            self.reset_main_data()
-        except gce.MainDatasetNotFoundError:
+            self.reset_hexbin_data()
+        except NoDataSetError:
             pass
         self.reset_region_data()
         self.reset_grid_data()
@@ -2243,21 +2165,11 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
         settings = simplify_dicts(builder_dict, **kwargs)
-        plotly_managers = settings.pop('builder_managers', {})
+        figure_manager = settings.pop('figure_manager', {})
+        figure_manager.update(dict(layout=settings.pop('figure_layout', {}), geos=settings.pop('figure_geos', {})))
+        grid_manager = settings.pop('grid_manager', {})
 
         builder = PlotBuilder(**settings)
-        try:
-            builder.update_main_manager(plotly_managers.get('main_dataset', {}))
-        except gce.MainDatasetNotFoundError:
-            pass
-        builder.update_grid_manager(plotly_managers.get('grids', {}))
-        builder.update_figure(plotly_managers.get('figure', {}))
-
-        for k, v in plotly_managers.get('regions', {}):
-            builder.update_region_manager(v, name=k)
-        for k, v in plotly_managers.get('outlines', {}):
-            builder.update_outline_manager(v, name=k)
-        for k, v in plotly_managers.get('points', {}):
-            builder.update_point_manager(v, name=k)
-
+        builder.update_grid_manager(grid_manager)
+        builder.update_figure(figure_manager)
         return builder
