@@ -84,11 +84,10 @@ def run_json(filepath: str, debug: bool = False):
             args, kwargs = parse_args_kwargs(v)
             try:
                 data_adjustments_map[k](builder, *args, **kwargs)
-                debugprint(f"* Invoked '{data_adjustments_map[k].__name__}'.")
+                debugprint(f"* invoked '{data_adjustments_map[k].__name__}'.")
             except Exception as e:
-                print(e)
                 try:
-                    debugprint(f"* error while performing '{plot_adjustments_map[k].__name__}'.")
+                    debugprint(f"* error while performing '{data_adjustments_map[k].__name__}' -> {e}")
                 except KeyError:
                     debugprint(f"* no such data adjustment as: {k}")
 
@@ -116,12 +115,12 @@ def run_json(filepath: str, debug: bool = False):
     if output_fig:
         args, kwargs = parse_args_kwargs(output_fig)
         builder.output(*args, **kwargs)
-        debugprint("* Figure output.")
+        debugprint("* figure output.")
 
     if display_fig:
         args, kwargs = parse_args_kwargs(display_fig)
         builder.display(*args, **kwargs)
-        debugprint("* Figure displayed.")
+        debugprint("* figure displayed.")
 
     end = time.time()
     debugprint(tok3)
