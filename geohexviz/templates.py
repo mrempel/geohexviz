@@ -4,6 +4,7 @@ templates = dict(
             geo=dict(
                 projection=dict(type='orthographic', scale=1.0),
                 showcoastlines=False,
+                showocean=True,
                 landcolor="rgba(166,166,166,0.625)",
                 oceancolor="rgb(222,222,222)",
                 showlakes=False,
