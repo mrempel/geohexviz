@@ -21,7 +21,7 @@ from geohexviz.utils.colorscales import solid_scale, discretize_cscale, \
 from geohexviz.utils.util import fix_filepath, get_column_type, \
     simplify_dicts, dict_deep_update, get_percdiff, parse_args_kwargs, get_best, get_worst
 from geohexviz.errors import *
-
+from functools import reduce
 import warnings
 
 _read_method_mapping = {
@@ -179,6 +179,7 @@ def _validate_dataset(dataset: StrDict):
     """
     if 'data' not in dataset:
         raise ValueError("There must be a 'data' member present in the dataset.")
+
 
 def get_reader_function_from_method(method: str):
     try:
@@ -372,6 +373,7 @@ def _convert_latlong_data(name: str, dstype: DataSetType, data: GeoDataFrame,
     gcg.conform_geogeometry(data)
     data.vtype = 'NUM'
     return data
+
 
 def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
@@ -686,10 +688,12 @@ class PlotBuilder:
         :type manager: StrDict
         """
         self._get_grids().pop('|*EMPTY*|', None)
-        selected_res = (hex_resolution or self.default_hex_resolution)
-        hbin_info = dict(hex_resolution=selected_res)
+
         if hexbin_info is None:
             hexbin_info = {}
+
+        selected_res = (hex_resolution or hexbin_info.get('hex_resolution')) or self.default_hex_resolution
+        hbin_info = dict(hex_resolution=selected_res)
 
         data = _read_data('hexbin', DataSetType.HEXBIN, data)
         dataset = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
@@ -697,6 +701,7 @@ class PlotBuilder:
                                      latitude_field=latitude_field, longitude_field=longitude_field)
 
         hbin_info.update(hexbin_info)
+
         data = _convert_to_hexbin_data("hexbin", DataSetType.HEXBIN, data, **hbin_info)
         dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
         dataset['manager'] = {}
@@ -745,7 +750,7 @@ class PlotBuilder:
             # remove the empty grid that may or may not have been added
             try:
                 self.remove_grid('|*EMPTY*|')
-            except DatasetNotFoundError:
+            except NoDataSetError:
                 pass
 
             if pop:
@@ -934,7 +939,8 @@ class PlotBuilder:
             data: DFType,
             hex_resolution: int = None,
             latitude_field: str = None,
-            longitude_field: str = None
+            longitude_field: str = None,
+            convex_simplify: bool = False
     ):
         """Adds a grid-type dataset to the builder.
 
@@ -950,6 +956,8 @@ class PlotBuilder:
         :type latitude_field: str
         :param longitude_field: The longitude column within the data
         :type longitude_field: str
+        :param convex_simplify: Determines if the area the grid is to be placed over should be simplified or not
+        :type convex_simplify: bool
         """
         if hex_resolution is None:
             try:
@@ -962,10 +970,14 @@ class PlotBuilder:
         _check_name(name, DataSetType.GRID)
         data = _read_data(name, DataSetType.GRID, data, allow_builtin=True)
         dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
+        data = _convert_latlong_data(name, DataSetType.GRID, data,
+                                  latitude_field=latitude_field, longitude_field=longitude_field)
+        if convex_simplify:
+            data = GeoDataFrame(geometry=data.convex_hull, crs="EPSG:4326")
+
         data = _convert_to_hexbin_data(
             name, DataSetType.GRID,
-            _convert_latlong_data(name, DataSetType.GRID, data,
-                                  latitude_field=latitude_field, longitude_field=longitude_field),
+            data,
             hex_resolution=selected_res,
             binning_fn=lambda lst: 0
         )
@@ -1512,11 +1524,14 @@ class PlotBuilder:
         dataset = self._get_hexbin()
 
         if dataset['VTYPE'] == 'STR':
-            raise TypeError("A qualitative dataset can not be converted into a logarithmic scale.")
+            raise TypeError("The scale of a hexbin dataset that is binned "
+                            "based on qualitative data can not be converted into a logarithmic scale.")
         _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
 
-    def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', operation: str = 'intersects'):
+    def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', reduce_first: bool = True,
+                      operation: str = 'intersects'):
         """Clips a query of datasets to another dataset.
+        this function is experimental and may not always work as intended
 
         There are two methods for this clipping:
         1) sjoin -> Uses GeoPandas spatial join in order to clip geometries
@@ -1531,11 +1546,17 @@ class PlotBuilder:
         :type to: GeoDataFrame
         :param method: The method to use when clipping, one of 'sjoin', 'gpd'
         :type method: str
+        :param reduce_first: Determines whether the geometries acting as the clip should be reduced first or not
+        :type reduce_first: bool
         :param operation: The operation to apply when using sjoin (spatial join operation)
         :type operation: str
         """
 
+        # TODO: In the future combining the geometries of all dataframes may be useful. (geopandas overlay how=union)
         datas = self.apply_to_query(to, lambda dataset: dataset['data'])
+        if reduce_first:
+            datas = [GeoDataFrame(geometry=[reduce(lambda left, right: left.union(right), datas).unary_union],
+                                  crs="EPSG:4326")]
 
         def gpdhelp(dataset: dict):
             dataset['data'] = butil.gpd_clip(dataset['data'], datas, validate=True)
@@ -1548,7 +1569,7 @@ class PlotBuilder:
         elif method == 'sjoin':
             self.apply_to_query(clip, sjoinhelp)
         else:
-            raise ValueError("The selected method must be one of ['gpd', 'sjoin'].")
+            raise ValueError("When clipping datasets, the selected method must be one of ['gpd', 'sjoin'].")
 
     # check methods of clipping
     def simple_clip(self, method: str = 'sjoin'):
@@ -1562,7 +1583,7 @@ class PlotBuilder:
         """
 
         self.clip_datasets('hexbin+grids', 'regions+outlines', method=method, operation='intersects')
-        #self.clip_datasets('main+grids', 'outlines', method=method, operation='intersects')
+        # self.clip_datasets('main+grids', 'outlines', method=method, operation='intersects')
         self.clip_datasets('points', 'hexbin+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
@@ -1594,9 +1615,9 @@ class PlotBuilder:
 
         Does not work.
         """
-        #calc = width - 50 + (t + b) * 2 / 10
-        #self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
-        #self._figure.update_layout(width=width + 50,
+        # calc = width - 50 + (t + b) * 2 / 10
+        # self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
+        # self._figure.update_layout(width=width + 50,
         #                           margin=dict(l=0, r=100, t=t, b=b))
 
         # driverOptions = Options()
@@ -1649,7 +1670,8 @@ class PlotBuilder:
         dataset = self._get_hexbin()
         butil.opacify_colorscale(dataset, alpha=alpha)
 
-    def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True, ranges_on: bool = True,
+    def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True,
+                     ranges_on: bool = True,
                      buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
         """Focuses on dataset(s) within the plot.
 
@@ -1878,7 +1900,6 @@ class PlotBuilder:
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
-
     def plot_hexbin(self):
         """Plots the main dataset within the builder.
 
@@ -1985,7 +2006,7 @@ class PlotBuilder:
                 disjoint=False,
                 mapbox=mapbox).update(name=poiname,
                                       text=poids['data'][poids['tfield']] if poids['tfield'] else None)
-                                      .update(poids['manager']))
+                                   .update(poids['manager']))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
@@ -1999,7 +2020,6 @@ class PlotBuilder:
         """
         self.plot_output_service = 'mapbox'
         self._figure.update_layout(mapbox_accesstoken=accesstoken)
-
 
     def finalize(
             self,
