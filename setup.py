@@ -1,11 +1,13 @@
 import pathlib
 from setuptools import setup, find_packages
+import numpy as np
 
 HERE = pathlib.Path(__file__).parent
 
 README = (HERE / "README.md").read_text()
 VERSION = "1.0.0"
 print("HERE:", HERE)
+print(np.__version__)
 
 setup(
     name="geohexviz",  # formerly real-geohexviz
@@ -24,7 +26,16 @@ setup(
     python_requires=">=3.1",
     packages=find_packages(exclude=tuple("tests")),
     include_package_data=True,
-    install_requires=["h3>=3.7.0", "shapely>=1.7.1", "pyproj", "numpy", "geojson>=2.5.0", "pandas", "plotly", "kaleido"],
+    install_requires=[
+        "h3>=3.7.0",
+        "shapely>=1.7.1",
+        "pyproj>=3.0.0.post1",
+        "numpy>=1.20.3",
+        "geojson>=2.5.0",
+        "pandas>=1.3.0",
+        "plotly>=4.14.3",
+        "kaleido>=0.2.1"
+    ],
     entry_points="""
     [console_scripts]
     geohexsimple = scripts.geohexsimple.simple:main
