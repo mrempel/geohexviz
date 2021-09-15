@@ -46,15 +46,15 @@ inputdf = DataFrame(dict(
 
 # Instantiating builder
 builder = PlotBuilder()
-builder.set_main(inputdf, hexbin_info=dict(binning_fn='sum', binning_field='value'))
+builder.set_hexbin(inputdf, hexbin_info=dict(binning_fn='sum', binning_field='value'))
 
-builder.build_plot(raise_errors=False)
-builder.display_figure(clear_figure=True)
+builder.finalize(raise_errors=False)
+builder.display(clear_figure=True)
 
 # A mapbox map
 builder.set_mapbox('<ACCESS TOKEN>')
-builder.build_plot()
-builder.display_figure(clear_figure=True)
+builder.finalize()
+builder.display(clear_figure=True)
 ```
 
 ###Behind the Scenes
