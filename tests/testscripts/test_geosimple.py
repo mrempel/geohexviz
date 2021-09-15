@@ -1,7 +1,7 @@
 import unittest
 from os.path import join as pjoin
 import os
-from scripts.geosimple.simple import run_json
+from scripts.geohexsimple.simple import run_json
 from geohexviz.builder import PlotStatus
 
 DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
