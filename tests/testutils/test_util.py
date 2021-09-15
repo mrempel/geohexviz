@@ -77,11 +77,6 @@ class UtilTestCase(unittest.TestCase):
         self.assertEqual(util.get_column_type(testdf, 'y'), 'STR')
         self.assertEqual(util.get_column_type(testdf, 'z'), 'UNK')
 
-    def test_generate_dataframe_random_ids(self):
-        testdf = DataFrame(dict(x=[i for i in range(0, 100)]))
-        util.generate_dataframe_random_ids(testdf)
-        # continue...?
-
 
 if __name__ == '__main__':
     unittest.main()
