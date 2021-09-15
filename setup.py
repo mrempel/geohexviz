@@ -27,7 +27,7 @@ setup(
     install_requires=["h3>=3.7.0", "shapely>=1.7.1", "pyproj", "numpy", "geojson>=2.5.0", "pandas", "plotly", "kaleido"],
     entry_points="""
     [console_scripts]
-    geosimple = scripts.geosimple.simple:main
+    geohexsimple = scripts.geohexsimple.simple:main
     """,
 )
 
