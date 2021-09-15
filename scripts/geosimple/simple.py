@@ -6,7 +6,6 @@ from geohexviz.builder import PlotBuilder
 from geohexviz.utils.util import parse_args_kwargs
 import json
 
-
 fn_map: Dict[str, Callable] = {
     'remove_empties': PlotBuilder.remove_empties,
     'logify_scale': PlotBuilder.logify_scale,
@@ -44,41 +43,41 @@ def run_json(filepath: str, debug: bool = False):
     :rtype: PlotStatus
     """
 
+    # TODO: in the future this should be substituted with another method of debug output
     if debug:
         debugprint = lambda x: print(x)
     else:
         debugprint = lambda x: None
 
+    # print the interface
     base = os.path.basename(filepath)
     start = time.time()
-    debugprint("=============== START =================")
+    tok1 = "✨================ START ================✨"
+    pathstr = f"Path: {filepath}"
+    if len(pathstr) > len(tok1):
+        m = (len(pathstr)-9)//2
+        tok1 = f"✨{'='*m} START {'='*m}✨"
+
+    m = (len(tok1)-12)//2
+    tok2 = f"*{'-'*(m+1)} Plotting {'-'*(m+1)}*"
+    tok3 = f"*{'-'*(len(tok1)-1)}*"
+    m = (len(tok1) - 7) // 2
+    tok4 = f"✨{'='*m} END {'='*m}✨"
+
+    debugprint(tok1)
     debugprint(f"File: {base}")
     debugprint(f"Path: {filepath}")
-    debugprint("-------------- Plotting ---------------")
+    debugprint(tok2)
 
+    # load and parse
     with open(filepath) as jse:
         read = json.load(jse)
-
-    build_args = {
-        "raise_errors": False,
-        "plot_regions": True,
-        "plot_grids": True,
-        "plot_outlines": True,
-        "plot_points": True
-    }
-
-    mapbox_fig = read.pop("mapbox_token", False)
     plot_adjustments = read.pop("plot_adjustments", {})
-    # adjust_opacity = plot_adjustments.pop("opacity", True)
-    # adjust_colorbar = plot_adjustments.pop("colorbar_size", True)
-    # adjust_focus = plot_adjustments.pop("focus", True)
-    # build_args.update(plot_adjustments.pop("build", {}))
     output_fig = read.pop("output_figure", False)
     display_fig = read.pop("display_figure", True)
     data_adjustments = read.pop("data_adjustments", {})
-
     builder = PlotBuilder.builder_from_dict(**read)
-    debugprint("* Datasets loaded")
+    debugprint("* all data sets loaded")
 
     for k, v in data_adjustments.items():
         if v != False:
@@ -86,11 +85,12 @@ def run_json(filepath: str, debug: bool = False):
             try:
                 data_adjustments_map[k](builder, *args, **kwargs)
                 debugprint(f"* Invoked '{data_adjustments_map[k].__name__}'.")
-            except Exception:
+            except Exception as e:
+                print(e)
                 try:
-                    debugprint(f"* Error while performing '{plot_adjustments_map[k].__name__}'.")
+                    debugprint(f"* error while performing '{plot_adjustments_map[k].__name__}'.")
                 except KeyError:
-                    debugprint(f"* No such data adjustment as: {k}")
+                    debugprint(f"* no such data adjustment as: {k}")
 
     if 'adjust_focus' not in plot_adjustments:
         plot_adjustments['adjust_focus'] = True
@@ -104,53 +104,29 @@ def run_json(filepath: str, debug: bool = False):
             args, kwargs = parse_args_kwargs(v)
             try:
                 plot_adjustments_map[k](builder, *args, **kwargs)
-                debugprint(f"* Invoked '{plot_adjustments_map[k].__name__}'.")
+                debugprint(f"* invoked '{plot_adjustments_map[k].__name__}'.")
             except Exception:
                 try:
-                    debugprint(f"* Error while performing '{plot_adjustments_map[k].__name__}'.")
+                    debugprint(f"* error while performing '{plot_adjustments_map[k].__name__}'.")
                 except KeyError:
-                    debugprint(f"* No such plot adjustment as: {k}")
+                    debugprint(f"* no such plot adjustment as: {k}")
 
-    '''
-    if mapbox_fig:
-        args, kwargs = parse_args_kwargs(mapbox_fig)
-        builder.set_mapbox(*args, **kwargs)
-        debugprint("* Converted to MapBox figure")
-
-    if adjust_focus:
-        args, kwargs = parse_args_kwargs(adjust_focus)
-        try:
-            builder.adjust_focus(*args, **kwargs)
-            debugprint("* Focus adjusted")
-        except Exception:
-            print("* Error when adjusting focus")
-
-    if adjust_opacity:
-        args, kwargs = parse_args_kwargs(adjust_opacity)
-        try:
-            builder.adjust_opacity(*args, **kwargs)
-            debugprint("* Colorscale opacity adjusted")
-        except Exception:
-            print("* Error when adjusting colorscale opacity")
-    '''
-
-    # builder.build_plot(**build_args)
-    builder.build_plot(raise_errors=False)
+    builder.finalize(raise_errors=False)
 
     if output_fig:
         args, kwargs = parse_args_kwargs(output_fig)
-        builder.output_figure(*args, **kwargs)
+        builder.output(*args, **kwargs)
         debugprint("* Figure output.")
 
     if display_fig:
         args, kwargs = parse_args_kwargs(display_fig)
-        builder.display_figure(*args, **kwargs)
+        builder.display(*args, **kwargs)
         debugprint("* Figure displayed.")
 
     end = time.time()
-    debugprint("---------------------------------------")
+    debugprint(tok3)
     debugprint(f"Runtime: {round(end - start, 3)}s")
-    debugprint("================ END ==================")
+    debugprint(tok4)
 
     return builder.get_plot_status()
 
