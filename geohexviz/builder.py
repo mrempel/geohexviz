@@ -375,60 +375,6 @@ def _convert_latlong_data(name: str, dstype: DataSetType, data: GeoDataFrame,
     return data
 
 
-def _convert_latlong_data2(data: GeoDataFrame, latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
-    """Converts lat/long columns into a proper geometry column, if present.
-
-    :param data: The data that may or may not contain lat/long columns
-    :type data: GeoDataFrame
-    :param latitude_field: The latitude column within the dataframe
-    :type latitude_field: str
-    :param longitude_field: The longitude column within the dataframe
-    :type longitude_field: str
-    :return: The converted dataframe
-    :rtype: GeoDataFrame
-    """
-    if data.empty:
-        raise ValueError("If the data passed is a DataFrame/GeoDataFrame, it must not be empty.")
-
-    data = data.copy(deep=True)
-
-    try:
-        latitude_field = data[latitude_field]
-    except KeyError:
-        try:
-            latitude_field = data['latitude']
-        except KeyError:
-            if 'geometry' not in data.columns:
-                raise ValueError(
-                    "If no geometry is passed, there must be latitude_field, "
-                    "and longitude_field entries. Missing latitude_field member.")
-
-    try:
-        longitude_field = data[longitude_field]
-    except KeyError:
-        try:
-            longitude_field = data['longitude']
-        except KeyError:
-            if 'geometry' not in data.columns:
-                raise ValueError(
-                    "If a GeoDataFrame that does not have geometry is passed, there must be latitude_field, "
-                    "and longitude_field entries. Missing longitude_field member.")
-
-    try:
-        data = GeoDataFrame(data, geometry=gpd.points_from_xy(longitude_field, latitude_field, crs='EPSG:4326'))
-    except (TypeError, ValueError):
-        pass
-
-    # TODO: test this with empty dataframes
-    # removes empty latitude and longitude entries that cause errors in the final product
-    if latitude_field is not None and longitude_field is not None:
-        data.dropna(subset=[latitude_field.name, longitude_field.name], inplace=True)
-
-    gcg.conform_geogeometry(data)
-    data.vtype = 'NUM'
-    return data
-
-
 def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
@@ -701,7 +647,6 @@ class PlotBuilder:
                                      latitude_field=latitude_field, longitude_field=longitude_field)
 
         hbin_info.update(hexbin_info)
-
         data = _convert_to_hexbin_data("hexbin", DataSetType.HEXBIN, data, **hbin_info)
         dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
         dataset['manager'] = {}
@@ -1489,7 +1434,7 @@ class PlotBuilder:
                                     raise ValueError("Error when applying function to query.")
         return lst
 
-    def remove_empties(self, empty_symbol: Any = 0, add_to_plot: bool = False):
+    def remove_empties(self, empty_symbol: Any = 0, add_to_plot: bool = True):
         """Removes empty entries from the main dataset.
 
         The empty entries may then be added to the plot as a grid.
@@ -1615,46 +1560,6 @@ class PlotBuilder:
 
         Does not work.
         """
-        # calc = width - 50 + (t + b) * 2 / 10
-        # self._figure.update_traces(patch=dict(colorbar_ypad=0, colorbar_xpad=0), selector=dict(type='choropleth'))
-        # self._figure.update_layout(width=width + 50,
-        #                           margin=dict(l=0, r=100, t=t, b=b))
-
-        # driverOptions = Options()
-        # driverOptions.add_argument('--headless')
-        # driverOptions.add_argument('--no-sandbox')
-        # driverOptions.add_argument('--disable-dev-shm-usage')
-        # driver = webdriver.Chrome(ChromeDriverManager().install(), chrome_options=driverOptions)
-
-        # from plotly.offline import plot
-        # plot_div = plot(self._figure, filename='temp')
-        # print(plot_div)
-
-        # res = re.search('<div id="([^"]*)"', plot_div)
-        # div_id = res.groups()[0]
-
-        # self._figure.show()
-        # self._figure.write_html("new2.html", post_script=post_script)
-        # driver.get('chrome://settings/clearBrowserData')
-        # driver.get(f"file://new.html")
-        # driver.implicitly_wait(1)
-        # print(driver.page_source)
-        # elem = driver.find_element_by_xpath("")
-
-        # dct = self._figure.full_figure_for_development(as_dict=True, warn=False)
-        # print(list(dct.keys()))
-        # print(dct['frames'])
-
-        # with open("new.html", "r") as fe:
-        #    parser = BeautifulSoup(fe, 'html.parser')
-        # elem = parser.find("g", {"class": "geolayer"})
-        # elem2 = elem.find("rect")
-        # print(elem2['height'], elem2['width'])
-
-        # self._figure.add_annotation(text='BL', xref='paper', yref='paper', x=0, y=0)
-        # self._figure.add_annotation(text='TL', xref='paper', yref='paper', x=0, y=1)
-        # self._figure.add_annotation(text='BR', xref='paper', yref='paper', x=1, y=0)
-        # self._figure.add_annotation(text='TR', xref='paper', yref='paper', x=1, y=1)
         return
 
     def adjust_opacity(self, alpha: float = None):
@@ -1671,7 +1576,7 @@ class PlotBuilder:
         butil.opacify_colorscale(dataset, alpha=alpha)
 
     def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True,
-                     ranges_on: bool = True,
+                     ranges_on: bool = True, rot_buffer_lat: float = 0, rot_buffer_lon: float = 0,
                      buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
         """Focuses on dataset(s) within the plot.
 
@@ -1688,6 +1593,10 @@ class PlotBuilder:
         :type rotation_on: bool
         :param ranges_on: Whether or not to add a lat axis, lon axis ranges to the focus
         :type ranges_on: bool
+        :param rot_buffer_lat: A number to add or subtract from the automatically calculated latitude (rotation)
+        :type rot_buffer_lat: float
+        :param rot_buffer_lon: A number to add or subtract from the automatically calculated longitude (rotation)
+        :type rot_buffer_lon: float
         :param buffer_lat: A low and high bound to add and subtract from the lataxis range
         :type buffer_lat: Tuple[float, float]
         :param buffer_lon: A low and high bound to add and subtract from the lonaxis range
@@ -1723,7 +1632,8 @@ class PlotBuilder:
         center = dict(lon=center.x, lat=center.y)
 
         if rotation_on:
-            geos['projection_rotation'] = center
+            geos['projection_rotation'] = dict(lat=center['lat']+rot_buffer_lat, lon=center['lon']+rot_buffer_lon)
+
 
         if center_on:
             geos['center'] = center
