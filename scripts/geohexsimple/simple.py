@@ -104,9 +104,9 @@ def run_json(filepath: str, debug: bool = False):
             try:
                 plot_adjustments_map[k](builder, *args, **kwargs)
                 debugprint(f"* invoked '{plot_adjustments_map[k].__name__}'.")
-            except Exception:
+            except Exception as e:
                 try:
-                    debugprint(f"* error while performing '{plot_adjustments_map[k].__name__}'.")
+                    debugprint(f"* error while performing '{plot_adjustments_map[k].__name__}' -> {e}")
                 except KeyError:
                     debugprint(f"* no such plot adjustment as: {k}")
 
