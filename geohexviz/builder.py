@@ -1541,7 +1541,8 @@ class PlotBuilder:
         """
 
         if not df.empty and not gdf.empty:
-            gdf = gpd.overlay(gdf, df[['value_field', 'geometry']],
+            df = df[['value_field', 'geometry']]
+            gdf = gpd.overlay(gdf, df[df['value_field'].notnull()],
                               how='difference')
             gdf = gcg.remove_other_geometries(gdf, 'Polygon')
             return gdf
