@@ -4,6 +4,7 @@ import operator
 import warnings
 from typing import Callable, List, Optional, Dict, Any, Union, Tuple, Iterable
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 from pyproj import Geod
 from geojson import Feature, FeatureCollection
@@ -235,13 +236,14 @@ def bin_by_hexid(hex_gdf: Union[DataFrame, GeoDataFrame], binning_field: str = N
         binning_field = 'binby'
 
     hex_gdf = hex_gdf.groupby(by=hex_field if hex_field is not None else hex_gdf.index)
+    tup = lambda lst: tuple([x for x in lst if np.isnan(x) == False])
 
     # group by ids aggregate into list
     if loss_method:
-        hex_gdf_g = (hex_gdf[binning_field].agg(tuple).to_frame(binning_field))
+        hex_gdf_g = (hex_gdf[binning_field].agg(tup).to_frame(binning_field))
     else:
         # the no loss method could be sped up (no geometry column)
-        hex_gdf_g = (hex_gdf.agg(tuple))
+        hex_gdf_g = (hex_gdf.agg(tup))
 
     apply_bin_function(hex_gdf_g, binning_field, binning_fn, binning_args=binning_args,
                        result_name=result_name, **binning_kw)
