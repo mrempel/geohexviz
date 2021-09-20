@@ -2,6 +2,7 @@ templates = dict(
     figure=dict(
         layout=dict(
             geo=dict(
+                resolution=50,
                 projection=dict(type='orthographic', scale=1.0),
                 showcoastlines=False,
                 showocean=True,
