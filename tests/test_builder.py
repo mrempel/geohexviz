@@ -50,7 +50,7 @@ class BuilderTestCase(unittest.TestCase):
         Ensure that this raises an error.
         Add a dataset with a correct name and ensure it was added.
         """
-        with self.assertRaises(err.DatasetNamingError):
+        with self.assertRaises(err.LayerNamingError):
             self.builder.add_outline("+plus+", "CANADA")
 
         self.builder.add_outline("correct_naming", "CANADA")
@@ -354,21 +354,21 @@ class BuilderTestCase(unittest.TestCase):
         initiallen = len(getmain['data'])
 
         # test clipping main to the first region alone
-        self.builder.clip_datasets('main', 'region:RRA1')
+        self.builder.clip_layers('main', 'region:RRA1')
         newlen = len(self.builder._get_hexbin()['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(5, newlen)  # for this dataset
 
         # test clipping main to the second region alone
         self.builder.reset_hexbin_data()  # reset back to original for another clip
-        self.builder.clip_datasets('main', 'region:RRA2')
+        self.builder.clip_layers('main', 'region:RRA2')
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(5, newlen)  # for this dataset
 
         # test clipping main to all regions
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'regions')
+        self.builder.clip_layers('main', 'regions')
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(10, newlen)  # for this dataset
@@ -382,42 +382,42 @@ class BuilderTestCase(unittest.TestCase):
         # test clipping grids to main
         self.builder.reset_hexbin_data()
         gridlen = sum(self.builder.apply_to_query('grids', lambda dataset: len(dataset['data'])))
-        self.builder.clip_datasets('grids', 'main', operation='within')
+        self.builder.clip_layers('grids', 'main', operation='within')
         newgridlen = sum(self.builder.apply_to_query('grids', lambda dataset: len(dataset['data'])))
         self.assertLess(newgridlen, gridlen)  # for this dataset
         self.assertEqual(14, newgridlen)  # for this dataset
 
         # test clipping main to grids
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'grids', operation='within')  # intersects will get a different result
+        self.builder.clip_layers('main', 'grids', operation='within')  # intersects will get a different result
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(14, newlen)  # for this dataset
 
         # test clipping main to the first outline alone
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outline:OOA1')
+        self.builder.clip_layers('main', 'outline:OOA1')
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(2, newlen)  # for this dataset
 
         # test clipping main to the second outline alone
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outline:OOA2')
+        self.builder.clip_layers('main', 'outline:OOA2')
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(1, newlen)  # for this dataset
 
         # test clipping main to all outlines
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outlines', method='gpd')
+        self.builder.clip_layers('main', 'outlines', method='gpd')
         newlen = len(getmain['data'])
         self.assertLess(newlen, initiallen)  # for this dataset
         self.assertEqual(3, newlen)  # for this dataset
 
         self.builder.reset_hexbin_data()
         outlen = sum(self.builder.apply_to_query('outlines', lambda dataset: len(dataset['data'])))
-        self.builder.clip_datasets('outlines', 'main', operation='intersects')
+        self.builder.clip_layers('outlines', 'main', operation='intersects')
         newoutlen = sum(self.builder.apply_to_query('outlines', lambda dataset: len(dataset['data'])))
         self.assertLessEqual(newoutlen, outlen)
         self.assertEqual(2, newoutlen)  # for this dataset
@@ -428,7 +428,7 @@ class BuilderTestCase(unittest.TestCase):
 
         err = False
         try:
-            self.builder.clip_datasets('main', 'points', method='gpd')
+            self.builder.clip_layers('main', 'points', method='gpd')
         except TypeError:
             err = True
         self.assertTrue(err)
@@ -488,7 +488,7 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset with a custom colorscale and invoke the function.
         Ensure the opacity is present within the colors of the colorscale.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.adjust_opacity()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -514,7 +514,7 @@ class BuilderTestCase(unittest.TestCase):
         Set the main dataset alongside a custom colorscale and invoke the function.
         Ensure that the colors are present twice in the output colorscale.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.discretize_scale()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -593,7 +593,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Set the main dataset and update it. Check if it was updated properly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_main_manager(colorscale='Viridis')
         self.builder.set_hexbin(
             DataFrame(dict(
@@ -609,7 +609,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Set the main dataset and clear it's manager. Ensure the manager is empty.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.clear_hexbin_manager()
         self.builder.set_hexbin(
             DataFrame(dict(
@@ -625,7 +625,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Set the main dataset. Alter it's data and reset it. Ensure that the data is equal to the original data.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.reset_hexbin_data()
 
         self.builder.set_hexbin(
@@ -647,7 +647,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Add region datasets and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_region_manager(name='RRA1', colorscale='Picnic')
         self.builder.update_region_manager(colorscale='Picnic')  # may change this behaviour (this does nothing)
         self.builder.add_region('RRA1', 'CANADA')
@@ -815,7 +815,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Add outline datasets and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_outline_manager(name='OOA1', mode='markers')
         self.builder.update_outline_manager(mode='markers')  # may change this behaviour (this does nothing)
         self.builder.add_outline('OOA1', 'CANADA')
@@ -898,7 +898,7 @@ class BuilderTestCase(unittest.TestCase):
         Tests:
         Add point datasets and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_point_manager(name='PPA1', mode='markers')
         self.builder.update_point_manager(mode='markers')  # may change this behaviour (this does nothing)
         self.builder.add_point('PPA1', DataFrame(dict(

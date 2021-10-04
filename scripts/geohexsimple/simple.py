@@ -12,7 +12,7 @@ fn_map: Dict[str, Callable] = {
     'logify_scale': PlotBuilder.logify_scale,
     'generate_grid': PlotBuilder.auto_grid,
     'simple_clip': PlotBuilder.simple_clip,
-    'clip_datasets': PlotBuilder.clip_datasets,
+    'clip_layers': PlotBuilder.clip_layers,
     'discretize_scale': PlotBuilder.discretize_scale,
     'adjust_focus': PlotBuilder.adjust_focus,
     'adjust_opacity': PlotBuilder.adjust_opacity,
@@ -84,7 +84,7 @@ def run_json(filepath: str, strict: bool = False, debug: bool = False):
     output = read.pop("output", False)
     display = read.pop("display", True)
     builder = PlotBuilder.builder_from_dict(**read)
-    debug_print("* all data sets loaded")
+    debug_print("* all layers loaded")
 
     for k, v in input_fns.items():
         if v:
