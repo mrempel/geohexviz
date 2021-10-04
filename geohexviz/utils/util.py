@@ -264,7 +264,7 @@ def get_column_or_default(df: DataFrame, col: str, default_val=None):
 def get_column_type(df: DataFrame, col: str) -> str:
     if all(isinstance(x, (int, float)) for x in df[col]):
         return 'NUM'
-    elif all(isinstance(x, str) for x in df[col]):
+    elif all(isinstance(x, str) or pd.isna(x) for x in df[col]):
         return 'STR'
     return 'UNK'
 
