@@ -391,6 +391,7 @@ def _convert_to_hexbin_data(name: str, dstype: LayerType, data: GeoDataFrame, he
     :return: The hexbinified dataframe
     :rtype: GeoDataFrame
     """
+    bfield_passed = binning_field is not None
     data = _hexify_data(data, hex_resolution)
 
     if isinstance(binning_fn, dict):
@@ -410,7 +411,8 @@ def _convert_to_hexbin_data(name: str, dstype: LayerType, data: GeoDataFrame, he
         data[binning_field] = data[binning_field].astype(str)
 
     if binning_fn is None:
-        binning_fn = _group_functions['best'] if vtype == 'STR' else _group_functions['count']
+        binning_fn = _group_functions['best'] if vtype == 'STR' else\
+            (_group_functions['sum'] if bfield_passed else _group_functions['count'])
 
     data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
                             result_name='value_field', add_geoms=True, **kwargs)
@@ -679,7 +681,7 @@ class PlotBuilder:
         """
         return deepcopy(self._get_hexbin())
 
-    def remove_main(self, pop: bool = False) -> StrDict:
+    def remove_hexbin(self, pop: bool = False) -> StrDict:
         """Removes the main layer.
 
         :param pop: Whether or not to return the removed layer
@@ -688,7 +690,7 @@ class PlotBuilder:
         :rtype: StrDict
         """
         try:
-            main = self._container.pop('hexbin')
+            hexbin = self._container.pop('hexbin')
 
             # remove the empty grid that may or may not have been added
             try:
@@ -697,12 +699,12 @@ class PlotBuilder:
                 pass
 
             if pop:
-                return main
+                return hexbin
         except KeyError:
             raise NoLayerError("hexbin", LayerType.HEXBIN)
 
-    def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
-        """Updates the manager the main layer.
+    def update_hexbin_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager the hexbin layer.
 
         :param updates: A dict containing updates for the layer(s)
         :type updates: StrDict
@@ -714,7 +716,7 @@ class PlotBuilder:
         _update_manager(self._get_hexbin(), updates=updates, overwrite=overwrite, **kwargs)
 
     def clear_hexbin_manager(self):
-        """Clears the manager of the main layer.
+        """Clears the manager of the hexbin layer.
         """
         try:
             self._get_hexbin()['manager'] = {}
@@ -722,7 +724,7 @@ class PlotBuilder:
             raise NoLayerError("hexbin", LayerType.HEXBIN)
 
     def reset_hexbin_data(self):
-        """Resets the data within the main layer to the data that was input at the beginning.
+        """Resets the data within the hexbin layer to the data that was input at the beginning.
         """
         _reset_to_odata(self._get_hexbin())
 
@@ -1433,7 +1435,7 @@ class PlotBuilder:
         return lst
 
     def remove_empties(self, empty_symbol: Any = 0, add_to_plot: bool = True):
-        """Removes empty entries from the main layer.
+        """Removes empty entries from the hexbin layer.
 
         The empty entries may then be added to the plot as a grid.
 
@@ -1453,7 +1455,7 @@ class PlotBuilder:
 
     # this is both a data altering, and plot altering function
     def logify_scale(self, **kwargs):
-        """Makes the scale of the main layers logarithmic.
+        """Makes the scale of the hexbin layers logarithmic.
 
         This function changes the tick values and tick text of the scale.
         The numerical values on the scale are the exponent of the tick text,
@@ -1518,15 +1520,15 @@ class PlotBuilder:
     def simple_clip(self, method: str = 'sjoin'):
         """Quick general clipping.
 
-        This function clips the main layer and grid layers to the region and outline layers.
-        The function also clips the point layers to the main, region, grid, and outline layers.
+        This function clips the hexbin layer and grid layers to the region and outline layers.
+        The function also clips the point layers to the hexbin, region, grid, and outline layers.
 
         :param method: The method to use when clipping, one of 'sjoin' or 'gpd'
         :type method: str
         """
 
         self.clip_layers('hexbin+grids', 'regions+outlines', method=method, operation='intersects')
-        # self.clip_layers('main+grids', 'outlines', method=method, operation='intersects')
+        # self.clip_layers('hexbin+grids', 'outlines', method=method, operation='intersects')
         self.clip_layers('points', 'hexbin+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
@@ -1562,7 +1564,7 @@ class PlotBuilder:
         return
 
     def adjust_opacity(self, alpha: float = None):
-        """Conforms the opacity of the color bar of the main layer to an alpha value.
+        """Conforms the opacity of the color bar of the hexbin layer to an alpha value.
 
         The alpha value can be passed in as a parameter, otherwise it is taken
         from the marker.opacity property within the layer's manager.
@@ -1809,7 +1811,7 @@ class PlotBuilder:
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_hexbin(self):
-        """Plots the main layer within the builder.
+        """Plots the hexbin layer within the builder.
 
         If qualitative, the layer is split into uniquely labelled plot traces.
         """
@@ -1960,7 +1962,7 @@ class PlotBuilder:
         :type plot_regions: bool
         :param plot_grids: Whether or not to plot grid layers
         :type plot_grids: bool
-        :param plot_hexbin: Whether or not to plot the main layer
+        :param plot_hexbin: Whether or not to plot the hexbin layer
         :type plot_hexbin: bool
         :param plot_outlines: Whether or not to plot outline layers
         :type plot_outlines: bool
