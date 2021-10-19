@@ -2043,7 +2043,6 @@ class PlotBuilder:
                 if isinstance(percent_retain, list):
                     crop_args.append("-p4")
                     crop_args.extend(percent_retain)
-                    print(crop_args)
                 else:
                     crop_args.extend(["-p", percent_retain])
             else:
