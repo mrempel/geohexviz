@@ -21,7 +21,7 @@ for quick and easy plots.
   "display_figure": true
 }
 ```
-running the JSON script will allow you to input a JSON file via command line
+running the JSON script will allow you to input a JSON file via command line.
 
 You may also use the functions that allow the executing of a JSON file from a python module.
 
