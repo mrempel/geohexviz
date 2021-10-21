@@ -2,18 +2,14 @@ import pathlib
 from setuptools import setup, find_packages
 import numpy as np
 
-HERE = pathlib.Path(__file__).parent
-
-README = (HERE / "README.md").read_text()
-VERSION = "1.0.0"
-print("HERE:", HERE)
-print(np.__version__)
+with open("README.rst") as readme_file:
+    readme = readme_file.read()
 
 setup(
     name="geohexviz",  # formerly real-geohexviz
     version="1.0.0",
     description="A library for the visualization of hexagonally binned data sets.",
-    long_description=README,
+    long_description=readme,
     long_description_content_type="text/markdown",
     url="",
     author="Tony Marco Abou Zeidan",
@@ -21,8 +17,12 @@ setup(
     license="",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9.4"
+        "Programming Language :: Python :: 3.9.4",
+        "Topic :: Visualization",
+        "Topic :: Visualization :: Geospatial"
+        "Topic :: Visualization :: Hexagonal Binning"
     ],
+    keywords='visualization,geospatial,hexagonal binning',
     python_requires=">=3.1",
     packages=find_packages(exclude=tuple("tests")),
     include_package_data=True,
@@ -41,6 +41,3 @@ setup(
     geohexsimple = scripts.geohexsimple.simple:main
     """,
 )
-
-print('PACKAGES:', find_packages(exclude=tuple("tests")))
-print(f"GeoHexViz v{VERSION} has been installed.")
