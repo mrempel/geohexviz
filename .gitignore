@@ -1,4 +1,4 @@
 /build/
 /dist/
-/docs/sphinx/build/
 /geohexviz.egg-info/
+/docs/sphinx/_build/
