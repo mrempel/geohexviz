@@ -1,9 +1,9 @@
 GeoHexViz
 =========
 
-| GeoVis is a package for the simple and repeatable visualization of
+GeoHexViz is a package for the simple and repeatable visualization of
 hexagon-ally binned data sets.
-| The package's main feature is a PlotBuilder class which utilizes tools
+The package's main feature is a PlotBuilder class which utilizes tools
 to hexagon-ally bin your dataset and then display it.
 
 Command Line / JSON Usage
