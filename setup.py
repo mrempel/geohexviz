@@ -36,6 +36,12 @@ setup(
         "plotly>=4.14.3",
         "kaleido>=0.2.1"
     ],
+    extras_require={
+        "dev": [
+            "pip"
+            "Sphinx"
+        ]
+    },
     entry_points="""
     [console_scripts]
     geohexsimple = scripts.geohexsimple.simple:main
