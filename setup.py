@@ -18,9 +18,9 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9.4",
-        "Topic :: Visualization",
-        "Topic :: Visualization :: Geospatial"
-        "Topic :: Visualization :: Hexagonal Binning"
+        "Operating System :: OS Independent",   # with exceptions
+        "Topic :: Scientific/Engineering :: Information Analysis",
+        "Topic :: Scientific/Engineering :: Visualization",
     ],
     keywords='visualization,geospatial,hexagonal binning',
     python_requires=">=3.1",
