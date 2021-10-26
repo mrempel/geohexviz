@@ -6,4 +6,3 @@ pyproj
 kaleido
 geojson
 plotly
-fiona
