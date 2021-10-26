@@ -7,3 +7,4 @@ geojson
 plotly
 h3
 pyyaml
+rtree
