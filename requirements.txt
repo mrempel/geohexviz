@@ -5,3 +5,4 @@ pyproj
 kaleido
 geojson
 plotly
+h3
