@@ -6,3 +6,4 @@ kaleido
 geojson
 plotly
 h3
+pyyaml
