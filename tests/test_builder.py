@@ -30,8 +30,8 @@ CSV_PATH = pjoin(DATA_PATH, 'csv-data')
 SHAPE_PATH = pjoin(DATA_PATH, 'shapefiles')
 
 
-def alterer(dataset):
-    dataset['data']['value_field'] = -1
+def alterer(layer):
+    layer['data']['value_field'] = -1
 
 
 class BuilderTestCase(unittest.TestCase):
@@ -46,11 +46,11 @@ class BuilderTestCase(unittest.TestCase):
         """Tests the builder's ability to detect invalid naming of passed data sets.
 
         Tests:
-        Attempt to add a dataset with an invalid name (any non-alphanumeric characters excluding '_' present).
+        Attempt to add a layer with an invalid name (any non-alphanumeric characters excluding '_' present).
         Ensure that this raises an error.
-        Add a dataset with a correct name and ensure it was added.
+        Add a layer with a correct name and ensure it was added.
         """
-        with self.assertRaises(err.DatasetNamingError):
+        with self.assertRaises(err.LayerNamingError):
             self.builder.add_outline("+plus+", "CANADA")
 
         self.builder.add_outline("correct_naming", "CANADA")
@@ -114,10 +114,10 @@ class BuilderTestCase(unittest.TestCase):
         with self.assertRaises(err.DataEmptyError):
             self.builder.set_hexbin(testdf)
 
-    def test_set_main_dataset_quantitative(self):
-        """Tests quantitative dataset functionality.
+    def test_set_hexbin_layer_quantitative(self):
+        """Tests quantitative layer functionality.
 
-        Sets the main dataset to a quantitative dataset,
+        Sets the hexbin layer to a quantitative layer,
         then checks if the result is correct.
         """
         testpoints = [
@@ -153,24 +153,24 @@ class BuilderTestCase(unittest.TestCase):
 
         self.builder.set_hexbin(testdf, hexbin_info=dict(binning_field='val', binning_fn=min))
 
-        getmain = self.builder._get_hexbin()  # internal version does not return a deepcopy
-        self.assertTrue(getmain)  # test to see if the main dataset was added correctly
-        # ensure the information stored in the dataset is valid
-        self.assertTrue('data' in getmain)
-        self.assertTrue('manager' in getmain)
-        self.assertTrue('value_field' in getmain['data'].columns)
-        self.assertEqual(getmain['DSTYPE'], 'HEX')
-        self.assertEqual(getmain['VTYPE'], 'NUM')
-        # ensure the main dataframe does not reference the dame input dataframe
-        self.assertFalse(testdf.equals(getmain['data']))
+        gethexbin = self.builder._get_hexbin()  # internal version does not return a deepcopy
+        self.assertTrue(gethexbin)  # test to see if the hexbin layer was added correctly
+        # ensure the information stored in the layer is valid
+        self.assertTrue('data' in gethexbin)
+        self.assertTrue('manager' in gethexbin)
+        self.assertTrue('value_field' in gethexbin['data'].columns)
+        self.assertEqual(gethexbin['DSTYPE'], 'HEX')
+        self.assertEqual(gethexbin['VTYPE'], 'NUM')
+        # ensure the hexbin dataframe does not reference the dame input dataframe
+        self.assertFalse(testdf.equals(gethexbin['data']))
         # ensure the dataframe was binned properly
-        self.assertTrue(all(val == 10 for val in getmain['data']['value_field']))
+        self.assertTrue(all(val == 10 for val in gethexbin['data']['value_field']))
 
-    def test_set_main_dataset_qualitative(self):
-        """Tests the builder's ability to set the main hexbin dataset (qualitative).
+    def test_set_hexbin_layer_qualitative(self):
+        """Tests the builder's ability to set the hexbin hexbin layer (qualitative).
 
         Tests:
-        Set the main dataset with qualitative data.
+        Set the hexbin layer with qualitative data.
         Determine if it was stored correctly.
         """
 
@@ -214,22 +214,22 @@ class BuilderTestCase(unittest.TestCase):
                 colorscale=['blue', 'pink']
             )
         )
-        getmain = self.builder._get_hexbin()  # internal version does not return a deepcopy
-        self.assertTrue(getmain)  # test to see if the main dataset was added correctly
-        # ensure the information stored in the dataset is valid
-        self.assertTrue('data' in getmain)
-        self.assertTrue('manager' in getmain)
-        self.assertTrue('value_field' in getmain['data'].columns)
-        self.assertEqual(getmain['DSTYPE'], 'HEX')
-        self.assertEqual(getmain['VTYPE'], 'STR')
-        # ensure the main dataframe does not reference the dame input dataframe
-        self.assertFalse(testdf.equals(getmain['data']))
+        gethexbin = self.builder._get_hexbin()  # internal version does not return a deepcopy
+        self.assertTrue(gethexbin)  # test to see if the hexbin layer was added correctly
+        # ensure the information stored in the layer is valid
+        self.assertTrue('data' in gethexbin)
+        self.assertTrue('manager' in gethexbin)
+        self.assertTrue('value_field' in gethexbin['data'].columns)
+        self.assertEqual(gethexbin['DSTYPE'], 'HEX')
+        self.assertEqual(gethexbin['VTYPE'], 'STR')
+        # ensure the hexbin dataframe does not reference the dame input dataframe
+        self.assertFalse(testdf.equals(gethexbin['data']))
 
     def test_add_region(self):
-        """Tests the builder's ability to add region-like datasets.
+        """Tests the builder's ability to add region-like layers.
 
         Tests:
-        Add a region-type dataset to the builder and determine if it was stored properly.
+        Add a region-type layer to the builder and determine if it was stored properly.
         """
 
         self.builder.add_region('RRA1', 'CANADA')
@@ -245,10 +245,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getreg['data']['value_field']))
 
     def test_add_grid(self):
-        """Tests the builder's ability to add grid-like datasets.
+        """Tests the builder's ability to add grid-like layers.
 
         Tests:
-        Add a grid-type dataset to the builder and determine if it was stored properly.
+        Add a grid-type layer to the builder and determine if it was stored properly.
         """
 
         self.builder.add_grid('GGA1', 'FRANCE')
@@ -264,10 +264,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getgr['data']['value_field']))
 
     def test_add_outline(self):
-        """Tests the builder's ability to add outline-like datasets.
+        """Tests the builder's ability to add outline-like layers.
 
         Tests:
-        Add a outline-type dataset to the builder and determine if it was stored properly.
+        Add a outline-type layer to the builder and determine if it was stored properly.
         """
         self.builder.add_outline('OOA1', 'SOUTH AMERICA')
         getout = self.builder._get_outline('OOA1')
@@ -282,10 +282,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getout['data']['value_field']))
 
     def test_add_points(self):
-        """Tests the builder's ability to add point-like datasets.
+        """Tests the builder's ability to add point-like layers.
 
         Tests:
-        Add a point-type dataset to the builder and determine if it was stored properly.
+        Add a point-type layer to the builder and determine if it was stored properly.
         """
 
         testpoints = shapes_from_wkt(*[
@@ -315,11 +315,11 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(v == 0 for v in getpnt['data']['value_field']))
 
     def test_clipping(self):
-        """Test the builder's ability to clip datasets to other datasets.
+        """Test the builder's ability to clip layers to other layers.
 
         Lengthier runtime.
         Tests:
-        Clip datasets within the builder to each other. Ensure the resulting
+        Clip layers within the builder to each other. Ensure the resulting
         data length matches that which was expected. Clip method does not
         really matter here.
         """
@@ -350,28 +350,28 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.add_region('RRA1', 'GERMANY')
         self.builder.add_region('RRA2', 'POLAND')
 
-        getmain = self.builder._get_hexbin()
-        initiallen = len(getmain['data'])
+        gethexbin = self.builder._get_hexbin()
+        initiallen = len(gethexbin['data'])
 
-        # test clipping main to the first region alone
-        self.builder.clip_datasets('main', 'region:RRA1')
+        # test clipping hexbin to the first region alone
+        self.builder.clip_layers('hexbin', 'region:RRA1')
         newlen = len(self.builder._get_hexbin()['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(5, newlen)  # for this dataset
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(5, newlen)  # for this layer
 
-        # test clipping main to the second region alone
+        # test clipping hexbin to the second region alone
         self.builder.reset_hexbin_data()  # reset back to original for another clip
-        self.builder.clip_datasets('main', 'region:RRA2')
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(5, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'region:RRA2')
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(5, newlen)  # for this layer
 
-        # test clipping main to all regions
+        # test clipping hexbin to all regions
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'regions')
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(10, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'regions')
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(10, newlen)  # for this layer
 
         # add a grid over europe
         self.builder.add_grid('GGA1', 'EUROPE')
@@ -379,57 +379,57 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.add_outline('OOA1', 'FRANCE')
         self.builder.add_outline('OOA2', 'ITALY')
 
-        # test clipping grids to main
+        # test clipping grids to hexbin
         self.builder.reset_hexbin_data()
-        gridlen = sum(self.builder.apply_to_query('grids', lambda dataset: len(dataset['data'])))
-        self.builder.clip_datasets('grids', 'main', operation='within')
-        newgridlen = sum(self.builder.apply_to_query('grids', lambda dataset: len(dataset['data'])))
-        self.assertLess(newgridlen, gridlen)  # for this dataset
-        self.assertEqual(14, newgridlen)  # for this dataset
+        gridlen = sum(self.builder.apply_to_query('grids', lambda layer: len(layer['data'])))
+        self.builder.clip_layers('grids', 'hexbin', operation='within')
+        newgridlen = sum(self.builder.apply_to_query('grids', lambda layer: len(layer['data'])))
+        self.assertLess(newgridlen, gridlen)  # for this layer
+        self.assertEqual(14, newgridlen)  # for this layer
 
-        # test clipping main to grids
+        # test clipping hexbin to grids
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'grids', operation='within')  # intersects will get a different result
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(14, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'grids', operation='within')  # intersects will get a different result
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(14, newlen)  # for this layer
 
-        # test clipping main to the first outline alone
+        # test clipping hexbin to the first outline alone
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outline:OOA1')
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(2, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'outline:OOA1')
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(2, newlen)  # for this layer
 
-        # test clipping main to the second outline alone
+        # test clipping hexbin to the second outline alone
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outline:OOA2')
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(1, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'outline:OOA2')
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(1, newlen)  # for this layer
 
-        # test clipping main to all outlines
+        # test clipping hexbin to all outlines
         self.builder.reset_hexbin_data()
-        self.builder.clip_datasets('main', 'outlines', method='gpd')
-        newlen = len(getmain['data'])
-        self.assertLess(newlen, initiallen)  # for this dataset
-        self.assertEqual(3, newlen)  # for this dataset
+        self.builder.clip_layers('hexbin', 'outlines', method='gpd')
+        newlen = len(gethexbin['data'])
+        self.assertLess(newlen, initiallen)  # for this layer
+        self.assertEqual(3, newlen)  # for this layer
 
         self.builder.reset_hexbin_data()
-        outlen = sum(self.builder.apply_to_query('outlines', lambda dataset: len(dataset['data'])))
-        self.builder.clip_datasets('outlines', 'main', operation='intersects')
-        newoutlen = sum(self.builder.apply_to_query('outlines', lambda dataset: len(dataset['data'])))
+        outlen = sum(self.builder.apply_to_query('outlines', lambda layer: len(layer['data'])))
+        self.builder.clip_layers('outlines', 'hexbin', operation='intersects')
+        newoutlen = sum(self.builder.apply_to_query('outlines', lambda layer: len(layer['data'])))
         self.assertLessEqual(newoutlen, outlen)
-        self.assertEqual(2, newoutlen)  # for this dataset
+        self.assertEqual(2, newoutlen)  # for this layer
 
-        # test clipping main to points, which does not make sense
+        # test clipping hexbin to points, which does not make sense
         self.builder.reset_hexbin_data()
         self.builder.add_point('PPA1', GeoDataFrame(geometry=testdata, crs='EPSG:4326'))
 
         err = False
         try:
-            self.builder.clip_datasets('main', 'points', method='gpd')
-        except TypeError:
+            self.builder.clip_layers('hexbin', 'points', method='gpd')
+        except ValueError:
             err = True
         self.assertTrue(err)
 
@@ -439,7 +439,7 @@ class BuilderTestCase(unittest.TestCase):
         This test also tests most of the logify_info() functionality (in plot_util).
 
         Tests:
-        Set the main dataset and invoke the function. Ensure that the dataset's
+        Set the hexbin layer and invoke the function. Ensure that the layer's
         value_field has been changed and it's manager contains accurate Plotly properties.
         """
 
@@ -468,10 +468,10 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.set_hexbin(GeoDataFrame(dict(geometry=testdata, val=values), crs='EPSG:4326'),
                                 hexbin_info=dict(binning_fn=min, binning_field='val'))
 
-        getmain = self.builder._get_hexbin()
-        oldvals = getmain['data']['value_field']
+        gethexbin = self.builder._get_hexbin()
+        oldvals = gethexbin['data']['value_field']
         self.builder.logify_scale()
-        newvals = getmain['data']['value_field']
+        newvals = gethexbin['data']['value_field']
         nvalmax, nvalmin = max(newvals), min(newvals)
         start, end = int(math.floor(nvalmin)), int(math.floor(nvalmax)) + 1
 
@@ -479,16 +479,16 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(all(y == np.log10(x) for x, y in zip(oldvals, newvals)))
 
         # ensure all necessary values are in colorbar properties
-        self.assertTrue(all(x in getmain['manager']['colorbar']['tickvals'] for x in range(start, end)))
+        self.assertTrue(all(x in gethexbin['manager']['colorbar']['tickvals'] for x in range(start, end)))
 
     def test_adjust_opacity(self):
         """Tests the adjusting opacity feature of the builder.
 
         Tests:
-        Set the main dataset with a custom colorscale and invoke the function.
+        Set the hexbin layer with a custom colorscale and invoke the function.
         Ensure the opacity is present within the colors of the colorscale.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.adjust_opacity()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -511,10 +511,10 @@ class BuilderTestCase(unittest.TestCase):
         """Tests the builder's ability to make a discrete scale.
 
         Tests:
-        Set the main dataset alongside a custom colorscale and invoke the function.
+        Set the hexbin layer alongside a custom colorscale and invoke the function.
         Ensure that the colors are present twice in the output colorscale.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.discretize_scale()
 
         inp_colorscale = [[0, 'rgb(10, 10, 10)'], [0.5, 'rgb(50, 50, 50)'], [1, 'rgb(90, 90, 90)']]
@@ -530,9 +530,9 @@ class BuilderTestCase(unittest.TestCase):
                 colorscale=inp_colorscale
             )
         )
-        getmain = self.builder._get_hexbin()
+        gethexbin = self.builder._get_hexbin()
         self.builder.discretize_scale(discrete_size=inp_ds)
-        out_colorscale = getmain['manager']['colorscale']
+        out_colorscale = gethexbin['manager']['colorscale']
         inpcolors = [ci for _, ci in inp_colorscale]
         outcolors = [ci for _, ci in out_colorscale]
         self.assertTrue(all(outcolors.count(ci) == 2 for ci in inpcolors))
@@ -541,7 +541,7 @@ class BuilderTestCase(unittest.TestCase):
         """Tests the builders ability to adjust the focus of the plot.
 
         Tests:
-        Add a dataset to the builder and focus onto it.
+        Add a layer to the builder and focus onto it.
         Ensure that the geospatial properties have been set properly.
         """
         self.builder.add_point(
@@ -575,41 +575,41 @@ class BuilderTestCase(unittest.TestCase):
         """Tests the builder's ability to apply a function to a query
 
         Tests:
-        Add datasets and apply a query to them. Ensure the resulting
-        datasets have been altered in the correct way.
+        Add layers and apply a query to them. Ensure the resulting
+        layers have been altered in the correct way.
         """
         self.builder.set_hexbin(
             DataFrame(dict(
                 latitude=[10, 10, 10, 10, 20, 20],
                 longitude=[20, 20, 10, 10, 10, 10]
             )))
-        getmain = self.builder._get_hexbin()
+        gethexbin = self.builder._get_hexbin()
         self.builder.apply_to_query('all', alterer)
-        self.assertTrue(all(x == -1 for x in getmain['data']['value_field'].values))
+        self.assertTrue(all(x == -1 for x in gethexbin['data']['value_field'].values))
 
-    def test_update_main_manager(self):
-        """Tests the builder's ability to update the main dataset's manager.
+    def test_update_hexbin_manager(self):
+        """Tests the builder's ability to update the hexbin layer's manager.
 
         Tests:
-        Set the main dataset and update it. Check if it was updated properly.
+        Set the hexbin layer and update it. Check if it was updated properly.
         """
-        with self.assertRaises(err.NoDataSetError):
-            self.builder.update_main_manager(colorscale='Viridis')
+        with self.assertRaises(err.NoLayerError):
+            self.builder.update_hexbin_manager(colorscale='Viridis')
         self.builder.set_hexbin(
             DataFrame(dict(
                 latitude=[10, 10, 10, 10, 20, 20],
                 longitude=[20, 20, 10, 10, 10, 10]
             )))
-        self.builder.update_main_manager(colorscale='Picnic')
+        self.builder.update_hexbin_manager(colorscale='Picnic')
         self.assertEqual('Picnic', self.builder._get_hexbin()['manager']['colorscale'])
 
-    def test_clear_main_manager(self):
-        """Tests the builder's ability to clear the manager of the main dataset.
+    def test_clear_hexbin_manager(self):
+        """Tests the builder's ability to clear the manager of the hexbin layer.
 
         Tests:
-        Set the main dataset and clear it's manager. Ensure the manager is empty.
+        Set the hexbin layer and clear it's manager. Ensure the manager is empty.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.clear_hexbin_manager()
         self.builder.set_hexbin(
             DataFrame(dict(
@@ -619,13 +619,13 @@ class BuilderTestCase(unittest.TestCase):
         self.builder.clear_hexbin_manager()
         self.assertEqual({}, self.builder._get_hexbin()['manager'])
 
-    def test_reset_main_data(self):
-        """Tests the builder's ability to reset the main dataset's data back to its original state.
+    def test_reset_hexbin_data(self):
+        """Tests the builder's ability to reset the hexbin layer's data back to its original state.
 
         Tests:
-        Set the main dataset. Alter it's data and reset it. Ensure that the data is equal to the original data.
+        Set the hexbin layer. Alter it's data and reset it. Ensure that the data is equal to the original data.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.reset_hexbin_data()
 
         self.builder.set_hexbin(
@@ -634,20 +634,20 @@ class BuilderTestCase(unittest.TestCase):
                 longitude=[20, 20, 10, 10, 10, 10]
             )))
 
-        getmain = self.builder._get_hexbin()
-        vals = getmain['data']['value_field'].copy()
-        self.builder.apply_to_query('main', alterer)
-        self.assertTrue(all(x == -1 for x in getmain['data']['value_field'].values))
+        gethexbin = self.builder._get_hexbin()
+        vals = gethexbin['data']['value_field'].copy()
+        self.builder.apply_to_query('hexbin', alterer)
+        self.assertTrue(all(x == -1 for x in gethexbin['data']['value_field'].values))
         self.builder.reset_hexbin_data()
-        self.assertTrue(getmain['data']['value_field'].equals(vals))
+        self.assertTrue(gethexbin['data']['value_field'].equals(vals))
 
     def test_update_region_manager(self):
-        """Tests the builder's ability to update the manager of region datasets.
+        """Tests the builder's ability to update the manager of region layers.
 
         Tests:
-        Add region datasets and update their managers. Ensure they were updated correctly.
+        Add region layers and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_region_manager(name='RRA1', colorscale='Picnic')
         self.builder.update_region_manager(colorscale='Picnic')  # may change this behaviour (this does nothing)
         self.builder.add_region('RRA1', 'CANADA')
@@ -669,10 +669,10 @@ class BuilderTestCase(unittest.TestCase):
             _ = rra1['manager']['colorscale']
 
     def test_clear_region_manager(self):
-        """Tests the builder's ability to clear the manager of region datasets.
+        """Tests the builder's ability to clear the manager of region layers.
 
         Tests:
-        Add region datasets and clear their managers. Ensure they are empty.
+        Add region layers and clear their managers. Ensure they are empty.
         """
         self.builder.clear_region_manager()
         self.builder.add_region('RRA1', 'CANADA')
@@ -689,10 +689,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual({}, rra2['manager'])
 
     def test_reset_region_data(self):
-        """Tests the builder's ability to reset the data of region datasets.
+        """Tests the builder's ability to reset the data of region layers.
 
         Tests:
-        Add region datasets and alter their data. Revert the data. Ensure they are back to original state.
+        Add region layers and alter their data. Revert the data. Ensure they are back to original state.
         """
         self.builder.add_region('RRA1', 'CANADA')
         self.builder.add_region('RRA2', 'FRANCE')
@@ -726,10 +726,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(rra2['data']['value_field'].equals(rra2vals))
 
     def test_update_grid_manager(self):
-        """Tests the builder's ability to update the manager of grid datasets.
+        """Tests the builder's ability to update the manager of grid layers.
 
         Tests:
-        Add grid datasets and update their managers. Ensure they were updated correctly.
+        Add grid layers and update their managers. Ensure they were updated correctly.
         """
         self.builder.update_grid_manager(colorscale='Viridis')
         self.builder.add_grid('GGA1', 'CANADA')
@@ -752,10 +752,10 @@ class BuilderTestCase(unittest.TestCase):
             _ = gga1['manager']['colorscale']
 
     def test_clear_grid_manager(self):
-        """Tests the builder's ability to clear the manager of grid datasets.
+        """Tests the builder's ability to clear the manager of grid layers.
 
         Tests:
-        Add grid datasets and clear their managers. Ensure they are empty.
+        Add grid layers and clear their managers. Ensure they are empty.
         """
         self.builder.clear_grid_manager()
         self.builder.add_grid('GGA1', 'CANADA')
@@ -774,10 +774,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual(gga1['manager'], gga2['manager'])
 
     def test_reset_grid_data(self):
-        """Tests the builder's ability to reset the data of grid datasets.
+        """Tests the builder's ability to reset the data of grid layers.
 
         Tests:
-        Add grid datasets and alter their data. Revert the data. Ensure they are back to original state.
+        Add grid layers and alter their data. Revert the data. Ensure they are back to original state.
         """
         self.builder.add_grid('GGA1', 'CANADA')
         self.builder.add_grid('GGA2', 'FRANCE')
@@ -810,12 +810,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(gga2['data']['value_field'].equals(gga2vals))
 
     def test_update_outline_manager(self):
-        """Tests the builder's ability to update the manager of outline datasets.
+        """Tests the builder's ability to update the manager of outline layers.
 
         Tests:
-        Add outline datasets and update their managers. Ensure they were updated correctly.
+        Add outline layers and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_outline_manager(name='OOA1', mode='markers')
         self.builder.update_outline_manager(mode='markers')  # may change this behaviour (this does nothing)
         self.builder.add_outline('OOA1', 'CANADA')
@@ -837,10 +837,10 @@ class BuilderTestCase(unittest.TestCase):
             _ = ooa1['manager']['mode']
 
     def test_clear_outline_manager(self):
-        """Tests the builder's ability to clear the manager of outline datasets.
+        """Tests the builder's ability to clear the manager of outline layers.
 
         Tests:
-        Add outline datasets and clear their managers. Ensure they are empty.
+        Add outline layers and clear their managers. Ensure they are empty.
         """
         self.builder.clear_outline_manager()
         self.builder.add_outline('OOA1', 'CANADA')
@@ -857,10 +857,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual({}, ooa2['manager'])
 
     def test_reset_outline_data(self):
-        """Tests the builder's ability to reset the data of outline datasets.
+        """Tests the builder's ability to reset the data of outline layers.
 
         Tests:
-        Add outline datasets and alter their data. Revert the data. Ensure they are back to original state.
+        Add outline layers and alter their data. Revert the data. Ensure they are back to original state.
         """
         self.builder.add_outline('OOA1', 'CANADA')
         self.builder.add_outline('OOA2', 'FRANCE')
@@ -893,12 +893,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(ooa2['data']['value_field'].equals(ooa2vals))
 
     def test_update_point_manager(self):
-        """Tests the builder's ability to update the manager of point datasets.
+        """Tests the builder's ability to update the manager of point layers.
 
         Tests:
-        Add point datasets and update their managers. Ensure they were updated correctly.
+        Add point layers and update their managers. Ensure they were updated correctly.
         """
-        with self.assertRaises(err.NoDataSetError):
+        with self.assertRaises(err.NoLayerError):
             self.builder.update_point_manager(name='PPA1', mode='markers')
         self.builder.update_point_manager(mode='markers')  # may change this behaviour (this does nothing)
         self.builder.add_point('PPA1', DataFrame(dict(
@@ -926,10 +926,10 @@ class BuilderTestCase(unittest.TestCase):
             _ = ppa1['manager']['mode']
 
     def test_clear_point_manager(self):
-        """Tests the builder's ability to clear the manager of point datasets.
+        """Tests the builder's ability to clear the manager of point layers.
 
         Tests:
-        Add point datasets and clear their managers. Ensure they are empty.
+        Add point layers and clear their managers. Ensure they are empty.
         """
         self.builder.clear_point_manager()
         self.builder.add_point('PPA1', DataFrame(dict(
@@ -952,10 +952,10 @@ class BuilderTestCase(unittest.TestCase):
         self.assertEqual({}, ppa2['manager'])
 
     def test_reset_point_data(self):
-        """Tests the builder's ability to reset the data of point datasets.
+        """Tests the builder's ability to reset the data of point layers.
 
         Tests:
-        Add point datasets and alter their data. Revert the data. Ensure they are back to original state.
+        Add point layers and alter their data. Revert the data. Ensure they are back to original state.
         """
 
         self.builder.add_point('PPA1', DataFrame(dict(

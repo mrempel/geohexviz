@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class DataSetType(Enum):
+class LayerType(Enum):
     """An enumeration of different dataset types.
     """
     HEXBIN = 'hexbin'
@@ -18,13 +18,6 @@ class BuilderPlotBuildError(Exception):
         super().__init__(self.message)
 
 
-class BuilderDatasetInfoError(Exception):
-
-    def __init__(self, message: str = "Ivalid information was given with a dataset."):
-        self.message = message
-        super().__init__(self.message)
-
-
 class BuilderAlterationError(Exception):
 
     def __init__(self, message: str = "There was an error while altering data within the builder."):
@@ -32,7 +25,7 @@ class BuilderAlterationError(Exception):
         super().__init__(self.message)
 
 
-class ColorscaleError(Exception):
+class ColorScaleError(Exception):
 
     def __init__(self, message: str = "There was an error while reading the colorscale."):
         self.message = message
@@ -48,7 +41,7 @@ class DataFileReadError(Exception):
 
 class DataReadError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType, allow_builtin: bool):
+    def __init__(self, name: str, dstype: LayerType, allow_builtin: bool):
 
         self.options = ["file path", "DataFrame", "GeoDataFrame"]
         if allow_builtin:
@@ -58,7 +51,7 @@ class DataReadError(Exception):
         self.name = name
         self.dstype = dstype
         self.allow_builtin = allow_builtin
-        if dstype == DataSetType.HEXBIN:
+        if dstype == LayerType.HEXBIN:
             self.message = f"The 'data' parameter given for the {dstype.value} data set was invalid.\n" \
                            f"The data must be one of the following: {', '.join(self.options)}"
         else:
@@ -74,12 +67,12 @@ longitude_aliases = ["longitude", "longitudes", "lon", "lons", "long", "longs", 
 
 class GeometryParseLatLongError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType, lat: bool):
+    def __init__(self, name: str, dstype: LayerType, lat: bool):
 
         self.name = name
         self.dstype = dstype
         self.fmt = "latitude" if lat else "longitude"
-        if dstype == DataSetType.HEXBIN:
+        if dstype == LayerType.HEXBIN:
             self.message = f"There was no geometry passed for the {dstype} data set.\n" \
                            f"In these cases, the columns containing latitudes " \
                            f"and longitudes must be specified (missing {self.fmt});\n" \
@@ -99,12 +92,12 @@ class GeometryParseLatLongError(Exception):
 
 class LatLongParseTypeError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType, lat: bool):
+    def __init__(self, name: str, dstype: LayerType, lat: bool):
 
         self.name = name
         self.dstype = dstype
         self.fmt = "latitude" if lat else "longitude"
-        if dstype == DataSetType.HEXBIN:
+        if dstype == LayerType.HEXBIN:
             self.message = f"A {self.fmt} column was passed or parsed for the {dstype} data set.\n" \
                            f"The column does not contain numeric entries, " \
                            f"and could not be converted to numerical format."
@@ -131,42 +124,42 @@ class BinValueTypeError(Exception):
         super().__init__(self.message)
 
 
-class DatasetNamingError(Exception):
+class LayerNamingError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType, err_type: str):
+    def __init__(self, name: str, dstype: LayerType, err_type: str):
         self.name = name
         self.dstype = dstype
-        self.message = f"An invalid name was passed when adding a {dstype}-type dataset." \
+        self.message = f"An invalid name was passed when adding a {dstype}-type layer." \
                        f"\nName: {name}\nInvalidity: {err_type}"
         super().__init__(self.message)
 
 
-class NoDataSetError(Exception):
+class NoLayerError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType):
+    def __init__(self, name: str, dstype: LayerType):
         self.dstype = dstype
-        if dstype == DataSetType.HEXBIN:
-            self.message = f"There is no {dstype.value} data set present."
+        if dstype == LayerType.HEXBIN:
+            self.message = f"There is no {dstype.value} layer present."
         else:
-            self.message = f"There is no {dstype.value}-type data set named '{name}' present."
+            self.message = f"There is no {dstype.value}-type layer named '{name}' present."
         super().__init__(self.message)
 
 
-class NoDataSetsError(Exception):
+class NoLayersError(Exception):
 
-    def __init__(self, dstype: DataSetType):
+    def __init__(self, dstype: LayerType):
         self.dstype = dstype
-        self.message = f"There are no {dstype.value}-type data sets present."
+        self.message = f"There are no {dstype.value}-type layers present."
         super().__init__(self.message)
 
 
 class NoHexagonalTilingError(Exception):
 
-    def __init__(self, name: str, dstype: DataSetType):
+    def __init__(self, name: str, dstype: LayerType):
 
         self.name = name
         self.dstype = dstype
-        if dstype == DataSetType.HEXBIN:
+        if dstype == LayerType.HEXBIN:
             self.message = f"No hexagonal tiling could be generated for the {dstype.value} data set.\n"
         else:
             self.message = f"No hexagonal tiling could be generated for the" \
@@ -185,7 +178,7 @@ class BigQueryError(Exception):
 
     def __init__(self, problematic: str):
         self.problematic = problematic
-        self.message = f"The given query contains an argument that refers to a collection of datasets.\n" \
+        self.message = f"The given query contains an argument that refers to a collection of layers.\n" \
                        f"Problematic: {problematic}"
 
 

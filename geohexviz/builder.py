@@ -1,7 +1,6 @@
 from copy import deepcopy
 from enum import Enum
-from os import path
-from os.path import join as pjoin
+import os
 from typing import Any, Tuple, Dict, Union, Callable
 
 import fiona.errors
@@ -74,13 +73,13 @@ StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
 
-def _reset_to_odata(dataset: StrDict):
-    """Resets the odata parameter of a dataset.
+def _reset_to_odata(layer: StrDict):
+    """Resets the odata parameter of a layer.
 
-    :param dataset: The dataset to reset
-    :type dataset: StrDict
+    :param layer: The layer to reset
+    :type layer: StrDict
     """
-    dataset['data'] = dataset['odata'].copy(deep=True)
+    layer['data'] = layer['odata'].copy(deep=True)
 
 
 def _prepare_choropleth_trace(gdf: GeoDataFrame, mapbox: bool = False) -> Union[Choropleth, Choroplethmapbox]:
@@ -171,14 +170,14 @@ def _prepare_scattergeo_trace(gdf: GeoDataFrame, separate: bool = True, disjoint
         )
 
 
-def _validate_dataset(dataset: StrDict):
-    """Validates a dataset.
+def _validate_layer(layer: StrDict):
+    """Validates a layer.
 
-    :param dataset: The dataset to validate
-    :type dataset: StrDict
+    :param layer: The layer to validate
+    :type layer: StrDict
     """
-    if 'data' not in dataset:
-        raise ValueError("There must be a 'data' member present in the dataset.")
+    if 'data' not in layer:
+        raise ValueError("There must be a 'data' member present in the layer.")
 
 
 def get_reader_function_from_method(method: str):
@@ -230,7 +229,7 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
     if read_args is None:
         read_args = ()
     try:
-        filepath, extension = path.splitext(pjoin(path.dirname(__file__), data))
+        filepath, extension = os.path.splitext(os.path.join(os.path.dirname(__file__), data))
         filepath = fix_filepath(filepath, add_ext=extension)
 
         try:
@@ -254,7 +253,7 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
     return data
 
 
-def _read_data(name: str, dstype: DataSetType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
+def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
     """Reads the data into a usable type for the builder.
 
     :param data: The data to be read
@@ -284,7 +283,7 @@ def _read_data(name: str, dstype: DataSetType, data: DFType, allow_builtin: bool
     return data
 
 
-def _parse_latlong_fields(name: str, dstype: DataSetType, data: GeoDataFrame,
+def _parse_latlong_fields(name: str, dstype: LayerType, data: GeoDataFrame,
                           latitude_field: str = None, longitude_field: str = None) -> Tuple[pd.Series, pd.Series]:
     """Parses the lat/long columns from a GeoDataFrame (called upon loading).
 
@@ -305,8 +304,7 @@ def _parse_latlong_fields(name: str, dstype: DataSetType, data: GeoDataFrame,
         latitude_field = data[latitude_field]
     except KeyError:
         for col in data.columns:
-            col = col.lower()
-            if col in latitude_aliases:
+            if col.lower() in latitude_aliases:
                 latitude_field = data[col]
                 break
         if latitude_field is None:
@@ -316,8 +314,7 @@ def _parse_latlong_fields(name: str, dstype: DataSetType, data: GeoDataFrame,
         longitude_field = data[longitude_field]
     except KeyError:
         for col in data.columns:
-            col = col.lower()
-            if col in longitude_aliases:
+            if col.lower() in longitude_aliases:
                 longitude_field = data[col]
                 break
         if longitude_field is None:
@@ -338,7 +335,7 @@ def _parse_latlong_fields(name: str, dstype: DataSetType, data: GeoDataFrame,
     return latitude_field, longitude_field
 
 
-def _convert_latlong_data(name: str, dstype: DataSetType, data: GeoDataFrame,
+def _convert_latlong_data(name: str, dstype: LayerType, data: GeoDataFrame,
                           latitude_field: str = None, longitude_field: str = None) -> GeoDataFrame:
     """Converts lat/long columns into a proper geometry column, if present.
 
@@ -375,7 +372,7 @@ def _convert_latlong_data(name: str, dstype: DataSetType, data: GeoDataFrame,
     return data
 
 
-def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, hex_resolution: int, binning_args=None,
+def _convert_to_hexbin_data(name: str, dstype: LayerType, data: GeoDataFrame, hex_resolution: int, binning_args=None,
                             binning_field: str = None, binning_fn: Callable = None, **kwargs) -> GeoDataFrame:
     """Converts a geodataframe into a hexagon-ally binned dataframe.
 
@@ -394,6 +391,7 @@ def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, 
     :return: The hexbinified dataframe
     :rtype: GeoDataFrame
     """
+    bfield_passed = binning_field is not None
     data = _hexify_data(data, hex_resolution)
 
     if isinstance(binning_fn, dict):
@@ -406,13 +404,15 @@ def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, 
     except KeyError:
         pass
     vtype = 'NUM' if binning_field is None else get_column_type(data, binning_field)
-
     if vtype == 'UNK':
         raise BinValueTypeError("An invalid binning column was passed.\n"
                                 "The binning field must be string or numerical column.")
+    elif vtype == 'STR':
+        data[binning_field] = data[binning_field].astype(str)
 
     if binning_fn is None:
-        binning_fn = _group_functions['best'] if vtype == 'STR' else _group_functions['count']
+        binning_fn = _group_functions['best'] if vtype == 'STR' else\
+            (_group_functions['sum'] if bfield_passed else _group_functions['count'])
 
     data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
                             result_name='value_field', add_geoms=True, **kwargs)
@@ -431,11 +431,11 @@ def _convert_to_hexbin_data(name: str, dstype: DataSetType, data: GeoDataFrame, 
     return data
 
 
-def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
-    """Updates the manager of a given dataset.
+def _update_manager(layer: StrDict, updates: StrDict = None, overwrite: bool = False, **kwargs):
+    """Updates the manager of a given layer.
 
-    :param dataset: The dataset whose manager to update
-    :type dataset: StrDict
+    :param layer: The layer whose manager to update
+    :type layer: StrDict
     :param updates: A dict of updates for the manager
     :type updates: StrDict
     :param overwrite: Whether to overwrite the existing manager with the new one or not
@@ -445,9 +445,9 @@ def _update_manager(dataset: StrDict, updates: StrDict = None, overwrite: bool =
     """
     updates = simplify_dicts(fields=updates, **kwargs)
     if overwrite:
-        dataset['manager'] = updates
+        layer['manager'] = updates
     else:
-        dict_deep_update(dataset['manager'], updates)
+        dict_deep_update(layer['manager'], updates)
 
 
 def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> Union[DataFrame, GeoDataFrame]:
@@ -464,7 +464,7 @@ def _hexify_data(data: Union[DataFrame, GeoDataFrame], hex_resolution: int) -> U
 
 
 def _split_query(query: str) -> Tuple[str, str]:
-    """Splits a query into the dataset type and dataset name.
+    """Splits a query into the layer type and layer name.
 
     :param query: The query to split
     :type query: str
@@ -475,14 +475,14 @@ def _split_query(query: str) -> Tuple[str, str]:
     return query[:lind], query[lind + 1:]
 
 
-def _check_name(name: str, dstype: DataSetType):
-    """Checks if the given dataset name is valid, and throws an error if it is not.
+def _check_name(name: str, dstype: LayerType):
+    """Checks if the given layer name is valid, and throws an error if it is not.
 
-    :param name: The name of the dataset
+    :param name: The name of the layer
     :type name: str
     """
     if any(not i.isalnum() and i not in ('_', ' ') for i in name):
-        raise DatasetNamingError(name, dstype, "Non-alphanumeric found (besides underscores)")
+        raise LayerNamingError(name, dstype, "Non-alphanumeric found (besides underscores)")
 
 
 class PlotStatus(Enum):
@@ -496,23 +496,23 @@ class PlotBuilder:
     """This class contains a Builder implementation for visualizing Plotly Hex data.
     """
 
-    def __init__(self, hexbin_dataset: StrDict = None, regions: Dict[str, StrDict] = None,
+    def __init__(self, hexbin_layer: StrDict = None, regions: Dict[str, StrDict] = None,
                  grids: Dict[str, StrDict] = None, outlines: Dict[str, StrDict] = None,
                  points: Dict[str, StrDict] = None, use_templates: bool = True):
         """Initializer for instances of PlotBuilder.
 
-        Initializes a new PlotBuilder with the given main dataset
-        alongside any region, grid, outline, point type datasets.
+        Initializes a new PlotBuilder with the given main layer
+        alongside any region, grid, outline, point type layers.
 
-        :param hexbin_dataset: The main dataset for this builder
-        :type hexbin_dataset: StrDict
-        :param regions: A set of region-type datasets for this builder
+        :param hexbin_layer: The main layer for this builder
+        :type hexbin_layer: StrDict
+        :param regions: A set of region-type layers for this builder
         :type regions: Dict[str, StrDict]
-        :param grids: A sed of grid-type datasets for this builder
+        :param grids: A sed of grid-type layers for this builder
         :type grids: Dict[str, StrDict]
-        :param outlines: A set of outline-type datasets for this builder
+        :param outlines: A set of outline-type layers for this builder
         :type outlines: Dict[str, StrDict]
-        :param points: A set of point-type datasets for this builder
+        :param points: A set of point-type layers for this builder
         :type points: Dict[str, StrDict]
         """
 
@@ -540,8 +540,8 @@ class PlotBuilder:
         self.output_destination = None
         self._last_output_location = None  # for future use
 
-        if hexbin_dataset is not None:
-            self.set_hexbin(**hexbin_dataset)
+        if hexbin_layer is not None:
+            self.set_hexbin(**hexbin_layer)
 
         if regions is not None:
             for k, v in regions.items():
@@ -600,13 +600,13 @@ class PlotBuilder:
 
         :param item: The item to search for
         :type item: str
-        :return: The retrieved dataset(s)
+        :return: The retrieved layer(s)
         :rtype: StrDict
         """
         return self.search(item)
 
     """
-    MAIN DATASET FUNCTIONS
+    MAIN layer FUNCTIONS
     """
 
     def set_hexbin(
@@ -618,7 +618,7 @@ class PlotBuilder:
             hexbin_info: StrDict = None,
             manager: StrDict = None
     ):
-        """Sets the hexbin dataset to plot.
+        """Sets the hexbin layer to plot.
 
         :param data: The data for this set
         :type data: DFType
@@ -630,7 +630,7 @@ class PlotBuilder:
         :type hex_resolution: int
         :param hexbin_info: A container for properties pertaining to hexagonal binning
         :type hexbin_info: StrDict
-        :param manager: A container for the plotly properties for this dataset
+        :param manager: A container for the plotly properties for this layer
         :type manager: StrDict
         """
         self._get_grids().pop('|*EMPTY*|', None)
@@ -641,90 +641,90 @@ class PlotBuilder:
         selected_res = (hex_resolution or hexbin_info.get('hex_resolution')) or self.default_hex_resolution
         hbin_info = dict(hex_resolution=selected_res)
 
-        data = _read_data('hexbin', DataSetType.HEXBIN, data)
-        dataset = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
-        data = _convert_latlong_data('hexbin', DataSetType.HEXBIN, data,
+        data = _read_data('hexbin', LayerType.HEXBIN, data)
+        layer = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
+        data = _convert_latlong_data('hexbin', LayerType.HEXBIN, data,
                                      latitude_field=latitude_field, longitude_field=longitude_field)
 
         hbin_info.update(hexbin_info)
-        data = _convert_to_hexbin_data("hexbin", DataSetType.HEXBIN, data, **hbin_info)
-        dataset['VTYPE'], dataset['data'], dataset['odata'] = data.VTYPE, data, data.copy(deep=True)
-        dataset['manager'] = {}
+        data = _convert_to_hexbin_data("hexbin", LayerType.HEXBIN, data, **hbin_info)
+        layer['VTYPE'], layer['data'], layer['odata'] = data.VTYPE, data, data.copy(deep=True)
+        layer['manager'] = {}
         if self.use_templates:
-            if dataset['VTYPE'] == 'NUM':
-                _update_manager(dataset, deepcopy(get_template('main_quant')))
+            if layer['VTYPE'] == 'NUM':
+                _update_manager(layer, deepcopy(get_template('main_quant')))
             else:
-                _update_manager(dataset, deepcopy(get_template('main_qual')))
-        _update_manager(dataset, **(manager if manager is not None else {}))
-        self._container['hexbin'] = dataset
+                _update_manager(layer, deepcopy(get_template('main_qual')))
+        _update_manager(layer, **(manager if manager is not None else {}))
+        self._container['hexbin'] = layer
 
     def _get_hexbin(self) -> StrDict:
-        """Retrieves the main dataset.
+        """Retrieves the main layer.
 
         Internal version.
 
-        :return: The main dataset
+        :return: The main layer
         :rtype: StrDict
         """
         try:
             return self._container['hexbin']
         except KeyError:
-            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
+            raise NoLayerError("hexbin", LayerType.HEXBIN)
 
     def get_hexbin(self):
-        """Retrieves the main dataset.
+        """Retrieves the main layer.
 
         External version, returns a deepcopy.
 
-        :return: The main dataset
+        :return: The main layer
         :rtype: StrDict
         """
         return deepcopy(self._get_hexbin())
 
-    def remove_main(self, pop: bool = False) -> StrDict:
-        """Removes the main dataset.
+    def remove_hexbin(self, pop: bool = False) -> StrDict:
+        """Removes the main layer.
 
-        :param pop: Whether or not to return the removed dataset
+        :param pop: Whether or not to return the removed layer
         :type pop: bool
-        :return: The removed dataset (pop=True)
+        :return: The removed layer (pop=True)
         :rtype: StrDict
         """
         try:
-            main = self._container.pop('hexbin')
+            hexbin = self._container.pop('hexbin')
 
             # remove the empty grid that may or may not have been added
             try:
                 self.remove_grid('|*EMPTY*|')
-            except NoDataSetError:
+            except NoLayerError:
                 pass
 
             if pop:
-                return main
+                return hexbin
         except KeyError:
-            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
+            raise NoLayerError("hexbin", LayerType.HEXBIN)
 
-    def update_main_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
-        """Updates the manager the main dataset.
+    def update_hexbin_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
+        """Updates the manager the hexbin layer.
 
-        :param updates: A dict containing updates for the dataset(s)
+        :param updates: A dict containing updates for the layer(s)
         :type updates: StrDict
         :param overwrite: Whether to override the current properties with the new ones or not
         :type overwrite: bool
-        :param kwargs: Other updates for the dataset(s)
+        :param kwargs: Other updates for the layer(s)
         :type kwargs: **kwargs
         """
         _update_manager(self._get_hexbin(), updates=updates, overwrite=overwrite, **kwargs)
 
     def clear_hexbin_manager(self):
-        """Clears the manager of the main dataset.
+        """Clears the manager of the hexbin layer.
         """
         try:
             self._get_hexbin()['manager'] = {}
         except ValueError:
-            raise NoDataSetError("hexbin", DataSetType.HEXBIN)
+            raise NoLayerError("hexbin", LayerType.HEXBIN)
 
     def reset_hexbin_data(self):
-        """Resets the data within the main dataset to the data that was input at the beginning.
+        """Resets the data within the hexbin layer to the data that was input at the beginning.
         """
         _reset_to_odata(self._get_hexbin())
 
@@ -738,85 +738,85 @@ class PlotBuilder:
             data: DFType,
             manager: StrDict = None
     ):
-        """Adds a region-type dataset to the builder.
+        """Adds a region-type layer to the builder.
 
-        Region-type datasets should consist of Polygon-like geometries.
+        Region-type layers should consist of Polygon-like geometries.
         Best results are read from a GeoDataFrame, or DataFrame.
 
-        :param name: The name this dataset is to be stored with
+        :param name: The name this layer is to be stored with
         :type name: str
-        :param data: The location of the data for this dataset
+        :param data: The location of the data for this layer
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param manager: The plotly properties for this dataset.
+        :param manager: The plotly properties for this layer.
         :type manager: StrDict
         """
-        _check_name(name, DataSetType.REGION)
-        data = _read_data(name, DataSetType.REGION, data, allow_builtin=True)
-        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
+        _check_name(name, LayerType.REGION)
+        data = _read_data(name, LayerType.REGION, data, allow_builtin=True)
+        layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
-        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        layer['data'], layer['odata'] = data, data.copy(deep=True)
         if self.use_templates:
-            dataset['manager'] = deepcopy(get_template('region'))
+            layer['manager'] = deepcopy(get_template('region'))
         else:
-            dataset['manager'] = {}
-        _update_manager(dataset, **(manager or {}))
-        self._get_regions()[name] = dataset
+            layer['manager'] = {}
+        _update_manager(layer, **(manager or {}))
+        self._get_regions()[name] = layer
 
     def _get_region(self, name: str) -> StrDict:
-        """Retrieves a region dataset from the builder.
+        """Retrieves a region layer from the builder.
 
         Internal version.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         try:
             return self._get_regions()[name]
         except KeyError:
-            raise NoDataSetError(name, DataSetType.REGION)
+            raise NoLayerError(name, LayerType.REGION)
 
     def get_region(self, name: str) -> StrDict:
-        """Retrieves a region dataset from the builder.
+        """Retrieves a region layer from the builder.
 
         External version, returns a deepcopy.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         return deepcopy(self._get_region(name))
 
     def _get_regions(self) -> Dict[str, StrDict]:
-        """Retrieves the region datasets from the builder.
+        """Retrieves the region layers from the builder.
 
         Internal version.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return self._container['regions']
 
     def get_regions(self) -> Dict[str, StrDict]:
-        """Retrieves the region datasets from the builder.
+        """Retrieves the region layers from the builder.
 
         External version, returns a deepcopy.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return deepcopy(self._get_regions())
 
     def remove_region(self, name: str, pop: bool = False) -> StrDict:
-        """Removes a region dataset from the builder.
+        """Removes a region layer from the builder.
 
-        :param name: The name of the dataset to remove
+        :param name: The name of the layer to remove
         :type name: str
-        :param pop: Whether to return the removed dataset or not
+        :param pop: Whether to return the removed layer or not
         :type pop: bool
-        :return: The removed dataset (pop=True)
+        :return: The removed layer (pop=True)
         :rtype: StrDict
         """
         try:
@@ -824,21 +824,21 @@ class PlotBuilder:
             if pop:
                 return region
         except KeyError:
-            raise NoDataSetError(name, DataSetType.REGION)
+            raise NoLayerError(name, LayerType.REGION)
 
     def update_region_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a region or regions.
 
         The manager consists of Plotly properties.
-        If the given name is none, all region datasets will be updated.
+        If the given name is none, all region layers will be updated.
 
-        :param name: The name of the dataset to update
+        :param name: The name of the layer to update
         :type name: str
-        :param updates: A dict containing updates for the dataset(s)
+        :param updates: A dict containing updates for the layer(s)
         :type updates: StrDict
         :param overwrite: Whether to override the current properties with the new ones or not
         :type overwrite: bool
-        :param kwargs: Other updates for the dataset(s)
+        :param kwargs: Other updates for the layer(s)
         :type kwargs: **kwargs
         """
 
@@ -849,18 +849,18 @@ class PlotBuilder:
             _update_manager(self._get_region(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def clear_region_manager(self, name: str = None):
-        """Clears the manager of a region dataset.
+        """Clears the manager of a region layer.
 
         If the given name is none, clears all of the region managers.
         """
         self.update_region_manager(name=name, updates={}, overwrite=True)
 
     def reset_region_data(self, name: str = None):
-        """Resets the data within the region dataset to the data that was input at the beginning.
+        """Resets the data within the region layer to the data that was input at the beginning.
 
-        If the given name is None, all region datasets will be reset.
+        If the given name is None, all region layers will be reset.
 
-        :param name: The name of the dataset to reset
+        :param name: The name of the layer to reset
         :type name: str
         """
         if name is None:
@@ -887,15 +887,15 @@ class PlotBuilder:
             longitude_field: str = None,
             convex_simplify: bool = False
     ):
-        """Adds a grid-type dataset to the builder.
+        """Adds a grid-type layer to the builder.
 
-        Grid-type datasets should consist of Polygon-like or Point-like geometries.
+        Grid-type layers should consist of Polygon-like or Point-like geometries.
 
-        :param name: The name this dataset is to be stored with
+        :param name: The name this layer is to be stored with
         :type name: str
-        :param data: The location of the data for this dataset
+        :param data: The location of the data for this layer
         :type data: Union[str, DataFrame, GeoDataFrame]
-        :param hex_resolution: The hexagonal resolution to use for this dataset (None->builder default)
+        :param hex_resolution: The hexagonal resolution to use for this layer (None->builder default)
         :type hex_resolution: int
         :param latitude_field: The latitude column within the data
         :type latitude_field: str
@@ -907,85 +907,85 @@ class PlotBuilder:
         if hex_resolution is None:
             try:
                 hex_resolution = self._get_hexbin()['HRES']
-            except NoDataSetError:
+            except NoLayerError:
                 pass
 
         selected_res = hex_resolution or self.default_hex_resolution
 
-        _check_name(name, DataSetType.GRID)
-        data = _read_data(name, DataSetType.GRID, data, allow_builtin=True)
-        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
-        data = _convert_latlong_data(name, DataSetType.GRID, data,
-                                  latitude_field=latitude_field, longitude_field=longitude_field)
+        _check_name(name, LayerType.GRID)
+        data = _read_data(name, LayerType.GRID, data, allow_builtin=True)
+        layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
+        data = _convert_latlong_data(name, LayerType.GRID, data,
+                                     latitude_field=latitude_field, longitude_field=longitude_field)
         if convex_simplify:
             data = GeoDataFrame(geometry=data.convex_hull, crs="EPSG:4326")
 
         data = _convert_to_hexbin_data(
-            name, DataSetType.GRID,
+            name, LayerType.GRID,
             data,
             hex_resolution=selected_res,
             binning_fn=lambda lst: 0
         )
         data = data[['value_field', 'geometry']]
-        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        dataset['manager'] = self._grid_manager
-        self._get_grids()[name] = dataset
+        layer['data'], layer['odata'] = data, data.copy(deep=True)
+        layer['manager'] = self._grid_manager
+        self._get_grids()[name] = layer
 
     def _get_grid(self, name: str) -> StrDict:
-        """Retrieves a grid dataset from the builder.
+        """Retrieves a grid layer from the builder.
 
         Internal version.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         try:
             return self._get_grids()[name]
         except KeyError:
-            raise NoDataSetError(name, DataSetType.GRID)
+            raise NoLayerError(name, LayerType.GRID)
 
     def get_grid(self, name: str) -> StrDict:
-        """Retrieves a grid dataset from the builder.
+        """Retrieves a grid layer from the builder.
 
         External version, returns a deepcopy.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         return deepcopy(self._get_grid(name))
 
     def _get_grids(self) -> Dict[str, StrDict]:
-        """Retrieves the grid datasets from the builder.
+        """Retrieves the grid layers from the builder.
 
         Internal version.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return self._container['grids']
 
     def get_grids(self) -> Dict[str, StrDict]:
-        """Retrieves the grid datasets from the builder.
+        """Retrieves the grid layers from the builder.
 
         External version, returns a deepcopy.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return deepcopy(self._get_grids())
 
     def remove_grid(self, name: str, pop: bool = False) -> StrDict:
-        """Removes a grid dataset from the builder.
+        """Removes a grid layer from the builder.
 
-        :param name: The name of the dataset to remove
+        :param name: The name of the layer to remove
         :type name:
-        :param pop: Whether to return the removed dataset or not
+        :param pop: Whether to return the removed layer or not
         :type pop: bool
-        :return: The removed dataset (pop=True)
+        :return: The removed layer (pop=True)
         :rtype: StrDict
         """
         try:
@@ -998,7 +998,7 @@ class PlotBuilder:
             if pop:
                 return grid
         except KeyError:
-            raise NoDataSetError(name, DataSetType.GRID)
+            raise NoLayerError(name, LayerType.GRID)
 
     def update_grid_manager(self, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the general grid manager.
@@ -1018,7 +1018,7 @@ class PlotBuilder:
             self._grid_manager.update(dct['manager'])
 
     def clear_grid_manager(self):
-        """Clears the manager of a region dataset.
+        """Clears the manager of a region layer.
 
         If the given name is none, clears all of the region managers.
         """
@@ -1026,11 +1026,11 @@ class PlotBuilder:
             self._grid_manager.clear()
 
     def reset_grid_data(self, name: str = None):
-        """Resets the data within the grid dataset to the data that was input at the beginning.
+        """Resets the data within the grid layer to the data that was input at the beginning.
 
-        If the given name is None, all grid datasets will be reset.
+        If the given name is None, all grid layers will be reset.
 
-        :param name: The name of the dataset to reset
+        :param name: The name of the layer to reset
         :type name: str
         """
         if name is None:
@@ -1040,7 +1040,7 @@ class PlotBuilder:
             _reset_to_odata(self._get_grid(name))
 
     def reset_grids(self):
-        """Resets the grid dataset container to it's original state.
+        """Resets the grid layer container to it's original state.
         """
         self._container['grids'] = {}
         self.clear_grid_manager()
@@ -1058,11 +1058,11 @@ class PlotBuilder:
             as_boundary: bool = False,
             manager: StrDict = None
     ):
-        """Adds a outline-type dataset to the builder.
+        """Adds a outline-type layer to the builder.
 
-        :param name: The name this dataset is to be stored with
+        :param name: The name this layer is to be stored with
         :type name: str
-        :param data: The location of the data for this dataset
+        :param data: The location of the data for this layer
         :type data: Union[str, DataFrame, GeoDataFrame]
         :param latitude_field: The latitude column of the data
         :type latitude_field: str
@@ -1070,82 +1070,82 @@ class PlotBuilder:
         :type longitude_field: str
         :param as_boundary: Changes the data into one big boundary if true
         :type as_boundary: bool
-        :param manager: Plotly properties for this dataset
+        :param manager: Plotly properties for this layer
         :type manager: StrDict
         """
-        _check_name(name, DataSetType.OUTLINE)
-        data = _read_data(name, DataSetType.OUTLINE, data, allow_builtin=True)
-        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
-        data = _convert_latlong_data(name, DataSetType.OUTLINE, data, latitude_field=latitude_field,
+        _check_name(name, LayerType.OUTLINE)
+        data = _read_data(name, LayerType.OUTLINE, data, allow_builtin=True)
+        layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
+        data = _convert_latlong_data(name, LayerType.OUTLINE, data, latitude_field=latitude_field,
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
         # TODO: there exists errors with the representation of outlines (given lfields)
 
         if as_boundary:
             data = gcg.unify_geodataframe(data)
 
-        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
+        layer['data'], layer['odata'] = data, data.copy(deep=True)
         if self.use_templates:
-            dataset['manager'] = deepcopy(get_template('outline'))
+            layer['manager'] = deepcopy(get_template('outline'))
         else:
-            dataset['manager'] = {}
-        _update_manager(dataset, **(manager or {}))
-        self._get_outlines()[name] = dataset
+            layer['manager'] = {}
+        _update_manager(layer, **(manager or {}))
+        self._get_outlines()[name] = layer
 
     def _get_outline(self, name: str) -> StrDict:
-        """Retrieves a outline dataset from the builder.
+        """Retrieves a outline layer from the builder.
 
         Internal version.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         try:
             return self._get_outlines()[name]
         except KeyError:
-            raise NoDataSetError(name, DataSetType.OUTLINE)
+            raise NoLayerError(name, LayerType.OUTLINE)
 
     def get_outline(self, name: str) -> StrDict:
-        """Retrieves a outline dataset from the builder.
+        """Retrieves a outline layer from the builder.
 
         External version, returns a deepcopy.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         return deepcopy(self._get_outline(name))
 
     def _get_outlines(self) -> Dict[str, StrDict]:
-        """Retrieves the outline datasets from the builder.
+        """Retrieves the outline layers from the builder.
 
         Internal version.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return self._container['outlines']
 
     def get_outlines(self) -> Dict[str, StrDict]:
-        """Retrieves the outline datasets from the builder.
+        """Retrieves the outline layers from the builder.
 
         External version, returns a deepcopy.
 
-        :return: The retrieved datasets
+        :return: The retrieved layers
         :rtype: Dict[str, StrDict]
         """
         return deepcopy(self._get_outlines())
 
     def remove_outline(self, name: str, pop: bool = False) -> StrDict:
-        """Removes an outline dataset from the builder.
+        """Removes an outline layer from the builder.
 
-        :param name: The name of the dataset to remove
+        :param name: The name of the layer to remove
         :type name:
-        :param pop: Whether to return the removed dataset or not
+        :param pop: Whether to return the removed layer or not
         :type pop: bool
-        :return: The removed dataset (pop=True)
+        :return: The removed layer (pop=True)
         :rtype: StrDict
         """
         try:
@@ -1153,21 +1153,21 @@ class PlotBuilder:
             if pop:
                 return outline
         except KeyError:
-            raise NoDataSetError(name, DataSetType.OUTLINE)
+            raise NoLayerError(name, LayerType.OUTLINE)
 
     def update_outline_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a outline or outlines.
 
         The manager consists of Plotly properties.
-        If the given name is none, all outline datasets will be updated.
+        If the given name is none, all outline layers will be updated.
 
-        :param name: The name of the dataset to update
+        :param name: The name of the layer to update
         :type name: str
-        :param updates: A dict containing updates for the dataset(s)
+        :param updates: A dict containing updates for the layer(s)
         :type updates: StrDict
         :param overwrite: Whether to override the current properties with the new ones or not
         :type overwrite: bool
-        :param kwargs: Other updates for the dataset(s)
+        :param kwargs: Other updates for the layer(s)
         :type kwargs: **kwargs
         """
 
@@ -1178,18 +1178,18 @@ class PlotBuilder:
             _update_manager(self._get_outline(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def clear_outline_manager(self, name: str = None):
-        """Clears the manager of a outline dataset.
+        """Clears the manager of a outline layer.
 
         If the given name is none, clears all of the outline managers.
         """
         self.update_outline_manager(name=name, updates={}, overwrite=True)
 
     def reset_outline_data(self, name: str = None):
-        """Resets the data within the outline dataset to the data that was input at the beginning.
+        """Resets the data within the outline layer to the data that was input at the beginning.
 
-        If the given name is None, all outline datasets will be reset.
+        If the given name is None, all outline layers will be reset.
 
-        :param name: The name of the dataset to reset
+        :param name: The name of the layer to reset
         :type name: str
         """
         if name is None:
@@ -1216,16 +1216,16 @@ class PlotBuilder:
             text_field: str = None,
             manager: StrDict = None
     ):
-        """Adds a point-type dataset to the builder.
+        """Adds a point-type layer to the builder.
 
-        Ideally the dataset's 'data' member should contain
+        Ideally the layer's 'data' member should contain
         lat/long columns or point like geometry column. If the geometry column
         is present and contains no point like geometry, the geometry will be converted
         into a bunch of points.
 
-        :param name: The name this dataset is to be stored with
+        :param name: The name this layer is to be stored with
         :type name: str
-        :param data: The location of the data for this dataset
+        :param data: The location of the data for this layer
         :type data: Union[str, DataFrame, GeoDataFrame]
         :param latitude_field: The latitude column of the data
         :type latitude_field: str
@@ -1233,85 +1233,85 @@ class PlotBuilder:
         :type longitude_field: str
         :param text_field: The column containing text for data entries
         :type text_field: str
-        :param manager: Plotly properties for this dataset
+        :param manager: Plotly properties for this layer
         :type manager: StrDict
         """
 
-        _check_name(name, DataSetType.POINT)
-        data = _read_data(name, DataSetType.POINT, data, allow_builtin=False)
-        dataset = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
+        _check_name(name, LayerType.POINT)
+        data = _read_data(name, LayerType.POINT, data, allow_builtin=False)
+        layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
         if text_field:
-            data = _convert_latlong_data(name, DataSetType.POINT, data, latitude_field=latitude_field,
+            data = _convert_latlong_data(name, LayerType.POINT, data, latitude_field=latitude_field,
                                          longitude_field=longitude_field)[[text_field, 'value_field', 'geometry']]
         else:
-            data = _convert_latlong_data(name, DataSetType.POINT, data, latitude_field=latitude_field,
+            data = _convert_latlong_data(name, LayerType.POINT, data, latitude_field=latitude_field,
                                          longitude_field=longitude_field)[['value_field', 'geometry']]
 
-        dataset['data'], dataset['odata'] = data, data.copy(deep=True)
-        dataset['tfield'] = text_field
+        layer['data'], layer['odata'] = data, data.copy(deep=True)
+        layer['tfield'] = text_field
         if self.use_templates:
-            dataset['manager'] = deepcopy(get_template('point'))
+            layer['manager'] = deepcopy(get_template('point'))
         else:
-            dataset['manager'] = {}
+            layer['manager'] = {}
 
-        _update_manager(dataset, **(manager or {}))
-        self._get_points()[name] = dataset
+        _update_manager(layer, **(manager or {}))
+        self._get_points()[name] = layer
 
     def _get_point(self, name: str) -> StrDict:
-        """Retrieves a point dataset from the builder.
+        """Retrieves a point layer from the builder.
 
         Internal version.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         try:
             return self._get_points()[name]
         except KeyError:
-            raise NoDataSetError(name, DataSetType.POINT)
+            raise NoLayerError(name, LayerType.POINT)
 
     def get_point(self, name: str) -> StrDict:
-        """Retrieves a point dataset from the builder.
+        """Retrieves a point layer from the builder.
 
         External version, returns a deepcopy.
 
-        :param name: The name of the dataset
+        :param name: The name of the layer
         :type name: str
-        :return: The retrieved dataset
+        :return: The retrieved layer
         :rtype: StrDict
         """
         return deepcopy(self._get_point(name))
 
     def _get_points(self) -> Dict[str, StrDict]:
-        """Retrieves the collection of point datasets in the builder.
+        """Retrieves the collection of point layers in the builder.
 
         Internal version.
 
-        :return: The point datasets within the builder
+        :return: The point layers within the builder
         :rtype: Dict[str, StrDict]
         """
         return self._container['points']
 
     def get_points(self) -> Dict[str, StrDict]:
-        """Retrieves the collection of point datasets in the builder.
+        """Retrieves the collection of point layers in the builder.
 
         External version, returns a deepcopy.
 
-        :return: The point datasets within the builder
+        :return: The point layers within the builder
         :rtype: Dict[str, StrDict]
         """
         return deepcopy(self._get_points())
 
     def remove_point(self, name: str, pop: bool = False) -> StrDict:
-        """Removes a point dataset from the builder.
+        """Removes a point layer from the builder.
 
-        :param name: The name of the dataset to remove
+        :param name: The name of the layer to remove
         :type name: str
-        :param pop: Whether to return the removed dataset or not
+        :param pop: Whether to return the removed layer or not
         :type pop: bool
-        :return: The removed dataset (pop=True)
+        :return: The removed layer (pop=True)
         :rtype: StrDict
         """
         try:
@@ -1319,21 +1319,21 @@ class PlotBuilder:
             if pop:
                 return point
         except KeyError:
-            raise NoDataSetError(name, DataSetType.POINT)
+            raise NoLayerError(name, LayerType.POINT)
 
     def update_point_manager(self, name: str = None, updates: StrDict = None, overwrite: bool = False, **kwargs):
         """Updates the manager of a point or points.
 
         The manager consists of Plotly properties.
-        If the given name is none, all point datasets will be updated.
+        If the given name is none, all point layers will be updated.
 
-        :param name: The name of the dataset to update
+        :param name: The name of the layer to update
         :type name: str
-        :param updates: A dict containing updates for the dataset(s)
+        :param updates: A dict containing updates for the layer(s)
         :type updates: StrDict
         :param overwrite: Whether to override the current properties with the new ones or not
         :type overwrite: bool
-        :param kwargs: Other updates for the dataset(s)
+        :param kwargs: Other updates for the layer(s)
         :type kwargs: **kwargs
         """
 
@@ -1344,18 +1344,18 @@ class PlotBuilder:
             _update_manager(self._get_point(name), updates=updates, overwrite=overwrite, **kwargs)
 
     def clear_point_manager(self, name: str = None):
-        """Clears the manager of a point dataset.
+        """Clears the manager of a point layer.
 
         If the given name is none, clears all of the point managers.
         """
         self.update_point_manager(name=name, updates={}, overwrite=True)
 
     def reset_point_data(self, name: str = None):
-        """Resets the data within the point dataset to the data that was input at the beginning.
+        """Resets the data within the point layer to the data that was input at the beginning.
 
-        If the given name is None, all point datasets will be reset.
+        If the given name is None, all point layers will be reset.
 
-        :param name: The name of the dataset to reset
+        :param name: The name of the layer to reset
         :type name: str
         """
         if name is None:
@@ -1365,7 +1365,7 @@ class PlotBuilder:
             _reset_to_odata(self._get_point(name))
 
     def reset_points(self):
-        """Resets the point dataset container to its original state.
+        """Resets the point layer container to its original state.
         """
         self._container['points'] = {}
 
@@ -1392,12 +1392,12 @@ class PlotBuilder:
     """
 
     def apply_to_query(self, name: str, fn, *args, allow_empty: bool = True, **kwargs):
-        """Applies a function to the datasets within a query.
+        """Applies a function to the layers within a query.
 
         For advanced users and not to be used carelessly.
-        The functions first argument must be the dataset.
+        The functions first argument must be the layer.
 
-        :param name: The query of the datasets to apply the function to
+        :param name: The query of the layers to apply the function to
         :type name: str
         :param fn: The function to apply
         :type fn: Callable
@@ -1405,15 +1405,15 @@ class PlotBuilder:
         :type allow_empty: bool
         """
 
-        datasets = self._search(name)
+        layers = self._search(name)
         lst = []
 
-        if not allow_empty and not datasets:
+        if not allow_empty and not layers:
             raise ValueError("The query submitted returned an empty result.")
-        if 'data' in datasets:
-            lst.append(fn(datasets, *args, **kwargs))
+        if 'data' in layers:
+            lst.append(fn(layers, *args, **kwargs))
         else:
-            for _, v in datasets.items():
+            for _, v in layers.items():
                 if not allow_empty and not v:
                     raise ValueError("The query submitted returned an empty result.")
                 if 'data' in v:
@@ -1435,27 +1435,27 @@ class PlotBuilder:
         return lst
 
     def remove_empties(self, empty_symbol: Any = 0, add_to_plot: bool = True):
-        """Removes empty entries from the main dataset.
+        """Removes empty entries from the hexbin layer.
 
         The empty entries may then be added to the plot as a grid.
 
-        :param empty_symbol: The symbol that constitutes an empty value in the dataset
+        :param empty_symbol: The symbol that constitutes an empty value in the layer
         :type empty_symbol: Any
         :param add_to_plot: Whether to add the empty cells to the plot or not
         :type add_to_plot: bool
         """
-        dataset = self._get_hexbin()
+        layer = self._get_hexbin()
 
         if add_to_plot:
-            empties = dataset['data'][dataset['data']['value_field'] == empty_symbol]
+            empties = layer['data'][layer['data']['value_field'] == empty_symbol]
             if not empties.empty:
                 empties['value_field'] = 0
                 self.get_grids()['|*EMPTY*|'] = empties
-        dataset['data'] = dataset['data'][dataset['data']['value_field'] != empty_symbol]
+        layer['data'] = layer['data'][layer['data']['value_field'] != empty_symbol]
 
     # this is both a data altering, and plot altering function
     def logify_scale(self, **kwargs):
-        """Makes the scale of the main datasets logarithmic.
+        """Makes the scale of the hexbin layers logarithmic.
 
         This function changes the tick values and tick text of the scale.
         The numerical values on the scale are the exponent of the tick text,
@@ -1466,16 +1466,16 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
 
-        dataset = self._get_hexbin()
+        layer = self._get_hexbin()
 
-        if dataset['VTYPE'] == 'STR':
-            raise TypeError("The scale of a hexbin dataset that is binned "
+        if layer['VTYPE'] == 'STR':
+            raise TypeError("The scale of a hexbin layer that is binned "
                             "based on qualitative data can not be converted into a logarithmic scale.")
-        _update_manager(dataset, butil.logify_scale(dataset['data'], **kwargs))
+        _update_manager(layer, butil.logify_scale(layer['data'], **kwargs))
 
-    def clip_datasets(self, clip: str, to: str, method: str = 'sjoin', reduce_first: bool = True,
+    def clip_layers(self, clip: str, to: str, method: str = 'sjoin', reduce_first: bool = True,
                       operation: str = 'intersects'):
-        """Clips a query of datasets to another dataset.
+        """Clips a query of layers to another layer.
         this function is experimental and may not always work as intended
 
         There are two methods for this clipping:
@@ -1485,9 +1485,9 @@ class PlotBuilder:
         2) gpd  ->  Uses GeoPandas clip function in order to clip geometries
                     to the boundary of the geometries acting as the clip.
 
-        :param clip: The query for the datasets that are to be clipped to another
+        :param clip: The query for the layers that are to be clipped to another
         :type clip: GeoDataFrame
-        :param to: The query for the datasets that are to be used as the boundary
+        :param to: The query for the layers that are to be used as the boundary
         :type to: GeoDataFrame
         :param method: The method to use when clipping, one of 'sjoin', 'gpd'
         :type method: str
@@ -1498,38 +1498,38 @@ class PlotBuilder:
         """
 
         # TODO: In the future combining the geometries of all dataframes may be useful. (geopandas overlay how=union)
-        datas = self.apply_to_query(to, lambda dataset: dataset['data'])
+        datas = self.apply_to_query(to, lambda layer: layer['data'])
         if reduce_first:
             datas = [GeoDataFrame(geometry=[reduce(lambda left, right: left.union(right), datas).unary_union],
                                   crs="EPSG:4326")]
 
-        def gpdhelp(dataset: dict):
-            dataset['data'] = butil.gpd_clip(dataset['data'], datas, validate=True)
+        def gpdhelp(layer: dict):
+            layer['data'] = butil.gpd_clip(layer['data'], datas, validate=True)
 
-        def sjoinhelp(dataset: dict):
-            dataset['data'] = butil.sjoin_clip(dataset['data'], datas, operation=operation, validate=True)
+        def sjoinhelp(layer: dict):
+            layer['data'] = butil.sjoin_clip(layer['data'], datas, operation=operation, validate=True)
 
         if method == 'gpd':
             self.apply_to_query(clip, gpdhelp)
         elif method == 'sjoin':
             self.apply_to_query(clip, sjoinhelp)
         else:
-            raise ValueError("When clipping datasets, the selected method must be one of ['gpd', 'sjoin'].")
+            raise ValueError("When clipping layers, the selected method must be one of ['gpd', 'sjoin'].")
 
     # check methods of clipping
     def simple_clip(self, method: str = 'sjoin'):
         """Quick general clipping.
 
-        This function clips the main dataset and grid datasets to the region and outline datasets.
-        The function also clips the point datasets to the main, region, grid, and outline datasets.
+        This function clips the hexbin layer and grid layers to the region and outline layers.
+        The function also clips the point layers to the hexbin, region, grid, and outline layers.
 
         :param method: The method to use when clipping, one of 'sjoin' or 'gpd'
         :type method: str
         """
 
-        self.clip_datasets('hexbin+grids', 'regions+outlines', method=method, operation='intersects')
-        # self.clip_datasets('main+grids', 'outlines', method=method, operation='intersects')
-        self.clip_datasets('points', 'hexbin+regions+outlines+grids', method=method, operation='within')
+        self.clip_layers('hexbin+grids', 'regions+outlines', method=method, operation='intersects')
+        # self.clip_layers('hexbin+grids', 'outlines', method=method, operation='intersects')
+        self.clip_layers('points', 'hexbin+regions+outlines+grids', method=method, operation='within')
 
     def _remove_underlying_grid(self, df: GeoDataFrame, gdf: GeoDataFrame):
         """Removes the pieces of a GeoDataFrame that lie under another.
@@ -1541,7 +1541,8 @@ class PlotBuilder:
         """
 
         if not df.empty and not gdf.empty:
-            gdf = gpd.overlay(gdf, df[['value_field', 'geometry']],
+            df = df[['value_field', 'geometry']]
+            gdf = gpd.overlay(gdf, df[df['value_field'].notnull()],
                               how='difference')
             gdf = gcg.remove_other_geometries(gdf, 'Polygon')
             return gdf
@@ -1563,29 +1564,29 @@ class PlotBuilder:
         return
 
     def adjust_opacity(self, alpha: float = None):
-        """Conforms the opacity of the color bar of the main dataset to an alpha value.
+        """Conforms the opacity of the color bar of the hexbin layer to an alpha value.
 
         The alpha value can be passed in as a parameter, otherwise it is taken
-        from the marker.opacity property within the dataset's manager.
+        from the marker.opacity property within the layer's manager.
 
         :param alpha: The alpha value to conform the color scale to
         :type alpha: float
         """
 
-        dataset = self._get_hexbin()
-        butil.opacify_colorscale(dataset, alpha=alpha)
+        layer = self._get_hexbin()
+        butil.opacify_colorscale(layer, alpha=alpha)
 
     def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True,
                      ranges_on: bool = True, rot_buffer_lat: float = 0, rot_buffer_lon: float = 0,
                      buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
-        """Focuses on dataset(s) within the plot.
+        """Focuses on layer(s) within the plot.
 
-        Collects the geometries of the queried datasets in order to
+        Collects the geometries of the queried layers in order to
         obtain a boundary to focus on.
 
         In the future using a GeoSeries may be looked into for cleaner code.
 
-        :param on: The query for the dataset(s) to be focused on
+        :param on: The query for the layer(s) to be focused on
         :type on: str
         :param center_on: Whether or not to add a center component to the focus
         :type center_on: bool
@@ -1632,8 +1633,7 @@ class PlotBuilder:
         center = dict(lon=center.x, lat=center.y)
 
         if rotation_on:
-            geos['projection_rotation'] = dict(lat=center['lat']+rot_buffer_lat, lon=center['lon']+rot_buffer_lon)
-
+            geos['projection_rotation'] = dict(lat=center['lat'] + rot_buffer_lat, lon=center['lon'] + rot_buffer_lon)
 
         if center_on:
             geos['center'] = center
@@ -1641,9 +1641,9 @@ class PlotBuilder:
         self._figure.update_geos(**geos)
 
     def auto_grid(self, on: str = 'hexbin', by_bounds: bool = False, hex_resolution: int = None):
-        """Makes a grid over the queried datasets.
+        """Makes a grid over the queried layers.
 
-        :param on: The query for the datasets to have a grid generated over them
+        :param on: The query for the layers to have a grid generated over them
         :type on: str
         :param by_bounds: Whether or not to treat the  geometries as a single boundary
         :type by_bounds: bool
@@ -1654,8 +1654,8 @@ class PlotBuilder:
         fn = gcg.generate_grid_over if by_bounds else gcg.hexify_dataframe
         hex_resolution = hex_resolution if hex_resolution is not None else self.default_hex_resolution
 
-        def helper(dataset):
-            return fn(dataset['data'], hex_resolution=hex_resolution)
+        def helper(layer):
+            return fn(layer['data'], hex_resolution=hex_resolution)
 
         try:
             grid = GeoDataFrame(pd.concat(list(self.apply_to_query(on, helper))), crs='EPSG:4326')[
@@ -1671,7 +1671,7 @@ class PlotBuilder:
             pass
 
     def discretize_scale(self, scale_type: str = 'sequential', **kwargs):
-        """Converts the color scale of the dataset(s) to a discrete scale.
+        """Converts the color scale of the layer(s) to a discrete scale.
 
         :param scale_type: One of 'sequential', 'discrete' for the type of color scale being used
         :type scale_type: str
@@ -1679,14 +1679,14 @@ class PlotBuilder:
         :type kwargs: **kwargs
         """
 
-        dataset = self._get_hexbin()
+        layer = self._get_hexbin()
 
-        if dataset['VTYPE'] == 'STR':
-            raise ValueError(f"You can not discretize a qualitative dataset.")
+        if layer['VTYPE'] == 'STR':
+            raise ValueError(f"You can not discretize a qualitative layer.")
         else:
-            low = dataset['manager'].get('zmin', min(dataset['data']['value_field']))
-            high = dataset['manager'].get('zmax', max(dataset['data']['value_field']))
-            dataset['manager']['colorscale'] = discretize_cscale(dataset['manager'].get('colorscale'), scale_type,
+            low = layer['manager'].get('zmin', min(layer['data']['value_field']))
+            high = layer['manager'].get('zmax', max(layer['data']['value_field']))
+            layer['manager']['colorscale'] = discretize_cscale(layer['manager'].get('colorscale'), scale_type,
                                                                  low, high, **kwargs)
 
     """
@@ -1696,7 +1696,7 @@ class PlotBuilder:
     """
 
     def search(self, query: str) -> StrDict:
-        """Query the builder for specific dataset(s).
+        """Query the builder for specific layer(s).
 
         Each query argument should be formatted like:
         <regions|grids|outlines|points|main|hexbin|all>
@@ -1707,7 +1707,7 @@ class PlotBuilder:
 
         External version.
 
-        :param query: The identifiers for the datasets being searched for
+        :param query: The identifiers for the layers being searched for
         :type query: str
         :return: The result of the query
         :rtype: StrDict
@@ -1715,11 +1715,11 @@ class PlotBuilder:
         return deepcopy(self._search(query))
 
     def _search(self, query: str, big_query: bool = True, multi_query: bool = True) -> StrDict:
-        """Query the builder for specific dataset(s).
+        """Query the builder for specific layer(s).
 
         Internal version, see search().
 
-        :param query: The identifiers for the datasets being searched for
+        :param query: The identifiers for the layers being searched for
         :type query: str
         :return: The result of the query
         :rtype: StrDict
@@ -1735,13 +1735,13 @@ class PlotBuilder:
             return {k: self._single_search(k, big_query=big_query) for k in sargs}
 
     def _single_search(self, query: str, big_query: bool = True) -> StrDict:
-        """Query the builder for specific datasets()
+        """Query the builder for specific layers()
 
         Retrieves a query of a single argument only, see _search().
 
-        :param query: The identifier for the dataset(s) being searched for
+        :param query: The identifier for the layer(s) being searched for
         :type query: str
-        :param big_query: Whether to allow the query argument to represent a collection of datasets or not
+        :param big_query: Whether to allow the query argument to represent a collection of layers or not
         :type big_query: bool
         :return: The result of the query
         :rtype: StrDict
@@ -1754,7 +1754,7 @@ class PlotBuilder:
             if big_query:
                 return self._container if query == 'all' else self._container[query]
             else:
-                raise BuilderQueryInvalidError("The given query should not refer to a collection of datasets.")
+                raise BuilderQueryInvalidError("The given query should not refer to a collection of layers.")
 
         try:
             typer, name = _split_query(query)
@@ -1766,7 +1766,7 @@ class PlotBuilder:
         try:
             return type_ret[typer](name)
         except KeyError:
-            raise BuilderQueryInvalidError("The given dataset type does not exist.\nMust be one of ['region', "
+            raise BuilderQueryInvalidError("The given layer type does not exist.\nMust be one of ['region', "
                                            f"'grid', 'outline', 'point'].\n Received: {typer}")
 
     get_query_data = lambda self, name: self.apply_to_query(name, lambda ds: ds['data'])
@@ -1776,14 +1776,14 @@ class PlotBuilder:
     """
 
     def plot_regions(self):
-        """Plots the region datasets within the builder.
+        """Plots the region layers within the builder.
 
         All of the regions are treated as separate plot traces.
         """
         # logger.debug('adding regions to plot.')
         mapbox = self.plot_output_service == 'mapbox'
         if not self._get_regions():
-            raise NoDataSetsError(DataSetType.REGION)
+            raise NoLayersError(LayerType.REGION)
         for regname, regds in self._get_regions().items():
             self._figure.add_trace(_prepare_choropleth_trace(
                 gcg.conform_geogeometry(regds['data']),
@@ -1792,15 +1792,15 @@ class PlotBuilder:
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_grids(self, remove_underlying: bool = False):
-        """Plots the grid datasets within the builder.
+        """Plots the grid layers within the builder.
 
-        Merges all of the datasets together, and plots it as a single plot trace.
+        Merges all of the layers together, and plots it as a single plot trace.
         """
         if not self._get_grids():
-            raise NoDataSetsError(DataSetType.GRID)
+            raise NoLayersError(LayerType.GRID)
 
         merged = gcg.conform_geogeometry(
-            pd.concat(self.apply_to_query('grids', lambda dataset: dataset['data'])).drop_duplicates())
+            pd.concat(self.apply_to_query('grids', lambda layer: layer['data'])).drop_duplicates())
 
         if remove_underlying:
             merged = self._remove_underlying_grid(self._get_hexbin()['data'], merged)
@@ -1811,24 +1811,23 @@ class PlotBuilder:
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_hexbin(self):
-        """Plots the main dataset within the builder.
+        """Plots the hexbin layer within the builder.
 
-        If qualitative, the dataset is split into uniquely labelled plot traces.
+        If qualitative, the layer is split into uniquely labelled plot traces.
         """
 
-        dataset = self._get_hexbin()
-        df = gcg.conform_geogeometry(dataset['data'])
+        layer = self._get_hexbin()
+        df = gcg.conform_geogeometry(layer['data'])
 
-        # qualitative dataset
-        if dataset['VTYPE'] == 'STR':
+        # qualitative layer
+        if layer['VTYPE'] == 'STR':
             df['text'] = 'BEST OPTION: ' + df['value_field']
-            colorscale = dataset['manager'].pop('colorscale')
+            colorscale = layer['manager'].pop('colorscale')
             try:
                 colorscale = get_scale(colorscale)
             except AttributeError:
                 pass
 
-            # we need to get the colorscale information somehow.
             sep = {}
             mapbox = self.plot_output_service == 'mapbox'
 
@@ -1838,15 +1837,14 @@ class PlotBuilder:
             for i, name in enumerate(df['temp_value'].unique()):
                 sep[name] = df[df['temp_value'] == name]
 
-            # TODO: we need to fix this (qualitative data set plotting)
-            manager = deepcopy(dataset['manager'])
+            manager = deepcopy(layer['manager'])
             if isinstance(colorscale, dict):
                 for k, v in sep.items():
                     try:
                         manager['colorscale'] = solid_scale(colorscale[k])
                     except KeyError:
-                        raise ColorscaleError(
-                            "If the colorscale is a map, you must provide hues for each option.")
+                        raise ColorScaleError(f"If the colorscale is a map, you must provide hues for each option.\n"
+                                              f"There was no color specified for the unique option of '{k}'.")
                     self._figure.add_trace(_prepare_choropleth_trace(
                         v,
                         mapbox=mapbox).update(name=k, showscale=False, showlegend=True, text=v['text']).update(manager))
@@ -1854,38 +1852,46 @@ class PlotBuilder:
             elif isinstance(colorscale, list) or isinstance(colorscale, tuple):
 
                 for i, (k, v) in enumerate(sep.items()):
-
                     try:
-                        if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple):
+                        if isinstance(colorscale[i], list) or isinstance(colorscale[i], tuple) \
+                                or isinstance(colorscale[i], set):
                             manager['colorscale'] = solid_scale(colorscale[i][1])
                         else:
                             manager['colorscale'] = solid_scale(colorscale[i])
                     except IndexError:
-                        raise IndexError("There were not enough hues for all of the unique options in the dataset.")
+                        raise ColorScaleError(f"There were not enough hues for all of the "
+                                              f"unique options in the layer.\n"
+                                              f"There was no color specified for the unique option of '{k}'.\n"
+                                              f"# of colors supplied: {len(colorscale)}\n"
+                                              f"# of colors needed: {len(sep.items())}")
                     self._figure.add_trace(
                         _prepare_choropleth_trace(v, mapbox=mapbox).update(name=k, showscale=False, showlegend=True,
                                                                            text=v['text']).update(manager))
             else:
-                raise ColorscaleError("If the colorscale is a map, you must provide hues for each option.")
-        # quantitative dataset
+                raise ColorScaleError("The color scale given is not valid.\n "
+                                      "The color scale must be one of the following options:\n"
+                                      "1) a valid Plotly color scale (string);\n"
+                                      "2) a dictionary-style collection (including hues for all unique options); or\n"
+                                      "3) a list-style collection (including hues for all unique options).")
+        # quantitative layer
         else:
             df['text'] = 'VALUE: ' + df['value_field'].astype(str)
             self._figure.add_trace(_prepare_choropleth_trace(df, mapbox=self.plot_output_service == 'mapbox').update(
-                text=df['text']).update(dataset['manager']))
+                text=df['text']).update(layer['manager']))
 
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_outlines(self, raise_errors: bool = False):
-        """Plots the outline datasets within the builder.
+        """Plots the outline layers within the builder.
 
         All of the outlines are treated as separate plot traces.
-        The datasets must first be converted into point-like geometries.
+        The layers must first be converted into point-like geometries.
 
         :param raise_errors: Whether or not to throw errors upon reaching empty dataframes
         :type raise_errors: bool
         """
         if not self._get_outlines():
-            raise NoDataSetsError(DataSetType.OUTLINE)
+            raise NoLayersError(LayerType.OUTLINE)
 
         mapbox = self.plot_output_service == 'mapbox'
         for outname, outds in self._get_outlines().items():
@@ -1900,13 +1906,13 @@ class PlotBuilder:
         self._plot_status = PlotStatus.DATA_PRESENT
 
     def plot_points(self):
-        """Plots the point datasets within the builder.
+        """Plots the point layers within the builder.
 
         All of the point are treated as separate plot traces.
         """
 
         if not self._get_points():
-            raise NoDataSetsError(DataSetType.POINT)
+            raise NoLayersError(LayerType.POINT)
 
         mapbox = self.plot_output_service == 'mapbox'
         for poiname, poids in self._get_points().items():
@@ -1945,58 +1951,59 @@ class PlotBuilder:
         Invokes the functions in the following order:
         1) plot regions
         2) plot grids
-        3) plot dataset
+        3) plot layer
         4) plot outlines
         5) plot points
 
         In the future we should alter these functions to
         allow trace order implementation.
 
-        :param plot_regions: Whether or not to plot region datasets
+        :param plot_regions: Whether or not to plot region layers
         :type plot_regions: bool
-        :param plot_grids: Whether or not to plot grid datasets
+        :param plot_grids: Whether or not to plot grid layers
         :type plot_grids: bool
-        :param plot_hexbin: Whether or not to plot the main dataset
+        :param plot_hexbin: Whether or not to plot the hexbin layer
         :type plot_hexbin: bool
-        :param plot_outlines: Whether or not to plot outline datasets
+        :param plot_outlines: Whether or not to plot outline layers
         :type plot_outlines: bool
-        :param plot_points: Whether or not to plot point datasets
+        :param plot_points: Whether or not to plot point layers
         :type plot_points: bool
-        :param raise_errors: Whether or not to raise errors related to empty dataset collections
+        :param raise_errors: Whether or not to raise errors related to empty layer collections
         :type raise_errors: bool
         """
         if plot_regions:
             try:
                 self.plot_regions()
-            except NoDataSetsError as e:
+            except NoLayersError as e:
                 if raise_errors:
                     raise e from None
         if plot_grids:
             try:
                 self.plot_grids(remove_underlying=True)
-            except NoDataSetsError as e:
+            except NoLayersError as e:
                 if raise_errors:
                     raise e from None
         if plot_hexbin:
             try:
                 self.plot_hexbin()
-            except NoDataSetError as e:
+            except NoLayerError as e:
                 if raise_errors:
                     raise e from None
         if plot_outlines:
             try:
                 self.plot_outlines()
-            except NoDataSetsError as e:
+            except NoLayersError as e:
                 if raise_errors:
                     raise e from None
         if plot_points:
             try:
                 self.plot_points()
-            except NoDataSetsError as e:
+            except NoLayersError as e:
                 if raise_errors:
                     raise e from None
 
-    def output(self, filepath: str = None, clear_figure: bool = False, **kwargs):
+    def output(self, filepath: str = None, clear_figure: bool = False,
+               crop_output: bool = False, percent_retain=None, keep_original: bool = False, **kwargs):
         """Outputs the figure to a filepath.
 
         The figure is output via Plotly's write_image() function.
@@ -2006,6 +2013,12 @@ class PlotBuilder:
         :type filepath: str
         :param clear_figure: Whether or not to clear the figure after this operation
         :type clear_figure: bool
+        :param crop_output: Whether or not to crop the output figure (requires that extension be pdf, PdfCropMargins must be installed)
+        :type crop_output: bool
+        :param percent_retain: Percentage of margins to retain from crop (requires that extension be pdf, PdfCropMargins must be installed)
+        :type percent_retain: float, str, list
+        :param keep_original: Whether or not to keep the original figure (requires that extension be pdf, PdfCropMargins must be installed)
+        :type keep_original: bool
         :param kwargs: Keyword arguments for the write_image function
         :type kwargs: **kwargs
         """
@@ -2019,6 +2032,28 @@ class PlotBuilder:
         self._last_output_location = filepath
         if clear_figure:
             self.clear_figure()
+
+        if crop_output:
+            from pdfCropMargins import crop
+            newfilepath, ext = os.path.splitext(filepath)
+            newfilepath = f"{newfilepath}-cropped{ext}"
+
+            crop_args = []
+            if percent_retain is not None:
+                if isinstance(percent_retain, list):
+                    crop_args.append("-p4")
+                    crop_args.extend(percent_retain)
+                else:
+                    crop_args.extend(["-p", percent_retain])
+            else:
+                crop_args.extend(["-p4", "1.5", "4.5", "2.5", "1.5"])
+            crop_args.extend(["-u", "-s", filepath, "-o", newfilepath])
+            print(f"Call to PdfCropMargins: {crop_args}")
+            crop(crop_args)
+
+            if not keep_original:
+                os.remove(filepath)
+                os.rename(newfilepath, filepath)
 
     def display(self, clear_figure: bool = False, **kwargs):
         """Displays the figure.
@@ -2074,11 +2109,11 @@ class PlotBuilder:
         self.default_hex_resolution = 3
 
     def reset_data(self):
-        """Resets the datasets of the builder to their original state.
+        """Resets the layers of the builder to their original state.
         """
         try:
             self.reset_hexbin_data()
-        except NoDataSetError:
+        except NoLayerError:
             pass
         self.reset_region_data()
         self.reset_grid_data()
