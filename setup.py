@@ -18,7 +18,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9.4",
-        "Operating System :: OS Independent",   # with exceptions
+        "Operating System :: OS Independent",  # with exceptions
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Visualization",
     ],
@@ -34,16 +34,21 @@ setup(
         "geojson>=2.5.0",
         "pandas>=1.3.0",
         "plotly>=4.14.3",
-        "kaleido>=0.2.1"
+        "kaleido>=0.2.1",
+        "pyyaml"
     ],
     extras_require={
         "dev": [
             "pip"
             "Sphinx"
+        ],
+        "geohexsimple": [
+            "pyyaml"
         ]
     },
-    entry_points="""
-    [console_scripts]
-    geohexsimple = scripts.geohexsimple.simple:main
-    """,
+    entry_points={
+        "console_scripts": ["geohexsimple=geohexsimple.simple:main [pyyaml]"]
+    }
 )
+
+print(find_packages(exclude=tuple("tests")))

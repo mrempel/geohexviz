@@ -26,7 +26,7 @@ running the JSON script will allow you to input a JSON file via command line.
 You may also use the functions that allow the executing of a JSON file from a python module.
 
 ```python
-from scripts.geohexsimple.simple import run_json
+from geohexsimple.simple import run_json
 
 run_json("<filepath here>")
 ```
