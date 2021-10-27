@@ -4,6 +4,13 @@ python:
   - 3.7
   - 3.8
 install:
-  - pip install -r requirements.txt
+  - pip install tox-travis
 script:
-  - python -m unittest discover
+  - tox
+jobs:
+  fast_finish: true
+  include:
+    - python: 3.8
+
+    - python: 3.8
+      env: TOXENV=docs
