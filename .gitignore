@@ -93,3 +93,4 @@ target/
 
 
 ~*.pptx
+/docs/sphinx/build/
