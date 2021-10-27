@@ -1,0 +1,172 @@
+\begin{sphinxtheindex}
+\let\bigletter\sphinxstyleindexlettergroup
+\let\spxpagem \sphinxstyleindexpagemain
+\let\spxentry \sphinxstyleindexentry
+\let\spxextra \sphinxstyleindexextra
+
+  \bigletter A
+  \item \spxentry{add\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{1}
+  \item \spxentry{add\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{1}
+  \item \spxentry{add\_point()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{2}
+  \item \spxentry{add\_region()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{2}
+  \item \spxentry{adjust\_colorbar\_size()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{2}
+  \item \spxentry{adjust\_focus()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{2}
+  \item \spxentry{adjust\_opacity()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{3}
+  \item \spxentry{apply\_to\_query()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{3}
+  \item \spxentry{auto\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{3}
+
+  \indexspace
+  \bigletter B
+  \item \spxentry{BigQueryError}, \hyperpage{13}
+  \item \spxentry{BinValueTypeError}, \hyperpage{13}
+  \item \spxentry{builder\_from\_dict()}\spxextra{geohexviz.builder.PlotBuilder static method}, 
+		\hyperpage{3}
+  \item \spxentry{BuilderAlterationError}, \hyperpage{13}
+  \item \spxentry{BuilderPlotBuildError}, \hyperpage{13}
+  \item \spxentry{BuilderQueryInvalidError}, \hyperpage{13}
+
+  \indexspace
+  \bigletter C
+  \item \spxentry{clear\_figure()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{3}
+  \item \spxentry{clear\_grid\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{3}
+  \item \spxentry{clear\_hexbin\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{3}
+  \item \spxentry{clear\_outline\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{3}
+  \item \spxentry{clear\_point\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{4}
+  \item \spxentry{clear\_region\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{4}
+  \item \spxentry{clip\_layers()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{4}
+  \item \spxentry{ColorScaleError}, \hyperpage{13}
+
+  \indexspace
+  \bigletter D
+  \item \spxentry{DataEmptyError}, \hyperpage{13}
+  \item \spxentry{DataFileReadError}, \hyperpage{13}
+  \item \spxentry{DataReadError}, \hyperpage{13}
+  \item \spxentry{discretize\_scale()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{4}
+  \item \spxentry{display()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{4}
+
+  \indexspace
+  \bigletter F
+  \item \spxentry{finalize()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{4}
+
+  \indexspace
+  \bigletter G
+  \item \spxentry{geohexviz.builder}
+    \subitem \spxentry{module}, \hyperpage{1}
+  \item \spxentry{geohexviz.errors}
+    \subitem \spxentry{module}, \hyperpage{13}
+  \item \spxentry{geohexviz.templates}
+    \subitem \spxentry{module}, \hyperpage{15}
+  \item \spxentry{GeometryParseLatLongError}, \hyperpage{13}
+  \item \spxentry{get\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{5}
+  \item \spxentry{get\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{5}
+  \item \spxentry{get\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{5}
+  \item \spxentry{get\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{5}
+  \item \spxentry{get\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{5}
+  \item \spxentry{get\_plot\_output\_service()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{5}
+  \item \spxentry{get\_plot\_status()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{5}
+  \item \spxentry{get\_point()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+  \item \spxentry{get\_points()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+  \item \spxentry{get\_query\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+  \item \spxentry{get\_region()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+  \item \spxentry{get\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+  \item \spxentry{get\_template()}\spxextra{in module geohexviz.templates}, \hyperpage{15}
+
+  \indexspace
+  \bigletter L
+  \item \spxentry{LatLongParseTypeError}, \hyperpage{13}
+  \item \spxentry{LayerNamingError}, \hyperpage{13}
+  \item \spxentry{LayerType}\spxextra{class in geohexviz.errors}, \hyperpage{13}
+  \item \spxentry{logify\_scale()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+
+  \indexspace
+  \bigletter M
+  \item \spxentry{module}
+    \subitem \spxentry{geohexviz.builder}, \hyperpage{1}
+    \subitem \spxentry{geohexviz.errors}, \hyperpage{13}
+    \subitem \spxentry{geohexviz.templates}, \hyperpage{15}
+    \subitem \spxentry{scripts.geohexsimple.simple}, \hyperpage{17}
+
+  \indexspace
+  \bigletter N
+  \item \spxentry{NoFilepathError}, \hyperpage{13}
+  \item \spxentry{NoHexagonalTilingError}, \hyperpage{13}
+  \item \spxentry{NoLayerError}, \hyperpage{13}
+  \item \spxentry{NoLayersError}, \hyperpage{13}
+
+  \indexspace
+  \bigletter O
+  \item \spxentry{output()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{6}
+
+  \indexspace
+  \bigletter P
+  \item \spxentry{plot\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{plot\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{plot\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{plot\_output\_service}\spxextra{geohexviz.builder.PlotBuilder property}, 
+		\hyperpage{7}
+  \item \spxentry{plot\_points()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{plot\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{PlotBuilder}\spxextra{class in geohexviz.builder}, \hyperpage{1}
+  \item \spxentry{PlotStatus}\spxextra{class in geohexviz.builder}, \hyperpage{11}
+
+  \indexspace
+  \bigletter R
+  \item \spxentry{remove\_empties()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{remove\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{7}
+  \item \spxentry{remove\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{remove\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{remove\_point()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{remove\_region()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{reset()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{reset\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{reset\_grid\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{8}
+  \item \spxentry{reset\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{8}
+  \item \spxentry{reset\_hexbin\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{8}
+  \item \spxentry{reset\_outline\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{9}
+  \item \spxentry{reset\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{9}
+  \item \spxentry{reset\_point\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{9}
+  \item \spxentry{reset\_points()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{9}
+  \item \spxentry{reset\_region\_data()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{9}
+  \item \spxentry{reset\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{9}
+  \item \spxentry{run\_json()}\spxextra{in module scripts.geohexsimple.simple}, \hyperpage{17}
+
+  \indexspace
+  \bigletter S
+  \item \spxentry{scripts.geohexsimple.simple}
+    \subitem \spxentry{module}, \hyperpage{17}
+  \item \spxentry{search()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{9}
+  \item \spxentry{set\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{9}
+  \item \spxentry{set\_mapbox()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{10}
+  \item \spxentry{set\_plot\_output\_service()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{10}
+  \item \spxentry{simple\_clip()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{10}
+
+  \indexspace
+  \bigletter U
+  \item \spxentry{update\_figure()}\spxextra{geohexviz.builder.PlotBuilder method}, \hyperpage{10}
+  \item \spxentry{update\_grid\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{10}
+  \item \spxentry{update\_hexbin\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{10}
+  \item \spxentry{update\_outline\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{10}
+  \item \spxentry{update\_point\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{11}
+  \item \spxentry{update\_region\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}, 
+		\hyperpage{11}
+
+\end{sphinxtheindex}
