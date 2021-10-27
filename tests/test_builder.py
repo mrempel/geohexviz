@@ -1009,13 +1009,11 @@ class BuilderTestCase(unittest.TestCase):
         :rtype:
         """
         # need to test by bounds version
-        self.builder.add_point(
-            'PPA1',
-            df := DataFrame(dict(
+        df = DataFrame(dict(
                 latitude=[10, 20, 30],
                 longitude=[10, 20, 30]
             ))
-        )
+        self.builder.add_point('PPA1', df)
         self.builder.auto_grid(on='point:PPA1')
         getauto = self.builder.get_grid('|*AUTO-point:PPA1*|')
         self.assertEqual(len(df), len(getauto['data']))
