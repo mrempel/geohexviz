@@ -11,6 +11,6 @@ deploy:
   - provider: pages
     skip-cleanup: true
     github-token: $GITHUB_TOKEN
-    local_dir: docs/sphinx/build/html
+    local_dir: build
     on:
       branch: github_fix
