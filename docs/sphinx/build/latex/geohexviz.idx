@@ -1,0 +1,97 @@
+\indexentry{module@\spxentry{module}!geohexviz.builder@\spxentry{geohexviz.builder}|hyperpage}{1}
+\indexentry{geohexviz.builder@\spxentry{geohexviz.builder}!module@\spxentry{module}|hyperpage}{1}
+\indexentry{PlotBuilder (class in geohexviz.builder)@\spxentry{PlotBuilder}\spxextra{class in geohexviz.builder}|hyperpage}{1}
+\indexentry{add\_grid() (geohexviz.builder.PlotBuilder method)@\spxentry{add\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{1}
+\indexentry{add\_outline() (geohexviz.builder.PlotBuilder method)@\spxentry{add\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{1}
+\indexentry{add\_point() (geohexviz.builder.PlotBuilder method)@\spxentry{add\_point()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{2}
+\indexentry{add\_region() (geohexviz.builder.PlotBuilder method)@\spxentry{add\_region()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{2}
+\indexentry{adjust\_colorbar\_size() (geohexviz.builder.PlotBuilder method)@\spxentry{adjust\_colorbar\_size()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{2}
+\indexentry{adjust\_focus() (geohexviz.builder.PlotBuilder method)@\spxentry{adjust\_focus()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{2}
+\indexentry{adjust\_opacity() (geohexviz.builder.PlotBuilder method)@\spxentry{adjust\_opacity()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{apply\_to\_query() (geohexviz.builder.PlotBuilder method)@\spxentry{apply\_to\_query()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{auto\_grid() (geohexviz.builder.PlotBuilder method)@\spxentry{auto\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{builder\_from\_dict() (geohexviz.builder.PlotBuilder static method)@\spxentry{builder\_from\_dict()}\spxextra{geohexviz.builder.PlotBuilder static method}|hyperpage}{3}
+\indexentry{clear\_figure() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_figure()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{clear\_grid\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_grid\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{clear\_hexbin\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_hexbin\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{clear\_outline\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_outline\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{3}
+\indexentry{clear\_point\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_point\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{clear\_region\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{clear\_region\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{clip\_layers() (geohexviz.builder.PlotBuilder method)@\spxentry{clip\_layers()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{discretize\_scale() (geohexviz.builder.PlotBuilder method)@\spxentry{discretize\_scale()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{display() (geohexviz.builder.PlotBuilder method)@\spxentry{display()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{finalize() (geohexviz.builder.PlotBuilder method)@\spxentry{finalize()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{4}
+\indexentry{get\_grid() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_grids() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_hexbin() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_outline() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_outlines() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_plot\_output\_service() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_plot\_output\_service()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_plot\_status() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_plot\_status()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{5}
+\indexentry{get\_point() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_point()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{get\_points() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_points()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{get\_query\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_query\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{get\_region() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_region()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{get\_regions() (geohexviz.builder.PlotBuilder method)@\spxentry{get\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{logify\_scale() (geohexviz.builder.PlotBuilder method)@\spxentry{logify\_scale()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{output() (geohexviz.builder.PlotBuilder method)@\spxentry{output()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{6}
+\indexentry{plot\_grids() (geohexviz.builder.PlotBuilder method)@\spxentry{plot\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{plot\_hexbin() (geohexviz.builder.PlotBuilder method)@\spxentry{plot\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{plot\_outlines() (geohexviz.builder.PlotBuilder method)@\spxentry{plot\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{plot\_output\_service (geohexviz.builder.PlotBuilder property)@\spxentry{plot\_output\_service}\spxextra{geohexviz.builder.PlotBuilder property}|hyperpage}{7}
+\indexentry{plot\_points() (geohexviz.builder.PlotBuilder method)@\spxentry{plot\_points()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{plot\_regions() (geohexviz.builder.PlotBuilder method)@\spxentry{plot\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{remove\_empties() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_empties()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{remove\_grid() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_grid()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{7}
+\indexentry{remove\_hexbin() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{remove\_outline() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_outline()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{remove\_point() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_point()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{remove\_region() (geohexviz.builder.PlotBuilder method)@\spxentry{remove\_region()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset() (geohexviz.builder.PlotBuilder method)@\spxentry{reset()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset\_grid\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_grid\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset\_grids() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_grids()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset\_hexbin\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_hexbin\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{8}
+\indexentry{reset\_outline\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_outline\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{reset\_outlines() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_outlines()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{reset\_point\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_point\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{reset\_points() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_points()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{reset\_region\_data() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_region\_data()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{reset\_regions() (geohexviz.builder.PlotBuilder method)@\spxentry{reset\_regions()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{search() (geohexviz.builder.PlotBuilder method)@\spxentry{search()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{set\_hexbin() (geohexviz.builder.PlotBuilder method)@\spxentry{set\_hexbin()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{9}
+\indexentry{set\_mapbox() (geohexviz.builder.PlotBuilder method)@\spxentry{set\_mapbox()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{set\_plot\_output\_service() (geohexviz.builder.PlotBuilder method)@\spxentry{set\_plot\_output\_service()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{simple\_clip() (geohexviz.builder.PlotBuilder method)@\spxentry{simple\_clip()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{update\_figure() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_figure()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{update\_grid\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_grid\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{update\_hexbin\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_hexbin\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{update\_outline\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_outline\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{10}
+\indexentry{update\_point\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_point\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{11}
+\indexentry{update\_region\_manager() (geohexviz.builder.PlotBuilder method)@\spxentry{update\_region\_manager()}\spxextra{geohexviz.builder.PlotBuilder method}|hyperpage}{11}
+\indexentry{PlotStatus (class in geohexviz.builder)@\spxentry{PlotStatus}\spxextra{class in geohexviz.builder}|hyperpage}{11}
+\indexentry{module@\spxentry{module}!geohexviz.errors@\spxentry{geohexviz.errors}|hyperpage}{13}
+\indexentry{geohexviz.errors@\spxentry{geohexviz.errors}!module@\spxentry{module}|hyperpage}{13}
+\indexentry{BigQueryError@\spxentry{BigQueryError}|hyperpage}{13}
+\indexentry{BinValueTypeError@\spxentry{BinValueTypeError}|hyperpage}{13}
+\indexentry{BuilderAlterationError@\spxentry{BuilderAlterationError}|hyperpage}{13}
+\indexentry{BuilderPlotBuildError@\spxentry{BuilderPlotBuildError}|hyperpage}{13}
+\indexentry{BuilderQueryInvalidError@\spxentry{BuilderQueryInvalidError}|hyperpage}{13}
+\indexentry{ColorScaleError@\spxentry{ColorScaleError}|hyperpage}{13}
+\indexentry{DataEmptyError@\spxentry{DataEmptyError}|hyperpage}{13}
+\indexentry{DataFileReadError@\spxentry{DataFileReadError}|hyperpage}{13}
+\indexentry{DataReadError@\spxentry{DataReadError}|hyperpage}{13}
+\indexentry{GeometryParseLatLongError@\spxentry{GeometryParseLatLongError}|hyperpage}{13}
+\indexentry{LatLongParseTypeError@\spxentry{LatLongParseTypeError}|hyperpage}{13}
+\indexentry{LayerNamingError@\spxentry{LayerNamingError}|hyperpage}{13}
+\indexentry{LayerType (class in geohexviz.errors)@\spxentry{LayerType}\spxextra{class in geohexviz.errors}|hyperpage}{13}
+\indexentry{NoFilepathError@\spxentry{NoFilepathError}|hyperpage}{13}
+\indexentry{NoHexagonalTilingError@\spxentry{NoHexagonalTilingError}|hyperpage}{13}
+\indexentry{NoLayerError@\spxentry{NoLayerError}|hyperpage}{13}
+\indexentry{NoLayersError@\spxentry{NoLayersError}|hyperpage}{13}
+\indexentry{module@\spxentry{module}!geohexviz.templates@\spxentry{geohexviz.templates}|hyperpage}{15}
+\indexentry{geohexviz.templates@\spxentry{geohexviz.templates}!module@\spxentry{module}|hyperpage}{15}
+\indexentry{get\_template() (in module geohexviz.templates)@\spxentry{get\_template()}\spxextra{in module geohexviz.templates}|hyperpage}{15}
+\indexentry{module@\spxentry{module}!scripts.geohexsimple.simple@\spxentry{scripts.geohexsimple.simple}|hyperpage}{17}
+\indexentry{scripts.geohexsimple.simple@\spxentry{scripts.geohexsimple.simple}!module@\spxentry{module}|hyperpage}{17}
+\indexentry{run\_json() (in module scripts.geohexsimple.simple)@\spxentry{run\_json()}\spxextra{in module scripts.geohexsimple.simple}|hyperpage}{17}

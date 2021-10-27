@@ -1,0 +1,1066 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>GeoHexViz - Plot Builder module &#8212; GeoHexViz 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="GeoHexViz - Errors module" href="errors.html" />
+    <link rel="prev" title="Welcome to GeoHexViz’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <section id="module-geohexviz.builder">
+<span id="geohexviz-plot-builder-module"></span><h1>GeoHexViz - Plot Builder module<a class="headerlink" href="#module-geohexviz.builder" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">geohexviz.builder.</span></span><span class="sig-name descname"><span class="pre">PlotBuilder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">hexbin_layer</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">grids</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outlines</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">points</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_templates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder" title="Permalink to this definition">¶</a></dt>
+<dd><p>This class contains a Builder implementation for visualizing Plotly Hex data.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.add_grid">
+<span class="sig-name descname"><span class="pre">add_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span> </span><span class="pre">geopandas.geodataframe.GeoDataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hex_resolution</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">longitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">convex_simplify</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.add_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.add_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a grid-type layer to the builder.</p>
+<p>Grid-type layers should consist of Polygon-like or Point-like geometries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name this layer is to be stored with</p></li>
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>, </em><em>GeoDataFrame</em><em>]</em>) – The location of the data for this layer</p></li>
+<li><p><strong>hex_resolution</strong> (<em>int</em>) – The hexagonal resolution to use for this layer (None-&gt;builder default)</p></li>
+<li><p><strong>latitude_field</strong> (<em>str</em>) – The latitude column within the data</p></li>
+<li><p><strong>longitude_field</strong> (<em>str</em>) – The longitude column within the data</p></li>
+<li><p><strong>convex_simplify</strong> (<em>bool</em>) – Determines if the area the grid is to be placed over should be simplified or not</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.add_outline">
+<span class="sig-name descname"><span class="pre">add_outline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span> </span><span class="pre">geopandas.geodataframe.GeoDataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">longitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">as_boundary</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.add_outline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.add_outline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a outline-type layer to the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name this layer is to be stored with</p></li>
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>, </em><em>GeoDataFrame</em><em>]</em>) – The location of the data for this layer</p></li>
+<li><p><strong>latitude_field</strong> (<em>str</em>) – The latitude column of the data</p></li>
+<li><p><strong>longitude_field</strong> (<em>str</em>) – The longitude column of the data</p></li>
+<li><p><strong>as_boundary</strong> (<em>bool</em>) – Changes the data into one big boundary if true</p></li>
+<li><p><strong>manager</strong> (<em>StrDict</em>) – Plotly properties for this layer</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.add_point">
+<span class="sig-name descname"><span class="pre">add_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span> </span><span class="pre">geopandas.geodataframe.GeoDataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">longitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">text_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.add_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.add_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a point-type layer to the builder.</p>
+<p>Ideally the layer’s ‘data’ member should contain
+lat/long columns or point like geometry column. If the geometry column
+is present and contains no point like geometry, the geometry will be converted
+into a bunch of points.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name this layer is to be stored with</p></li>
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>, </em><em>GeoDataFrame</em><em>]</em>) – The location of the data for this layer</p></li>
+<li><p><strong>latitude_field</strong> (<em>str</em>) – The latitude column of the data</p></li>
+<li><p><strong>longitude_field</strong> (<em>str</em>) – The longitude column of the data</p></li>
+<li><p><strong>text_field</strong> (<em>str</em>) – The column containing text for data entries</p></li>
+<li><p><strong>manager</strong> (<em>StrDict</em>) – Plotly properties for this layer</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.add_region">
+<span class="sig-name descname"><span class="pre">add_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span> </span><span class="pre">geopandas.geodataframe.GeoDataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.add_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.add_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a region-type layer to the builder.</p>
+<p>Region-type layers should consist of Polygon-like geometries.
+Best results are read from a GeoDataFrame, or DataFrame.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name this layer is to be stored with</p></li>
+<li><p><strong>data</strong> (<em>Union</em><em>[</em><em>str</em><em>, </em><em>DataFrame</em><em>, </em><em>GeoDataFrame</em><em>]</em>) – The location of the data for this layer</p></li>
+<li><p><strong>manager</strong> (<em>StrDict</em>) – The plotly properties for this layer.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.adjust_colorbar_size">
+<span class="sig-name descname"><span class="pre">adjust_colorbar_size</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">width</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">700</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">height</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">450</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.adjust_colorbar_size"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.adjust_colorbar_size" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adjusts the color scale position of the color bar to match the plot area size.</p>
+<p>Does not work.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.adjust_focus">
+<span class="sig-name descname"><span class="pre">adjust_focus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">on</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'hexbin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">center_on</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rotation_on</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ranges_on</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rot_buffer_lat</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rot_buffer_lon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_lat</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tuple</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">(0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">buffer_lon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">tuple</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">(0,</span> <span class="pre">0)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">validate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.adjust_focus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.adjust_focus" title="Permalink to this definition">¶</a></dt>
+<dd><p>Focuses on layer(s) within the plot.</p>
+<p>Collects the geometries of the queried layers in order to
+obtain a boundary to focus on.</p>
+<p>In the future using a GeoSeries may be looked into for cleaner code.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>on</strong> (<em>str</em>) – The query for the layer(s) to be focused on</p></li>
+<li><p><strong>center_on</strong> (<em>bool</em>) – Whether or not to add a center component to the focus</p></li>
+<li><p><strong>rotation_on</strong> (<em>bool</em>) – Whether or not to add a projection rotation to the focus</p></li>
+<li><p><strong>ranges_on</strong> (<em>bool</em>) – Whether or not to add a lat axis, lon axis ranges to the focus</p></li>
+<li><p><strong>rot_buffer_lat</strong> (<em>float</em>) – A number to add or subtract from the automatically calculated latitude (rotation)</p></li>
+<li><p><strong>rot_buffer_lon</strong> (<em>float</em>) – A number to add or subtract from the automatically calculated longitude (rotation)</p></li>
+<li><p><strong>buffer_lat</strong> (<em>Tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – A low and high bound to add and subtract from the lataxis range</p></li>
+<li><p><strong>buffer_lon</strong> (<em>Tuple</em><em>[</em><em>float</em><em>, </em><em>float</em><em>]</em>) – A low and high bound to add and subtract from the lonaxis range</p></li>
+<li><p><strong>validate</strong> (<em>bool</em>) – Whether or not to validate the ranges</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.adjust_opacity">
+<span class="sig-name descname"><span class="pre">adjust_opacity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.adjust_opacity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.adjust_opacity" title="Permalink to this definition">¶</a></dt>
+<dd><p>Conforms the opacity of the color bar of the hexbin layer to an alpha value.</p>
+<p>The alpha value can be passed in as a parameter, otherwise it is taken
+from the marker.opacity property within the layer’s manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>alpha</strong> (<em>float</em>) – The alpha value to conform the color scale to</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.apply_to_query">
+<span class="sig-name descname"><span class="pre">apply_to_query</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fn</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">allow_empty</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.apply_to_query"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.apply_to_query" title="Permalink to this definition">¶</a></dt>
+<dd><p>Applies a function to the layers within a query.</p>
+<p>For advanced users and not to be used carelessly.
+The functions first argument must be the layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The query of the layers to apply the function to</p></li>
+<li><p><strong>fn</strong> (<em>Callable</em>) – The function to apply</p></li>
+<li><p><strong>allow_empty</strong> (<em>bool</em>) – Whether to allow query arguments that retrieved empty results or not</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.auto_grid">
+<span class="sig-name descname"><span class="pre">auto_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">on</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'hexbin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">by_bounds</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hex_resolution</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.auto_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.auto_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes a grid over the queried layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>on</strong> (<em>str</em>) – The query for the layers to have a grid generated over them</p></li>
+<li><p><strong>by_bounds</strong> (<em>bool</em>) – Whether or not to treat the  geometries as a single boundary</p></li>
+<li><p><strong>hex_resolution</strong> (<em>int</em>) – The hexagonal resolution to use for the auto grid</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.builder_from_dict">
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">builder_from_dict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">builder_dict</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.builder_from_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.builder_from_dict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes a builder from a dictionary.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>builder_dict</strong> (<em>StrDict</em>) – The dictionary to build from</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id1"><span class="problematic" id="id2">**</span></a>kwargs) – Keyword arguments for the builder</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_figure">
+<span class="sig-name descname"><span class="pre">clear_figure</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_figure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the figure of its current data.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_grid_manager">
+<span class="sig-name descname"><span class="pre">clear_grid_manager</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_grid_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_grid_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the manager of a region layer.</p>
+<p>If the given name is none, clears all of the region managers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_hexbin_manager">
+<span class="sig-name descname"><span class="pre">clear_hexbin_manager</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_hexbin_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_hexbin_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the manager of the hexbin layer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_outline_manager">
+<span class="sig-name descname"><span class="pre">clear_outline_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_outline_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_outline_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the manager of a outline layer.</p>
+<p>If the given name is none, clears all of the outline managers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_point_manager">
+<span class="sig-name descname"><span class="pre">clear_point_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_point_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_point_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the manager of a point layer.</p>
+<p>If the given name is none, clears all of the point managers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clear_region_manager">
+<span class="sig-name descname"><span class="pre">clear_region_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clear_region_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clear_region_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clears the manager of a region layer.</p>
+<p>If the given name is none, clears all of the region managers.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.clip_layers">
+<span class="sig-name descname"><span class="pre">clip_layers</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clip</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">to</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'sjoin'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduce_first</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">operation</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'intersects'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.clip_layers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.clip_layers" title="Permalink to this definition">¶</a></dt>
+<dd><p>Clips a query of layers to another layer.
+this function is experimental and may not always work as intended</p>
+<p>There are two methods for this clipping:
+1) sjoin -&gt; Uses GeoPandas spatial join in order to clip geometries</p>
+<blockquote>
+<div><p>that (intersect, are within, contain, etc.) the geometries
+acting as the clip.</p>
+</div></blockquote>
+<ol class="arabic simple" start="2">
+<li><dl class="simple">
+<dt>gpd  -&gt;  Uses GeoPandas clip function in order to clip geometries</dt><dd><p>to the boundary of the geometries acting as the clip.</p>
+</dd>
+</dl>
+</li>
+</ol>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clip</strong> (<em>GeoDataFrame</em>) – The query for the layers that are to be clipped to another</p></li>
+<li><p><strong>to</strong> (<em>GeoDataFrame</em>) – The query for the layers that are to be used as the boundary</p></li>
+<li><p><strong>method</strong> (<em>str</em>) – The method to use when clipping, one of ‘sjoin’, ‘gpd’</p></li>
+<li><p><strong>reduce_first</strong> (<em>bool</em>) – Determines whether the geometries acting as the clip should be reduced first or not</p></li>
+<li><p><strong>operation</strong> (<em>str</em>) – The operation to apply when using sjoin (spatial join operation)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.discretize_scale">
+<span class="sig-name descname"><span class="pre">discretize_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">scale_type</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'sequential'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.discretize_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.discretize_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts the color scale of the layer(s) to a discrete scale.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>scale_type</strong> (<em>str</em>) – One of ‘sequential’, ‘discrete’ for the type of color scale being used</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id3"><span class="problematic" id="id4">**</span></a>kwargs) – Keyword arguments to be passed into the discretize functions</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.display">
+<span class="sig-name descname"><span class="pre">display</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">clear_figure</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.display"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.display" title="Permalink to this definition">¶</a></dt>
+<dd><p>Displays the figure.</p>
+<p>The figure is displayed via Plotly’s show() function.
+Extensions may be needed.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>clear_figure</strong> (<em>bool</em>) – Whether or not to clear the figure after this operation</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id5"><span class="problematic" id="id6">**</span></a>kwargs) – Keyword arguments for the show function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.finalize">
+<span class="sig-name descname"><span class="pre">finalize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">plot_regions</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_grids</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_hexbin</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_outlines</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_points</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">raise_errors</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.finalize"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.finalize" title="Permalink to this definition">¶</a></dt>
+<dd><p>Builds the final plot by adding traces in order.</p>
+<p>Invokes the functions in the following order:
+1) plot regions
+2) plot grids
+3) plot layer
+4) plot outlines
+5) plot points</p>
+<p>In the future we should alter these functions to
+allow trace order implementation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>plot_regions</strong> (<em>bool</em>) – Whether or not to plot region layers</p></li>
+<li><p><strong>plot_grids</strong> (<em>bool</em>) – Whether or not to plot grid layers</p></li>
+<li><p><strong>plot_hexbin</strong> (<em>bool</em>) – Whether or not to plot the hexbin layer</p></li>
+<li><p><strong>plot_outlines</strong> (<em>bool</em>) – Whether or not to plot outline layers</p></li>
+<li><p><strong>plot_points</strong> (<em>bool</em>) – Whether or not to plot point layers</p></li>
+<li><p><strong>raise_errors</strong> (<em>bool</em>) – Whether or not to raise errors related to empty layer collections</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_grid">
+<span class="sig-name descname"><span class="pre">get_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a grid layer from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The retrieved layer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_grids">
+<span class="sig-name descname"><span class="pre">get_grids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_grids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_grids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the grid layers from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The retrieved layers</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, StrDict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_hexbin">
+<span class="sig-name descname"><span class="pre">get_hexbin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_hexbin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_hexbin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the main layer.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The main layer</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_outline">
+<span class="sig-name descname"><span class="pre">get_outline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_outline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_outline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a outline layer from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The retrieved layer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_outlines">
+<span class="sig-name descname"><span class="pre">get_outlines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_outlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the outline layers from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The retrieved layers</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, StrDict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_plot_output_service">
+<span class="sig-name descname"><span class="pre">get_plot_output_service</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">str</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_plot_output_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_plot_output_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the current plot output service for the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The current plot output service</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_plot_status">
+<span class="sig-name descname"><span class="pre">get_plot_status</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <a class="reference internal" href="#geohexviz.builder.PlotStatus" title="geohexviz.builder.PlotStatus"><span class="pre">geohexviz.builder.PlotStatus</span></a><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_plot_status"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_plot_status" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the status of the internal plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The status of the plot</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><a class="reference internal" href="#geohexviz.builder.PlotStatus" title="geohexviz.builder.PlotStatus">PlotStatus</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_point">
+<span class="sig-name descname"><span class="pre">get_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a point layer from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The retrieved layer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_points">
+<span class="sig-name descname"><span class="pre">get_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the collection of point layers in the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The point layers within the builder</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, StrDict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_query_data">
+<span class="sig-name descname"><span class="pre">get_query_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_query_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>PLOTTING FUNCTIONS</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_region">
+<span class="sig-name descname"><span class="pre">get_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves a region layer from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The retrieved layer</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.get_regions">
+<span class="sig-name descname"><span class="pre">get_regions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.get_regions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.get_regions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the region layers from the builder.</p>
+<p>External version, returns a deepcopy.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The retrieved layers</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Dict[str, StrDict]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.logify_scale">
+<span class="sig-name descname"><span class="pre">logify_scale</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.logify_scale"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.logify_scale" title="Permalink to this definition">¶</a></dt>
+<dd><p>Makes the scale of the hexbin layers logarithmic.</p>
+<p>This function changes the tick values and tick text of the scale.
+The numerical values on the scale are the exponent of the tick text,
+i.e the text of 1 on the scale actually represents the value of zero,
+and the text of 1000 on the scale actually represents the value of 3.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>kwargs</strong> (<a href="#id7"><span class="problematic" id="id8">**</span></a>kwargs) – Keyword arguments to be passed into logify functions</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.output">
+<span class="sig-name descname"><span class="pre">output</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filepath</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">clear_figure</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">crop_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">percent_retain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keep_original</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.output"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.output" title="Permalink to this definition">¶</a></dt>
+<dd><p>Outputs the figure to a filepath.</p>
+<p>The figure is output via Plotly’s write_image() function.
+Plotly’s Kaleido is required for this feature.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filepath</strong> (<em>str</em>) – The filepath to output the figure at (including filename and extension)</p></li>
+<li><p><strong>clear_figure</strong> (<em>bool</em>) – Whether or not to clear the figure after this operation</p></li>
+<li><p><strong>crop_output</strong> (<em>bool</em>) – Whether or not to crop the output figure (requires that extension be pdf, PdfCropMargins must be installed)</p></li>
+<li><p><strong>percent_retain</strong> (<em>float</em><em>, </em><em>str</em><em>, </em><em>list</em>) – Percentage of margins to retain from crop (requires that extension be pdf, PdfCropMargins must be installed)</p></li>
+<li><p><strong>keep_original</strong> (<em>bool</em>) – Whether or not to keep the original figure (requires that extension be pdf, PdfCropMargins must be installed)</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id9"><span class="problematic" id="id10">**</span></a>kwargs) – Keyword arguments for the write_image function</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_grids">
+<span class="sig-name descname"><span class="pre">plot_grids</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">remove_underlying</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.plot_grids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_grids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the grid layers within the builder.</p>
+<p>Merges all of the layers together, and plots it as a single plot trace.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_hexbin">
+<span class="sig-name descname"><span class="pre">plot_hexbin</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.plot_hexbin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_hexbin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the hexbin layer within the builder.</p>
+<p>If qualitative, the layer is split into uniquely labelled plot traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_outlines">
+<span class="sig-name descname"><span class="pre">plot_outlines</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">raise_errors</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.plot_outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_outlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the outline layers within the builder.</p>
+<p>All of the outlines are treated as separate plot traces.
+The layers must first be converted into point-like geometries.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>raise_errors</strong> (<em>bool</em>) – Whether or not to throw errors upon reaching empty dataframes</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_output_service">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">plot_output_service</span></span><em class="property"><span class="pre">:</span> <span class="pre">str</span></em><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_output_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Retrieves the current plot output service for the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>The current plot output service</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_points">
+<span class="sig-name descname"><span class="pre">plot_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.plot_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the point layers within the builder.</p>
+<p>All of the point are treated as separate plot traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.plot_regions">
+<span class="sig-name descname"><span class="pre">plot_regions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.plot_regions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.plot_regions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Plots the region layers within the builder.</p>
+<p>All of the regions are treated as separate plot traces.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_empties">
+<span class="sig-name descname"><span class="pre">remove_empties</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">empty_symbol</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Any</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">add_to_plot</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_empties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_empties" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes empty entries from the hexbin layer.</p>
+<p>The empty entries may then be added to the plot as a grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>empty_symbol</strong> (<em>Any</em>) – The symbol that constitutes an empty value in the layer</p></li>
+<li><p><strong>add_to_plot</strong> (<em>bool</em>) – Whether to add the empty cells to the plot or not</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_grid">
+<span class="sig-name descname"><span class="pre">remove_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pop</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_grid" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a grid layer from the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The name of the layer to remove</p></li>
+<li><p><strong>pop</strong> (<em>bool</em>) – Whether to return the removed layer or not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The removed layer (pop=True)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_hexbin">
+<span class="sig-name descname"><span class="pre">remove_hexbin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pop</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_hexbin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_hexbin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes the main layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pop</strong> (<em>bool</em>) – Whether or not to return the removed layer</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The removed layer (pop=True)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_outline">
+<span class="sig-name descname"><span class="pre">remove_outline</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pop</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_outline"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_outline" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes an outline layer from the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – The name of the layer to remove</p></li>
+<li><p><strong>pop</strong> (<em>bool</em>) – Whether to return the removed layer or not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The removed layer (pop=True)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_point">
+<span class="sig-name descname"><span class="pre">remove_point</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pop</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_point"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_point" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a point layer from the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the layer to remove</p></li>
+<li><p><strong>pop</strong> (<em>bool</em>) – Whether to return the removed layer or not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The removed layer (pop=True)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.remove_region">
+<span class="sig-name descname"><span class="pre">remove_region</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pop</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.remove_region"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.remove_region" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a region layer from the builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the layer to remove</p></li>
+<li><p><strong>pop</strong> (<em>bool</em>) – Whether to return the removed layer or not</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The removed layer (pop=True)</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the builder to it’s initial state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_data">
+<span class="sig-name descname"><span class="pre">reset_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the layers of the builder to their original state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_grid_data">
+<span class="sig-name descname"><span class="pre">reset_grid_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_grid_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_grid_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the data within the grid layer to the data that was input at the beginning.</p>
+<p>If the given name is None, all grid layers will be reset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer to reset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_grids">
+<span class="sig-name descname"><span class="pre">reset_grids</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_grids"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_grids" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the grid layer container to it’s original state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_hexbin_data">
+<span class="sig-name descname"><span class="pre">reset_hexbin_data</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_hexbin_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_hexbin_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the data within the hexbin layer to the data that was input at the beginning.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_outline_data">
+<span class="sig-name descname"><span class="pre">reset_outline_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_outline_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_outline_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the data within the outline layer to the data that was input at the beginning.</p>
+<p>If the given name is None, all outline layers will be reset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer to reset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_outlines">
+<span class="sig-name descname"><span class="pre">reset_outlines</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_outlines"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_outlines" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the outlines within the builder to empty.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_point_data">
+<span class="sig-name descname"><span class="pre">reset_point_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_point_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_point_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the data within the point layer to the data that was input at the beginning.</p>
+<p>If the given name is None, all point layers will be reset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer to reset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_points">
+<span class="sig-name descname"><span class="pre">reset_points</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_points"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_points" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the point layer container to its original state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_region_data">
+<span class="sig-name descname"><span class="pre">reset_region_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_region_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_region_data" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the data within the region layer to the data that was input at the beginning.</p>
+<p>If the given name is None, all region layers will be reset.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>name</strong> (<em>str</em>) – The name of the layer to reset</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.reset_regions">
+<span class="sig-name descname"><span class="pre">reset_regions</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.reset_regions"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.reset_regions" title="Permalink to this definition">¶</a></dt>
+<dd><p>Resets the regions within the builder to empty.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.search">
+<span class="sig-name descname"><span class="pre">search</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">query</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.search"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.search" title="Permalink to this definition">¶</a></dt>
+<dd><p>Query the builder for specific layer(s).</p>
+<p>Each query argument should be formatted like:
+&lt;regions|grids|outlines|points|main|hexbin|all&gt;
+OR
+&lt;region|grid|outline|point&gt;:&lt;name&gt;</p>
+<p>And each query argument can be separated by the ‘+’ character.</p>
+<p>External version.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>query</strong> (<em>str</em>) – The identifiers for the layers being searched for</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The result of the query</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>StrDict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.set_hexbin">
+<span class="sig-name descname"><span class="pre">set_hexbin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">,</span> </span><span class="pre">geopandas.geodataframe.GeoDataFrame</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">latitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">longitude_field</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hex_resolution</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hexbin_info</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">manager</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.set_hexbin"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.set_hexbin" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the hexbin layer to plot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<em>DFType</em>) – The data for this set</p></li>
+<li><p><strong>latitude_field</strong> (<em>str</em>) – The latitude column of the data</p></li>
+<li><p><strong>longitude_field</strong> (<em>str</em>) – The longitude column of the data</p></li>
+<li><p><strong>hex_resolution</strong> (<em>int</em>) – The hex resolution to use (this can also be passed via hexbin_info)</p></li>
+<li><p><strong>hexbin_info</strong> (<em>StrDict</em>) – A container for properties pertaining to hexagonal binning</p></li>
+<li><p><strong>manager</strong> (<em>StrDict</em>) – A container for the plotly properties for this layer</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.set_mapbox">
+<span class="sig-name descname"><span class="pre">set_mapbox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accesstoken</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.set_mapbox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.set_mapbox" title="Permalink to this definition">¶</a></dt>
+<dd><p>Prepares the builder for a mapbox output.</p>
+<p>Sets figure.layout.mapbox_accesstoken, and plot_settings output service.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>accesstoken</strong> (<em>str</em>) – A mapbox access token for the plot</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.set_plot_output_service">
+<span class="sig-name descname"><span class="pre">set_plot_output_service</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">service</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.set_plot_output_service"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.set_plot_output_service" title="Permalink to this definition">¶</a></dt>
+<dd><p>Sets the plot output service for this builder.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>service</strong> (<em>str</em>) – The output service (one of ‘plotly’, ‘mapbox’)</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.simple_clip">
+<span class="sig-name descname"><span class="pre">simple_clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'sjoin'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.simple_clip"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.simple_clip" title="Permalink to this definition">¶</a></dt>
+<dd><p>Quick general clipping.</p>
+<p>This function clips the hexbin layer and grid layers to the region and outline layers.
+The function also clips the point layers to the hexbin, region, grid, and outline layers.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>method</strong> (<em>str</em>) – The method to use when clipping, one of ‘sjoin’ or ‘gpd’</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_figure">
+<span class="sig-name descname"><span class="pre">update_figure</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_figure"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_figure" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the figure properties on the spot.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict of properties to update the figure with</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether to overwrite existing figure properties or not</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id11"><span class="problematic" id="id12">**</span></a>kwargs) – Any other updates for the figure</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_grid_manager">
+<span class="sig-name descname"><span class="pre">update_grid_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_grid_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_grid_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the general grid manager.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict of updates for the manager</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether or not to override existing manager properties</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id13"><span class="problematic" id="id14">**</span></a>kwargs) – Any additional updates for the manager</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_hexbin_manager">
+<span class="sig-name descname"><span class="pre">update_hexbin_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_hexbin_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_hexbin_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the manager the hexbin layer.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict containing updates for the layer(s)</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether to override the current properties with the new ones or not</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id15"><span class="problematic" id="id16">**</span></a>kwargs) – Other updates for the layer(s)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_outline_manager">
+<span class="sig-name descname"><span class="pre">update_outline_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_outline_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_outline_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the manager of a outline or outlines.</p>
+<p>The manager consists of Plotly properties.
+If the given name is none, all outline layers will be updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the layer to update</p></li>
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict containing updates for the layer(s)</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether to override the current properties with the new ones or not</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id17"><span class="problematic" id="id18">**</span></a>kwargs) – Other updates for the layer(s)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_point_manager">
+<span class="sig-name descname"><span class="pre">update_point_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_point_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_point_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the manager of a point or points.</p>
+<p>The manager consists of Plotly properties.
+If the given name is none, all point layers will be updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the layer to update</p></li>
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict containing updates for the layer(s)</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether to override the current properties with the new ones or not</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id19"><span class="problematic" id="id20">**</span></a>kwargs) – Other updates for the layer(s)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotBuilder.update_region_manager">
+<span class="sig-name descname"><span class="pre">update_region_manager</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">updates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Any</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overwrite</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotBuilder.update_region_manager"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotBuilder.update_region_manager" title="Permalink to this definition">¶</a></dt>
+<dd><p>Updates the manager of a region or regions.</p>
+<p>The manager consists of Plotly properties.
+If the given name is none, all region layers will be updated.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<em>str</em>) – The name of the layer to update</p></li>
+<li><p><strong>updates</strong> (<em>StrDict</em>) – A dict containing updates for the layer(s)</p></li>
+<li><p><strong>overwrite</strong> (<em>bool</em>) – Whether to override the current properties with the new ones or not</p></li>
+<li><p><strong>kwargs</strong> (<a href="#id21"><span class="problematic" id="id22">**</span></a>kwargs) – Other updates for the layer(s)</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="geohexviz.builder.PlotStatus">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">geohexviz.builder.</span></span><span class="sig-name descname"><span class="pre">PlotStatus</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/geohexviz/builder.html#PlotStatus"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#geohexviz.builder.PlotStatus" title="Permalink to this definition">¶</a></dt>
+<dd><p>An enumeration of different plot status.</p>
+</dd></dl>
+
+</section>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">GeoHexViz</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">     Plot Builder Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="errors.html">     Errors Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="templates.html">     Templates Module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="simple.html">     GeoHexSimple Package</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to GeoHexViz’s documentation!</a></li>
+      <li>Next: <a href="errors.html" title="next chapter">GeoHexViz - Errors module</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Tony Abou Zeidan.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.0.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/builder.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
