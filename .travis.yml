@@ -12,6 +12,6 @@ deploy:
     skip-cleanup: true
     github-token: $GITHUB_TOKEN
     keep_history: true
-    local_dir: ./geohexsimple
+    local_dir: ./docs
     on:
       branch: github_fix
