@@ -7,11 +7,11 @@ install:
   - pip install -r requirements.txt
 script:
   - python -m unittest discover
-deploy:
-  - provider: pages
-    skip-cleanup: true
-    github-token: $GITHUB_TOKEN
-    keep_history: true
-    local_dir: ./docs/sphinx/build/html
-    on:
-      branch: github_fix
+#deploy:
+#  - provider: pages
+#    skip-cleanup: true
+#    github-token: $GITHUB_TOKEN
+#    keep_history: true
+#    local_dir: ./docs/sphinx/build/html
+#    on:
+#      branch: github_fix
