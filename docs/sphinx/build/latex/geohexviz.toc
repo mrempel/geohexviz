@@ -1,0 +1,19 @@
+\babel@toc {english}{}\relax 
+\contentsline {chapter}{\numberline {1}GeoHexViz \sphinxhyphen {} Plot Builder module}{1}{chapter.1}%
+\contentsline {chapter}{\numberline {2}GeoHexViz \sphinxhyphen {} Errors module}{13}{chapter.2}%
+\contentsline {chapter}{\numberline {3}GeoHexViz \sphinxhyphen {} Templates module}{15}{chapter.3}%
+\contentsline {chapter}{\numberline {4}GeoHexSimple \sphinxhyphen {} Simple module}{17}{chapter.4}%
+\contentsline {chapter}{\numberline {5}Further Information}{19}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Command Line / JSON Usage}{19}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Python Module Usage (PlotBuilder)}{19}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Behind the Scenes}{20}{subsection.5.2.1}%
+\contentsline {section}{\numberline {5.3}Installation}{21}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Further Documentation}{21}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Acknowledgements}{21}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Limitations}{21}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Contributing}{22}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Contact}{22}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Copyright and License}{22}{section.5.9}%
+\contentsline {chapter}{\numberline {6}Indices and tables}{23}{chapter.6}%
+\contentsline {chapter}{Python Module Index}{25}{section*.92}%
+\contentsline {chapter}{Index}{27}{section*.93}%
