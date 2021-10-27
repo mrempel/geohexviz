@@ -12,6 +12,6 @@ deploy:
     skip-cleanup: true
     github-token: $GITHUB_TOKEN
     keep_history: true
-    local_dir: ./docs
+    local_dir: ./docs/sphinx/build/html
     on:
       branch: github_fix
