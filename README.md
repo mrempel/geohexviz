@@ -26,7 +26,7 @@ running the JSON script will allow you to input a JSON file via command line.
 You may also use the functions that allow the executing of a JSON file from a python module.
 
 ```python
-from geohexsimple.simple import run_json
+from geohexsimple import run_json
 
 run_json("<filepath here>")
 ```
@@ -107,13 +107,25 @@ When the data is eventually plotted, a GeoJSON format of the data is passed
 alongside plotly properties are passed to the Plotly graphing library.
 
 ## Installation
-As of right now the GeoHexViz package can be cloned on GitHub, and install
-by using the `setup.py` file.
+As a prerequisite, the user must install the ``GeoPandas`` library before
+installing ``GeoHexViz``.
+This can be done easily in an Anaconda environment by doing running the
+following command:
 
-In the near future the package will be available via pip:\
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install GeoHexViz.
 ```bash
-pip install geohexviz
+conda install -c conda-forge geopandas
+```
+
+More information can be seen in the GeoPandas official documentation.
+
+
+As of right now the GeoHexViz package can be cloned on GitHub, and
+install by using the ``setup.py`` file.
+This can be done by navigating to the folder containing the ``setup.py`` file,
+and running the following command:
+
+```bash
+python setup.py install
 ```
 
 ## Further Documentation
@@ -156,7 +168,7 @@ For major changes, please open an issue first to discuss what you would like to 
 ## Contact
 For any questions, feedback, bug reports, feature requests, etc please first
 present your thoughts via GitHub issues. For further assistance please
-contact tonyabouzeidan@cmail.carleton.ca
+contact tony.azp25@gmail.com.
 
 ## Copyright and License
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented by

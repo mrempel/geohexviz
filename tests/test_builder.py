@@ -544,13 +544,11 @@ class BuilderTestCase(unittest.TestCase):
         Add a layer to the builder and focus onto it.
         Ensure that the geospatial properties have been set properly.
         """
-        self.builder.add_point(
-            'PPA1',
-            df := DataFrame(dict(
-                latitude=[10, 10, 10, 10, 20, 20],
-                longitude=[20, 20, 10, 10, 10, 10]
-            ))
-        )
+        df = DataFrame(dict(
+            latitude=[10, 10, 10, 10, 20, 20],
+            longitude=[20, 20, 10, 10, 10, 10]
+        ))
+        self.builder.add_point('PPA1', df)
         self.builder.adjust_focus(on='point:PPA1')
         rlat, rlon = [min(df['latitude']), max(df['latitude'])], [min(df['latitude']), max(df['latitude'])]
         getgeo = self.builder._figure.layout.geo
@@ -1011,13 +1009,11 @@ class BuilderTestCase(unittest.TestCase):
         :rtype:
         """
         # need to test by bounds version
-        self.builder.add_point(
-            'PPA1',
-            df := DataFrame(dict(
+        df = DataFrame(dict(
                 latitude=[10, 20, 30],
                 longitude=[10, 20, 30]
             ))
-        )
+        self.builder.add_point('PPA1', df)
         self.builder.auto_grid(on='point:PPA1')
         getauto = self.builder.get_grid('|*AUTO-point:PPA1*|')
         self.assertEqual(len(df), len(getauto['data']))
