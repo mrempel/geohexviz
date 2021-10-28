@@ -35,7 +35,7 @@ from a python module.
 
 .. code:: python
 
-    from scripts.geohexsimple.simple import run_json
+    from geohexsimple import run_json
 
     run_json("<filepath here>")
 
@@ -147,15 +147,26 @@ library.
 Installation
 ------------
 
-As of right now the GeoHexViz package can be cloned on GitHub, and
-install by using the ``setup.py`` file.
-
-In the near future the package will be available via pip:
-Use the package manager `pip <https://pip.pypa.io/en/stable/>`__ to install GeoHexViz.
+As a prerequisite, the user must install the ``GeoPandas`` library before
+installing ``GeoHexViz``.
+This can be done easily in an Anaconda environment by doing running the
+following command:
 
 .. code:: bash
 
-    pip install geohexviz
+    conda install -c conda-forge geopandas
+
+More information can be seen in the GeoPandas official documentation.
+
+
+As of right now the GeoHexViz package can be cloned on GitHub, and
+install by using the ``setup.py`` file.
+This can be done by navigating to the folder containing the ``setup.py`` file,
+and running the following command:
+
+.. code:: bash
+
+    python setup.py install
 
 Further Documentation
 ---------------------
