@@ -168,7 +168,7 @@ For major changes, please open an issue first to discuss what you would like to 
 ## Contact
 For any questions, feedback, bug reports, feature requests, etc please first
 present your thoughts via GitHub issues. For further assistance please
-contact tonyabouzeidan@cmail.carleton.ca
+contact tony.azp25@gmail.com.
 
 ## Copyright and License
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented by
