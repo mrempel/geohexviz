@@ -219,7 +219,7 @@ Contact
 
 For any questions, feedback, bug reports, feature requests, etc please
 first present your thoughts via GitHub issues. For further assistance
-please contact tonyabouzeidan@cmail.carleton.ca
+please contact tony.azp25@gmail.com.
 
 Copyright and License
 ---------------------
