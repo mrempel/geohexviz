@@ -55,13 +55,13 @@ The resulting output is a publication-quality visualization, that can be display
 GeoHexViz can generate visualizations for both quantitative, and qualitative data sets.
 
 
-![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1943)\label{fig:examplequant-ww2-subA}](bombings-1943.pdf){#ww2A width=30%}
+![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1943)\label{fig:examplequant-ww2-subA}](bombings-1943.pdf){#ww2A}
 
 
-![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1944)\label{fig:examplequant-ww2-subB}](bombings-1944.pdf){#ww2B width=same}
+![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1944)\label{fig:examplequant-ww2-subB}](bombings-1944.pdf){#ww2B}
 
 
-![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1945)\label{fig:examplequant-ww2-subC}](bombings-1945.pdf){#ww2C width=same}
+![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1945)\label{fig:examplequant-ww2-subC}](bombings-1945.pdf){#ww2C}
 
 
 ![Most frequent fire category by location (United States of America: 2017)\label{fig:examplequal-fires}](fire_locations.pdf)
