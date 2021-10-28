@@ -52,10 +52,18 @@ Second, the user can generate a visualization via importing and invoking functio
 The hexagonal tiling is generated with the use of the Uber H3 library [@uber-H3], which provides an interface to convert conventional lat/long coordinates into a geospatial index. These hex-tiles are then stored within GeoPandas objects and are binned by common hex tile [@jordahl2021a]. The data is then converted into GeoJSON format and is visualized with the aid of the Plotly graphing library [@plotly-py].
 
 The resulting output is a publication-quality visualization, that can be displayed, or output to a file.
-GeoHexViz can generate visualizations for both quantitative, and qualitative data sets.s
+GeoHexViz can generate visualizations for both quantitative, and qualitative data sets.
+
+
 ![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1943)\label{fig:examplequant-ww2-subA}](bombings-1943.pdf){#ww2A width=30%}
+
+
 ![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1944)\label{fig:examplequant-ww2-subB}](bombings-1944.pdf){#ww2B width=same}
+
+
 ![Bombings in World War 2\textemdash European Theatre; Total mass of bombs dropped in tons (1945)\label{fig:examplequant-ww2-subC}](bombings-1945.pdf){#ww2C width=same}
+
+
 ![Most frequent fire category by location (United States of America: 2017)\label{fig:examplequal-fires}](fire_locations.pdf)
 
 ## Saving the output
