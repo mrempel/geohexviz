@@ -36,6 +36,7 @@ setup(
         "plotly>=4.14.3",
         "kaleido>=0.2.1",
         "pyyaml"
+        "rtree"
     ],
     extras_require={
         "dev": [
