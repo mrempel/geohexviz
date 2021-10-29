@@ -18,6 +18,7 @@ setup(
     classifiers=[
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9.4",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)", # ensure license
         "Operating System :: OS Independent",  # with exceptions
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Visualization",

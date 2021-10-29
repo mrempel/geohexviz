@@ -1,3 +1,6 @@
+.. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
+    :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
+
 GeoHexViz
 =========
 
