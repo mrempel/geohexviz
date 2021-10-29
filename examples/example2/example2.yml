@@ -1,0 +1,47 @@
+---
+hexbin_layer:
+  data: path to data.csv
+  hex_resolution: 3
+  hexbin_info:
+    binning_field: killed_injured
+    binning_fn: sum
+  manager:
+    colorbar:
+      x: 0.8365
+regions:
+  sample_Region_USA:
+    data: UNITED STATES OF AMERICA
+points:
+  sample_Point_EPICENTERS:
+    data: path to data-epicenters.csv
+    text_field: city
+    manager:
+      textposition:
+      - top center
+      - top center
+      - middle right
+      - top center
+      - top left
+      - bottom right
+      - top center
+      - top center
+      - top center
+      - top center
+      marker:
+        symbol: square-dot
+        size: 4
+        line:
+          width: 0.5
+functions:
+  remove_empties: true
+  adjust_focus:
+    'on': hexbin
+    buffer_lat:
+    - 0
+    - 15
+    rot_buffer_lon: -8
+  logify_scale:
+    exp_type: r
+output:
+  filepath: path to output (.pdf)
+  crop_output: true

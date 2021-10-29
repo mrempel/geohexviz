@@ -1,0 +1,54 @@
+{
+	"hexbin_layer": {
+		"data":"<path to data.csv>",
+		"hexbin_info": {
+			"hex_resolution":4,
+			"binning_field": "FIRE_TYPE",
+			"binning_fn": "best"
+		},
+		"manager": {
+			"marker": {
+				"line": {
+					"width": 0.1
+				}
+			},
+			"colorscale": "Dark24"
+		}
+	},
+	"regions": {
+		"sample_Region_USA": {
+			"data": "UNITED STATES OF AMERICA"
+		}
+	},
+	"grids": {
+		"sample_Grid_USA": {
+			"data": "UNITED STATES OF AMERICA",
+			"convex_simplify": true
+		}
+	},
+	"figure_layout": {
+		"legend": {
+			"x": 0.8043,
+			"bordercolor": "black",
+			"borderwidth": 1,
+			"font": {
+				"size": 8
+			}
+		}
+	},
+	"functions": {
+		"clip_layers": {
+			"clip": "hexbin+grids",
+			"to": "regions"
+		},
+		"adjust_focus": {
+			"on": "hexbin",
+			"buffer_lat": [0,15],
+			"rot_buffer_lon": -8
+		}
+	},
+	"output": {
+		"filepath": "<path to output (.pdf)>",
+		"crop_output": true
+	}
+}

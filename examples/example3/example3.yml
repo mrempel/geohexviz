@@ -1,0 +1,49 @@
+---
+hexbin_layer:
+  data: path to data-1943.csv, data-1944.csv, data-1945.csv (run for each year)
+  latitude_field: target_latitude
+  longitude_field: target_longitude
+  hexbin_info:
+    binning_field: high_explosives_weight_tons
+    binning_fn: sum
+  hex_resolution: 4
+  manager:
+    marker:
+      line:
+        width: 0.45
+    colorscale: Viridis
+    colorbar:
+      x: 0.82
+regions:
+  EURO:
+    data: EUROPE
+grids:
+  EURO:
+    data: EUROPE
+    convex_simplify: true
+  RUSSIA:
+    data: RUSSIA
+grid_manager:
+  marker:
+    line:
+      width: 0.45
+figure_geos:
+  lataxis_range:
+  - 35
+  - 58
+  lonaxis_range:
+  - 0
+  - 43
+  projection_rotation:
+    lat: 46.63321662159487
+    lon: 11.21560455920799
+functions:
+  clip_datasets:
+    clip: hexbin+grids
+    to: regions
+  logify_scale:
+    exp_type: r
+  adjust_focus: false
+output:
+  filepath: path to output (.pdf)
+  crop_output: true
