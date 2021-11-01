@@ -9,32 +9,91 @@ hexagon-ally binned data sets.
 The package's main feature is a PlotBuilder class which utilizes tools
 to hexagon-ally bin your dataset and then display it.
 
-Command Line / JSON Usage
--------------------------
+
+Functional Specification
+########################
+GeoHexViz allows a user to generate hexagonally binned geospatial visualizations with two different methods.
+Method 1 concerns using the GeoHexSimple package's script to run a file containing plot structure.
+Method 2 concerns using Python code to interact with the functions within the package.
+Method 2 method has two categories:
+
+a) Using functions from the GeoHexSimple package \
+b) Using functions from the GeoHexViz package
+
+Method 1 Example Usage
+**********************
 
 The GeoHexViz distribution includes a module that can allow the reading
 of JSON files for quick and easy plots.
 
-.. code:: json
+.. code-block:: json
 
     {
-      "main_dataset": {
+      "hexbin_layer": {
         "data": "<sample csv file>",
         "hex_resolution": 4
       },
-      "output_figure": {
+      "output": {
         "filepath": "<sample filepath>",
         "width": 600,
         "height": 400
       },
-      "display_figure": true
+      "display": true
     }
 
-running the JSON script will allow you to input a JSON file via command
-line.
+Running the JSON script will allow you to input a JSON file via command-line.
+The GeoHexSimple command-line script was created using argparse and is very robust.
+Running the help command provides the following:
 
-You may also use the functions that allow the executing of a JSON file
-from a python module.
+.. code-block::
+
+        >geohexsimple --help
+        usage: geohexsimple [options]
+
+        Input plot property files to make hexagonally binned plots.
+
+        optional arguments:
+          -h, --help            show this help message and exit
+          -p PATH, --path PATH  path to json file or directory containing json files (required if no gui is used)
+          -g, --gui             enable command-line gui (set to true if no path is provided)
+          -nf, --nofeedback     turn off feedback while plotting
+          -v, --verbose         whether to raise all errors or not
+
+
+Running your plot properties file may look something like:
+
+.. code-block::
+
+    >geohexsimple --path <path to file>
+    exit
+
+Or something like:
+
+.. code-block::
+
+    >geohexsimple
+
+    ✨=================GeoHexSimple================✨
+     A script for the simple creation of
+     hexagonally binned geospatial visualizations.
+    ✨=============================================✨
+    ✨Main Menu✨
+    Please input the location of your parameterized
+    builder file (JSON, YAML) or a directory containing
+    builder files.
+    Options: file path, help, exit.
+    <path to file>
+
+Method 2
+********
+As previously mentioned there are two ways to use the GeoHexViz library in Python code.
+Method 2a concerns using the functions within GeoHexSimple to create plots from pre-existing plot parameter files.
+Method 2b concerns using the functions from the GeoHexViz package to create plots.
+
+Method 2a Example Usage
+_______________________
+You can use the functions within GeoHexSimple to create a plot from a pre-existing plot parameter file.
+A simple example of this method is given below.
 
 .. code:: python
 
@@ -42,8 +101,10 @@ from a python module.
 
     run_json("<filepath here>")
 
-Python Module Usage (PlotBuilder)
----------------------------------
+Method 2b Example Usage
+_______________________
+You can use the functions and objects within GeoHexViz to create a plot from scratch.
+A simple example of this method is given below.
 
 .. code:: python
 
@@ -69,10 +130,10 @@ Python Module Usage (PlotBuilder)
     builder.finalize()
     builder.display(clear_figure=True)
 
-Behind the Scenes
-~~~~~~~~~~~~~~~~~
 
-When the main dataset is passed into the builder, the data is processed
+Behind the Scenes
+*****************
+When the hexbin layer is set, the data is processed
 in the following steps:
 
 Data:
