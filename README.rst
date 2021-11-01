@@ -209,7 +209,7 @@ passed alongside plotly properties are passed to the Plotly graphing
 library.
 
 Installation
-------------
+############
 
 As a prerequisite, the user must install the ``GeoPandas`` library before
 installing ``GeoHexViz``.
@@ -233,20 +233,20 @@ and running the following command:
     python setup.py install
 
 Further Documentation
----------------------
+#####################
 
 There is further documentation contained within the Reference Document
 published alongside this software package, which is available {HERE}.
 The official API documentation is also available {HERE}.
 
 Acknowledgements
-----------------
+################
 
 Thank you to Nicholi Shiell for his input in testing, and providing
 advice for the development of this package.
 
 Limitations
------------
+###########
 
 This package uses GeoJSON format to plot data sets. With GeoJSON comes
 difficulties when geometries cross the 180th meridian . The issue
@@ -273,20 +273,20 @@ this should be done automatically as it is a common feature of
 publication quality choropleth maps.
 
 Contributing
-------------
+############
 
 For major changes, please open an issue first to discuss what you would
 like to change.
 
 Contact
--------
+#######
 
 For any questions, feedback, bug reports, feature requests, etc please
 first present your thoughts via GitHub issues. For further assistance
 please contact tony.azp25@gmail.com.
 
 Copyright and License
----------------------
+#####################
 
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented
 by the Minister of National Defence, 2021.
