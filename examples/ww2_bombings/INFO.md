@@ -5,15 +5,14 @@ The output visualization depicts the total mass of bombs dropped in each of thes
 
 The description of each file provided for this tutorial are listed below:
 
-|    File Name   |                                   Description                                  |
-|:--------------:|:------------------------------------------------------------------------------:|
-| data-1943.csv  | Resource file for tutorial (1943)                                              |
-| data-1944.csv  | Resource file for tutorial (1944)                                              |
-| data-1945.csv  | Resource file for tutorial (1945)                                              |
-| example3.ipynb | Jupyter notebook providing the tutorial for Python users (all years)           |
-| example3.json  | JSON file providing the property structure for non-technical users (all years) |
-| example3.py    | Python code providing the tutorial for Python users (all years)                |
-| example3.yml   | YAML file providing the property structure for non-technical users (all years) |
+| File Name                                 | Description                                                                              |
+|-------------------------------------------|------------------------------------------------------------------------------------------|
+| data-(1943/1944/1945).csv                 | Resource file for tutorial (1943 / 1944 / 1945)                                          |
+| json_structure.json                       | JSON file providing the property structure for GeoHexSimple users (all years)            |
+| json_walkthrough.md                       | Markdown file providing a walkthrough for users of GeoHexSimple (building the JSON file) |
+| output_visualization-(1943/1944/1945).pdf | Output visualization in PDF format (1943 / 1944 / 1945)                                  |
+| python_walkthrough.ipynb                  | Jupyter Notebook providing the tutorial for Python (GeoHexViz) users (all years)         |
+| python_walkthrough.py                     | Python code providing the tutorial for Python (GeoHexViz) users (all years)              |
 
 
 ## References

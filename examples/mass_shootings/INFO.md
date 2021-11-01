@@ -6,14 +6,15 @@ The output visualization depicts the sum of people killed or injured per hexagon
 
 The description of each file provided for this tutorial are listed below:
 
-|      File Name      |                             Description                            |
-|:-------------------:|:------------------------------------------------------------------:|
-| data.csv            | Resource file for tutorial                                         |
-| data-epicenters.csv | Resource file for tutorial containing epicenters                   |
-| example2.ipynb      | Jupyter notebook providing the tutorial for Python users           |
-| example2.json       | JSON file providing the property structure for non-technical users |
-| example2.py         | Python code providing the tutorial for Python users                |
-| example2.yml        | YAML file providing the property structure for non-technical users |
+| File Name                | Description                                                                          |
+|--------------------------|--------------------------------------------------------------------------------------|
+| data.csv                 | Resource file for tutorial                                                           |
+| data-epicenters.csv      | Resource file for tutorial containing epicenters                                     |
+| json_structure.json      | JSON file providing the properties structure for GeoHexSimple users                  |
+| json_walkthrough.md      | Markdown file providing the tutorial for GeoHexSimple users (building the JSON file) |
+| output_visualization.pdf | Output visualization in PDF format                                                   |
+| python_walkthrough.ipynb | Jupyter Notebook providing the tutorial for Python (GeoHexViz) users                 |
+| python_walkthrough.py    | Python code providing the tutorial for Python (GeoHexViz) users                      |
 
 
 ## References

@@ -19,16 +19,16 @@
 		}
 	},
 	"regions": {
-		"EURO": {
+		"sample_Region_EUROPE": {
 			"data": "EUROPE"
 		}
 	},
 	"grids": {
-		"EURO": {
+		"sample_Grid_EUROPE": {
 			"data": "EUROPE",
 			"convex_simplify": true
 		},
-		"RUSSIA": {
+		"sample_Grid_RUSSIA": {
 			"data": "RUSSIA"
 		}
 	},

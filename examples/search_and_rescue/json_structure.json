@@ -10,12 +10,12 @@
 		}
 	},
 	"regions": {
-		"can": {
+		"sample_Region_CANADA": {
 			"data": "CANADA"
 		}
 	},
 	"grids": {
-		"can": {
+		"sample_Grid_CANADA": {
 			"data": "CANADA",
 			"convex_simplify": true
 		}

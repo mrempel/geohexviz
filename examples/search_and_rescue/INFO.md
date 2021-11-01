@@ -6,10 +6,11 @@ The output visualization depicts the density of these randomly generated locatio
 
 The description of each file provided for this tutorial are listed below:
 
-|    File Name   |                             Description                            |
-|:--------------:|:------------------------------------------------------------------:|
-| data.csv       | Resource file for tutorial                                         |
-| example1.ipynb | Jupyter notebook providing the tutorial for Python users           |
-| example1.json  | JSON file providing the property structure for non-technical users |
-| example1.py    | Python code providing the tutorial for Python users                |
-| example1.yml   | YAML file providing the property structure for non-technical users |
+|         File Name        |                                         Description                                         |
+|:------------------------:|:-------------------------------------------------------------------------------------------:|
+| data.csv                 | Resource file for tutorial                                                                  |
+| json_structure.json      | JSON file providing the property structure for GeoHexSimple users (all years)               |
+| json_walkthrough.md      | Markdown file providing a walkthrough for GeoHexSimple users (building the properties file) |
+| output_visualization.pdf | Output visualization in PDF format.                                                         |
+| python_walkthrough.ipynb | Jupyter notebook providing the tutorial for Python users (all years)                        |
+| python_walkthrough.py    | Python code providing the tutorial for Python users (all years)                             |

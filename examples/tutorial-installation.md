@@ -4,13 +4,13 @@ It does this by using simple-to-understand function definitions that add and mod
 A high-level interpretation of GeoHexViz is provided below.
 The figure also depicts how a user should interact with GeoHexViz.
 
-![High-level process used by GeoHexViz.](./highlevel_flow.jpg)
+![High-level process used by GeoHexViz.](./examples-dependencies/highlevel_flow.jpg)
 
 In the guts of GeoHexViz, once a layer is input it is processed.
 When the final plot is built, these layers are then added to the internal figure.
 The relationship between input, processing, and output can be seen below.
 
-![Software flow.](./all_processes.jpg)
+![Software flow.](./examples-dependencies/all_processes.jpg)
 
 ## Installation
 There are a few steps that a user must follow when installing GeoHexViz.
