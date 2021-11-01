@@ -27,12 +27,14 @@ def _plotDir(directory: str, debug: bool = False, strict: bool = False):
 def main():
     """Main executor.
     """
-    my_parser = argparse.ArgumentParser(prog='simplecli', usage='%(prog)s [options]',
-                                        description="Input JSON files to make hexagonally binned plots.")
+    my_parser = argparse.ArgumentParser(prog='geohexsimple', usage='%(prog)s [options]',
+                                        description="Input plot property files to make hexagonally binned plots.")
     my_parser.add_argument('-p', '--path', type=str,
-                           default="", dest='path', help='path to json file or directory containing json files')
+                           default="", dest='path', help='path to json file or directory containing '
+                                                         'json files (required if no gui is used)')
     my_parser.add_argument('-g', '--gui', action='store_const', const=True,
-                           default=False, dest='gui', help='enable command-line gui')
+                           default=False, dest='gui', help='enable command-line gui '
+                                                           '(set to true if no path is provided)')
     my_parser.add_argument('-nf', '--nofeedback', action='store_const', const=True, default=False,
                            dest="nofeedback", help="turn off feedback while plotting")
     my_parser.add_argument('-v', '--verbose', action='store_const',
