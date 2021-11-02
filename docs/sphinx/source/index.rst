@@ -107,6 +107,7 @@ Data:
 |   5   | 46.75 | 31.17 |  700  |
 +-------+-------+-------+-------+
 
+
 1) Coordinate columns are converted into geometry (if applicable)
 
 +-------+-------+---------------------+
@@ -124,6 +125,7 @@ Data:
 +-------+-------+---------------------+
 |   5   |  700  | POINT(46.75, 31.17) |
 +-------+-------+---------------------+
+
 
 2) Hex cells are then placed over the data
 
@@ -143,6 +145,7 @@ Data:
 | 831e5dfffffffff |  700  | POINT(46.75, 31.17) |
 +-----------------+-------+---------------------+
 (hex resolution = 3)
+
 
 3) The data is grouped together by hex, and hex geometry is added
 
@@ -173,13 +176,6 @@ Use the package manager `pip <https://pip.pypa.io/en/stable/>`__ to install GeoH
 .. code:: bash
 
     pip install geohexviz
-
-Further Documentation
----------------------
-
-There is further documentation contained within the Reference Document
-published alongside this software package, which is available {HERE}.
-The official API documentation is also available {HERE}.
 
 Acknowledgements
 ----------------
@@ -225,19 +221,10 @@ Contact
 
 For any questions, feedback, bug reports, feature requests, etc please
 first present your thoughts via GitHub issues. For further assistance
-please contact tonyabouzeidan@cmail.carleton.ca
+please contact tony.azp25@gmail.com.
 
 Copyright and License
 ---------------------
 
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented
 by the Minister of National Defence, 2021.
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
