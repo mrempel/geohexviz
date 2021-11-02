@@ -8,11 +8,11 @@ tags:
   - operations research
 authors:
   - name: Tony M. Abou Zeidan
-    affiliation: 1
     orcid: 0000-0001-5103-3070
+    affiliation: 1
   - name: Mark Rempel
-    affiliation: 2
     orcid: 0000-0002-6248-1722
+    affiliation: 2
 affiliation:
   - name: Canadian Joint Operations Command, Ottawa, Canada, 1600 Star Top Road, K1B 3W6
     index: 1
@@ -21,9 +21,6 @@ affiliation:
 date: 2 November 2021
 bibliography: paper.bib
 ---
-
-*[JSON]: JavaScript Object Notation
-*[GIS]:Geographic Information Systems
 
 # Summary
 
