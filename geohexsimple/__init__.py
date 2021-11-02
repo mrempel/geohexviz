@@ -102,7 +102,6 @@ def _run_file_full(filepath: str, contents: dict, strict: bool = False, debug: b
     :return: The status of the final plot
     :rtype: PlotStatus
     """
-    print(contents)
 
     if debug:
         debug_print = lambda x: print(x)
