@@ -277,9 +277,7 @@ publication quality choropleth maps.
 Contributing
 ############
 
-For major changes, please open an issue first to discuss what you would
-like to change.
-
+For major changes, please open an issue first to discuss what you would like to change.
 For more details please see `this page <https://github.com/tony-zeidan/geohexviz/blob/master/CONTRIBUTING.md>`_.
 
 Acknowledgements
