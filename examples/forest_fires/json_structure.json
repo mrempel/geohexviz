@@ -26,9 +26,16 @@
 			"convex_simplify": true
 		}
 	},
+	"grid_manager": {
+		"marker": {
+			"line": {
+				"width": 0.1
+			}
+		}
+	},
 	"figure_layout": {
 		"legend": {
-			"x": 0.8043,
+			"x": 0.8430,
 			"bordercolor": "black",
 			"borderwidth": 1,
 			"font": {

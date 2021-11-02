@@ -68,6 +68,19 @@ Since the data spans the United States of America, we declare a grid layer that 
 This grid layer is defined through the object `sample_Grid_USA`, whose `data` member is set to `UNITED STATES OF AMERICA`.
 
 
+Next the Plotly properties of the grid layers are set to match the Plotly properties of the hexbin layer.
+This is done by adding the `grid_manager` object to the JSON file.
+
+```json
+	"grid_manager": {
+		"marker": {
+			"line": {
+				"width": 0.1
+			}
+		}
+	},
+```
+
 Next, some properties of the legend are set for aesthetic purposes.
 The properties of the legend are stored within the internal figure's layout properties.
 In order to interact with the internal figure's layout, the `figure_layout` object is added to the JSON file.
