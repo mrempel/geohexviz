@@ -219,26 +219,36 @@ library.
 Installation
 ############
 
-As a prerequisite, the user must install the ``GeoPandas`` library before
-installing ``GeoHexViz``.
-This can be done easily in an Anaconda environment by doing running the
-following command:
+There are a few steps that a user must follow when installing GeoHexViz.
+First, the user must install GeoPandas.
+This is most easily done through the use of Anaconda, with this tool it can be installed like this:
 
-.. code:: bash
+
+.. code-block::
 
     conda install -c conda-forge geopandas
 
-More information can be seen in the GeoPandas official documentation.
+
+The version that GeoHexViz was developed with is version 0.8.1 (build py_0).
+Next, the user must download or clone GeoHexViz's GitHub repository.
+Finally, the user can run the ``setup.py`` file like this:
 
 
-As of right now the GeoHexViz package can be cloned on GitHub, and
-install by using the ``setup.py`` file.
-This can be done by navigating to the folder containing the ``setup.py`` file,
-and running the following command:
-
-.. code:: bash
+.. code-block::
 
     python setup.py install
+
+
+Setting up a conda environment first helps.
+To make this process smoother the ``environment.yml`` file is included, which includes all dependencies.
+Using this file an environment can be set up like this:
+
+.. code-block::
+
+    conda env create -f environment.yml
+
+This will create an Anaconda environment called ``geohexviz`` on your machine,
+simply activate the environment and run the ``setup.py`` file as shown above.
 
 Further Documentation
 #####################
