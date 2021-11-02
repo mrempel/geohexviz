@@ -36,7 +36,7 @@ setup(
         "pandas>=1.3.0",
         "plotly>=4.14.3",
         "kaleido>=0.2.1",
-        "pyyaml~=5.4.1"
+        "pyyaml~=5.4.1",
         "rtree~=0.9.1"
     ],
     extras_require={
