@@ -259,6 +259,7 @@ The user may also install using pip and GitHub:
 
 Setting up a conda environment first helps.
 To make this process smoother the ``environment.yml`` file is included, which includes all dependencies.
+With this file, the first step (installation of GeoPandas) is done automatically.
 Using this file an environment can be set up like this:
 
 .. code-block::

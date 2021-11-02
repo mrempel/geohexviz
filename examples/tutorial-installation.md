@@ -21,15 +21,28 @@ conda install -c conda-forge geopandas
 ```
 The version that GeoHexViz was developed with is version 0.8.1 (build py_0).
 Next, the user must download or clone GeoHexViz's GitHub repository.
-Finally, the user can run the `setup.py` file like this:
+Finally, the user can navigate to the directory containing the ``setup.py`` file, and run:
+
 ```bash
 python setup.py install
 ```
-Setting up a conda environment first helps.
-To make this process smoother the `environment.yml` file is included, which includes all dependencies.
-Using this file an environment can be set up like this:
+
+Or
+
 ```bash
-conda env create -f environment.yml
+pip install .
+```
+
+Note that to use the pdf cropping features, the user can do an editable install:
+
+```bash    
+pip install -e .[pdf-crop]
+```
+
+The user may also install using pip and GitHub (cloning unnecessary):
+
+```bash
+pip install git+https://github.com/tony-zeidan/geohexviz.git
 ```
 
 ## Running Tests
