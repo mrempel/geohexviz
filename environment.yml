@@ -2,12 +2,13 @@ name: geohexviz
 channels:
   - conda-forge
   - defaults
+  - plotly
 dependencies:
   - geopandas
   - shapely
   - setuptools
   - pyproj
-  - kaleido
+  - python-kaleido
   - geojson
   - plotly
   - h3
