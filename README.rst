@@ -4,14 +4,20 @@
 GeoHexViz
 =========
 
-GeoHexViz is a package for the simple and repeatable visualization of
-hexagon-ally binned data sets.
-The package's main feature is a PlotBuilder class which utilizes tools
-to hexagon-ally bin your dataset and then display it.
+Welcome to GeoHexViz!
+
+Creating geospatial visualizations is often time-consuming and laborious. For example, an analyst must make a variety of design decisions, including which map projection to use, the colour scheme, the basemap, and how to organize the data in layers. One of many software applications may be used to construct the visualization, such as:
+
++ **ArcGIS** which provides a wide range of capabilities, but requires a paid license and a solid foundation in geospatial information processing;
++ **QGIS** which is free and open source, but like ArcGIS requires in-depth knowledge of geospatial information processing to be used effectively;
++ **D3** which emphasizes web standards rather than a proprietary framework, but requires extensive knowledge of JavaScript; and
++ **Plotly** which is a free and open source Python graphing library, but like D3 and other packages requires knowledge of a programming language.
+
+Common across these applications is the requirement to have knowledge of geospatial concepts, and acquiring this knowledge has been identified as a significant challenge. In addition, the latter two options require programming. While many analysts have programming experience, not all do and in time-sensitive situations, as often encountered in a military setting, writing code to produce a visualization may not be feasible. With this in mind, GeoHexViz aims to reduce the time, in-depth knowledge, and programming required to produce publication-quality geospatial visualizations that use hexagonal binning. Implemented in Python, it seamlessly integrates several underlying packages &emdash; Pandas, GeoPandas, Uber H3, Shapely, and Plotly &emdash; and extends their functionality to achieve these goals. Although originally designed for use within the military operations research community, it may be used in other research communities.
 
 
-Functional Specification
-########################
+Example Usage
+#############
 GeoHexViz allows a user to generate hexagonally binned geospatial visualizations with two different methods.
 Method 1 concerns using the GeoHexSimple package's script to run a file containing plot structure.
 Method 2 concerns using Python code to interact with the functions within the package.
@@ -19,6 +25,8 @@ Method 2 method has two categories:
 
 a) Using functions from the GeoHexSimple package \
 b) Using functions from the GeoHexViz package
+
+Please refer to the `examples directory <https://github.com/tony-zeidan/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods).
 
 Method 1 Example Usage
 **********************
@@ -235,15 +243,9 @@ and running the following command:
 Further Documentation
 #####################
 
-There is further documentation contained within the Reference Document
-published alongside this software package, which is available {HERE}.
-The official API documentation is also available {HERE}.
-
-Acknowledgements
-################
-
-Thank you to Nicholi Shiell for his input in testing, and providing
-advice for the development of this package.
+The official documentation for GeoHexViz can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
+In particular, the API documentation for Python users can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_.
+The reference document published alongside this package can also be seen in the `docs directory <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
 
 Limitations
 ###########
@@ -277,6 +279,14 @@ Contributing
 
 For major changes, please open an issue first to discuss what you would
 like to change.
+
+For more details please see `this page <https://github.com/tony-zeidan/geohexviz/blob/master/CONTRIBUTING.md>`_.
+
+Acknowledgements
+################
+
+Thank you to Nicholi Shiell for his input in testing, and providing
+advice for the development of this package.
 
 Contact
 #######
