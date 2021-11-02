@@ -43,6 +43,9 @@ setup(
         "dev": [
             "pip"
             "Sphinx"
+        ],
+        "pdf-crop": [
+            "pdfcropmargins"
         ]
     },
     entry_points={
