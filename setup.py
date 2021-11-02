@@ -44,7 +44,7 @@ setup(
             "Sphinx"
         ],
         "pdf-crop": [
-            "pdfcropmargins"
+            "pdfcropmargins~=1.0.5"
         ]
     },
     entry_points={
