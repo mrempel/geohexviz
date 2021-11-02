@@ -13,7 +13,7 @@ authors:
   - name: Mark Rempel
     orcid: 0000-0002-6248-1722
     affiliation: 2
-affiliation:
+affiliations:
   - name: Canadian Joint Operations Command, Ottawa, Canada, 1600 Star Top Road, K1B 3W6
     index: 1
   - name: Defence Research and Development Canada, Ottawa, Canada, 101 Colonel By Dr., K1A 0K2
