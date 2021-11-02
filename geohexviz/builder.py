@@ -1578,7 +1578,7 @@ class PlotBuilder:
 
     def adjust_focus(self, on: str = 'hexbin', center_on: bool = False, rotation_on: bool = True,
                      ranges_on: bool = True, rot_buffer_lat: float = 0, rot_buffer_lon: float = 0,
-                     buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0), validate: bool = False):
+                     buffer_lat: tuple = (0, 0), buffer_lon: tuple = (0, 0)):
         """Focuses on layer(s) within the plot.
 
         Collects the geometries of the queried layers in order to
@@ -1602,8 +1602,6 @@ class PlotBuilder:
         :type buffer_lat: Tuple[float, float]
         :param buffer_lon: A low and high bound to add and subtract from the lonaxis range
         :type buffer_lon: Tuple[float, float]
-        :param validate: Whether or not to validate the ranges
-        :type validate: bool
         """
         geoms = []
         self.apply_to_query(on, lambda ds: geoms.extend(list(ds['data'].geometry)))
@@ -1616,18 +1614,6 @@ class PlotBuilder:
             lonrng, latrng = gcg.find_ranges_simple(geoms)
             geos['lataxis_range'] = (latrng[0] - buffer_lat[0], latrng[1] + buffer_lat[1])
             geos['lonaxis_range'] = (lonrng[0] - buffer_lon[0], lonrng[1] + buffer_lon[1])
-
-            if validate:
-                latlow, lathigh = geos['lataxis_range']
-                lonlow, lonhigh = geos['lonaxis_range']
-
-                lonlowdiff, lonhighdiff = get_percdiff(lonlow, -180), get_percdiff(lonhigh, 180)
-                latlowdiff, lathighdiff = get_percdiff(latlow, -90), get_percdiff(lathigh, 90)
-
-                if lonlowdiff <= 5 and lonhighdiff <= 5:
-                    geos['lonaxis_range'] = (-180, 180)
-                if latlowdiff <= 5 and lathighdiff <= 5:
-                    geos['lataxis_range'] = (-90, 90)
 
         center = gcg.find_center_simple(geoms)
         center = dict(lon=center.x, lat=center.y)

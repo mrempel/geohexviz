@@ -99,45 +99,21 @@ def dict_deep_update(d: dict, u: dict) -> object:
     return d
 
 
-def get_occurrences(lst: list, **kwargs):
+def get_occurrences(lst: list, **kwargs) -> list:
+    """Retrieves a list of tuples containing the list item and its frequency in the list.
+
+    :param lst: The list to count frequencies from
+    :type lst: list
+    :param kwargs: Keyword arguments for the sorted function
+    :type kwargs: **kwargs
+    :return: The list of item frequency pairs
+    :rtype: list
+    """
     occ = list(sorted(((x, lst.count(x)) for x in set(lst)), key=lambda item: item[1], **kwargs))
     return [list(group) for key, group in groupby(occ, itemgetter(1))]
 
 
-def get_sorted_occ2(lst: list, allow_ties=False, join_ties=True, selector=None, **kwargs):
-    if selector is None:
-        selector = []
-    occ = get_occurrences(lst, **kwargs)
-
-    def select(lst: list):
-        if len(selector) > 0:
-            for select in selector:
-                if select in lst:
-                    return select
-        return lst[0]
-
-    for i in range(len(occ)):
-        for j in range(len(occ[i])):
-            occ[i][j] = str(occ[i][j][0])
-        group = occ[i]
-        if isinstance(group, list):
-            group = list(sorted(group))
-            while np.nan in group:
-                group.remove(np.nan)
-            while 'empty' in group:
-                group.remove('empty')
-            if not allow_ties:
-                group = select(group)
-            else:
-                if join_ties:
-                    group = ','.join(group)
-                else:
-                    group = 'tie'
-        occ[i] = group
-    return occ[0]
-
-
-def get_sorted_best(lst: list, allow_ties: bool = False, join_ties: bool = True, selector: Iterable = None,
+def get_sorted_best(lst: list, allow_ties: bool = True, join_ties: bool = True, selector: Iterable = None,
                     reverse: bool = True) -> object:
     """Retrieves the best entry or entries from a list of labels based on occurrences.
 
@@ -175,7 +151,7 @@ def get_sorted_best(lst: list, allow_ties: bool = False, join_ties: bool = True,
         if len(group) == 0:
             group = [np.nan]
 
-        occ[i] = (', '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group) \
+        occ[i] = (' & '.join(sorted(group)) if join_ties else 'tie') if allow_ties else select(group) \
             if len(group) > 1 else group[0]
     return occ[0]
 
