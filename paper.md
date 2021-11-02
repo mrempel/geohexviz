@@ -7,10 +7,10 @@ tags:
   - binning
   - operations research
 authors:
-  - name: Tony M. Abou Zeidan^[co-first author, corresponding author tony.azp25\@gmail.com] 
+  - name: Tony M. Abou Zeidan
     affiliation: 1
     orcid: 0000-0001-5103-3070
-  - name: Mark Rempel^[co-first author, mark.rempel@forces.gc.ca]
+  - name: Mark Rempel
     affiliation: 2
     orcid: 0000-0002-6248-1722
 affiliation:
@@ -18,7 +18,7 @@ affiliation:
     index: 1
   - name: Defence Research and Development Canada, Ottawa, Canada, 101 Colonel By Dr., K1A 0K2
     index: 2
-date: 29 October 2021
+date: 2 November 2021
 bibliography: paper.bib
 ---
 
