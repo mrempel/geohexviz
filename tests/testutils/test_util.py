@@ -39,13 +39,15 @@ class UtilTestCase(unittest.TestCase):
         Tests:
         Take a list and get the best occurrence from it. Ensure that the result is correct.
         """
-        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'])
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
+                                      allow_ties=False)
         self.assertEqual('deny', result)
-        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['allow', 'deny'])
+        result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['allow', 'deny'],
+                                      allow_ties=False)
         self.assertEqual('allow', result)
         result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
                                       allow_ties=True, join_ties=True)
-        self.assertEqual(', '.join(['allow', 'deny']), result)
+        self.assertEqual(' & '.join(['allow', 'deny']), result)
         result = util.get_sorted_best(['allow', 'allow', 'deny', 'deny', 'permit'], selector=['deny', 'allow'],
                                       allow_ties=True, join_ties=False)
         self.assertEqual('tie', result)
