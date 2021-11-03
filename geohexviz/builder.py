@@ -205,7 +205,7 @@ def _read_data_file_dict(data):
         try:
             dpath = data.pop("path")
         except KeyError:
-            raise DataReadError("There must be a 'path' parameter"
+            raise DataTypeError("There must be a 'path' parameter"
                                 " present when passing the 'data' parameter as a dict.")
         read_method = data.pop("method", None)
         read_args, read_kwargs = parse_args_kwargs(data)
@@ -263,8 +263,86 @@ def _read_data_file(data: str, read_method=None, read_args=None, **kwargs) -> Da
 
     except TypeError:
         pass
-    print(data)
     return data
+
+valid_data_intypes = ['region', 'dataframe', 'geodataframe', 'file']
+
+def _read_data_full(
+        name: str,
+        dstype: LayerType,
+        data: DFType,
+        allow_builtin: bool = False
+):
+    # TODO: refactored initial processing (informative errors)
+
+    read_args = ()
+    read_kwargs = {}
+    data_type = None
+    rtype = 'file'
+
+    if isinstance(data, dict):
+        try:
+            odata = deepcopy(data)
+            data = odata.pop("path")
+            if 'type' in odata:
+                data_type = odata.pop('type')
+                raise DataReadError(
+                    name, dstype,
+                    message=f"The given input data type must be one of: {valid_data_intypes}.\n"
+                            f"Received: {data_type}."
+                )
+
+        except KeyError:
+            raise DataReadError(
+                name, dstype,
+                message="There must be a 'path' key in the 'data' property if it is passed as a dict."
+            )
+        read_args, read_kwargs = parse_args_kwargs(odata)
+
+    # check if string
+    if isinstance(data, str):
+        filepath, extension = os.path.splitext(os.path.join(os.path.dirname(__file__), data))
+
+        try:
+            read_fn = get_reader_function_from_path(extension)
+        except ValueError:
+            read_fn = gpd.read_file
+
+        try:
+            data = read_fn(data, *read_args, **read_kwargs)
+        except Exception as e:
+            if allow_builtin:
+                try:
+                    data, rtype = butil.get_shapes_from_world(data), 'builtin'
+                except (KeyError, ValueError, TypeError):
+                    raise DataReadError(
+                        name, dstype,
+                        message="If the 'data' property passed was a filepath it was not read.\n"
+                                f"Error: {str(e)}"
+                                "If the 'data' property passed was a region name "
+                                "(country or continent CAPS), it was invalid. "
+                                "Ensure that the region name is spelled out in full and is in all CAPS."
+                    )
+            else:
+                raise DataFileReadError(
+                    name, dstype,
+                    message="The file could not be read.\n"
+                            f"Error: {str(e)}"
+                )
+
+
+    try:
+        data = GeoDataFrame(data)
+        data['value_field'] = 0
+        data.RTYPE = rtype
+        data.VTYPE = 'NUM'
+    except Exception:
+        raise DataTypeError(name, dstype, allow_builtin=allow_builtin)
+
+    return data
+
+
+
 
 
 def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
@@ -295,7 +373,7 @@ def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool =
         data.RTYPE = rtype
         data.VTYPE = 'NUM'
     else:
-        raise DataReadError(name, dstype, allow_builtin)
+        raise DataTypeError(name, dstype, allow_builtin)
     return data
 
 
@@ -655,7 +733,7 @@ class PlotBuilder:
         selected_res = (hex_resolution or hexbin_info.get('hex_resolution')) or self.default_hex_resolution
         hbin_info = dict(hex_resolution=selected_res)
 
-        data = _read_data('hexbin', LayerType.HEXBIN, data)
+        data = _read_data_full('hexbin', LayerType.HEXBIN, data)
         layer = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
         data = _convert_latlong_data('hexbin', LayerType.HEXBIN, data,
                                      latitude_field=latitude_field, longitude_field=longitude_field)
@@ -765,7 +843,7 @@ class PlotBuilder:
         :type manager: StrDict
         """
         _check_name(name, LayerType.REGION)
-        data = _read_data(name, LayerType.REGION, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.REGION, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
         layer['data'], layer['odata'] = data, data.copy(deep=True)
@@ -927,7 +1005,7 @@ class PlotBuilder:
         selected_res = hex_resolution or self.default_hex_resolution
 
         _check_name(name, LayerType.GRID)
-        data = _read_data(name, LayerType.GRID, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.GRID, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
         data = _convert_latlong_data(name, LayerType.GRID, data,
                                      latitude_field=latitude_field, longitude_field=longitude_field)
@@ -1088,7 +1166,7 @@ class PlotBuilder:
         :type manager: StrDict
         """
         _check_name(name, LayerType.OUTLINE)
-        data = _read_data(name, LayerType.OUTLINE, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.OUTLINE, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
         data = _convert_latlong_data(name, LayerType.OUTLINE, data, latitude_field=latitude_field,
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
@@ -1252,7 +1330,7 @@ class PlotBuilder:
         """
 
         _check_name(name, LayerType.POINT)
-        data = _read_data(name, LayerType.POINT, data, allow_builtin=False)
+        data = _read_data_full(name, LayerType.POINT, data, allow_builtin=False)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
         if text_field:
             data = _convert_latlong_data(name, LayerType.POINT, data, latitude_field=latitude_field,

@@ -42,7 +42,7 @@ class BuilderTestCase(unittest.TestCase):
     def setUp(self):
         self.builder = builder.PlotBuilder()
 
-    def test_read_data(self):
+    def test_read_data_full_full(self):
         """Tests the builder module's ability to read GIS related formats.
 
         Tests:
@@ -53,7 +53,7 @@ class BuilderTestCase(unittest.TestCase):
         # method may be deprecated in the future
         # test reading file with incorrect specified method (dict)
         with self.assertRaises(ValueError):
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 dict(
@@ -68,13 +68,16 @@ class BuilderTestCase(unittest.TestCase):
             builder._read_data(
                 "sample",
                 err.LayerType.HEXBIN,
-                pjoin(DATA_PATH, "sample-fires2017.xlsx")
+                dict(
+                    path=pjoin(DATA_PATH, "sample-fires2017.xlsx"),
+                    sheet_name=None
+                )
             )
         )
 
         # test reading geopackage
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 pjoin(DATA_PATH, "sample-examplegpkg.gpkg")
@@ -83,7 +86,7 @@ class BuilderTestCase(unittest.TestCase):
 
         # test reading csv
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 pjoin(DATA_PATH, "sample-fires2017.csv")
@@ -92,7 +95,7 @@ class BuilderTestCase(unittest.TestCase):
 
         # test reading shapefile
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 pjoin(DATA_PATH, "sample-fires2017")
@@ -101,7 +104,7 @@ class BuilderTestCase(unittest.TestCase):
 
         # test reading kml file
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 pjoin(DATA_PATH, "sample-fires2017.kml")
@@ -109,8 +112,8 @@ class BuilderTestCase(unittest.TestCase):
         )
 
         # test builtin names
-        with self.assertRaises(err.DataReadError):
-            builder._read_data(
+        with self.assertRaises(err.DataTypeError):
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 "UNKUNK",
@@ -119,7 +122,7 @@ class BuilderTestCase(unittest.TestCase):
 
         # country name
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 "CANADA",
@@ -129,7 +132,7 @@ class BuilderTestCase(unittest.TestCase):
 
         # continent name
         self.assertIsNotNone(
-            builder._read_data(
+            builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 "EUROPE",
