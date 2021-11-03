@@ -50,27 +50,14 @@ class BuilderTestCase(unittest.TestCase):
         Also test builtin names.
         """
 
-        # method may be deprecated in the future
-        # test reading file with incorrect specified method (dict)
-        with self.assertRaises(ValueError):
+        # test reading excel file (requires dev-dependencies)
+        self.assertIsNotNone(
             builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
                 dict(
                     path=pjoin(DATA_PATH, "sample-fires2017.xlsx"),
-                    method="xxx",
-                    args=[1, 2, 3]
-                )
-            )
-
-        # test reading excel file (requires dev-dependencies)
-        self.assertIsNotNone(
-            builder._read_data(
-                "sample",
-                err.LayerType.HEXBIN,
-                dict(
-                    path=pjoin(DATA_PATH, "sample-fires2017.xlsx"),
-                    sheet_name=None
+                    sheet_name=0
                 )
             )
         )
@@ -112,7 +99,7 @@ class BuilderTestCase(unittest.TestCase):
         )
 
         # test builtin names
-        with self.assertRaises(err.DataTypeError):
+        with self.assertRaises(err.DataReadError):
             builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
@@ -136,6 +123,34 @@ class BuilderTestCase(unittest.TestCase):
                 "sample",
                 err.LayerType.HEXBIN,
                 "EUROPE",
+                allow_builtin=True
+            )
+        )
+
+        # test input dict (new)
+        self.assertIsNotNone(
+            builder._read_data_full(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(lats=[1,1,1,1,1,1], lons=[2,2,2,2,2,2])
+            )
+        )
+
+        # test input dict in dict
+        self.assertIsNotNone(
+            builder._read_data_full(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(path=dict(lats=[1, 1, 1, 1, 1, 1], lons=[2, 2, 2, 2, 2, 2]))
+            )
+        )
+
+        # test input str in dict
+        self.assertIsNotNone(
+            builder._read_data_full(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(path="CANADA!"),
                 allow_builtin=True
             )
         )

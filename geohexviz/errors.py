@@ -37,11 +37,11 @@ class DataFileReadError(Exception):
     def __init__(self, name: str, dstype: LayerType, message: str = "There was an error while reading the data file."):
         if dstype == LayerType.HEXBIN:
             self.message = f"There was an error while reading the 'data' property of the {dstype.value} layer.\n" \
-                           f"Error message: {message}"
+                           f"Error message:\n{message}"
         else:
             self.message = f"There was an error while reading the 'data' property of the " \
                            f"{dstype.value}-type layer named {name}.\n" \
-                           f"Error message: {message}"
+                           f"Error message:\n{message}"
         super().__init__(self.message)
 
 
@@ -51,11 +51,11 @@ class DataReadError(Exception):
                  message: str = "There was an error while reading the 'data' parameter passed."):
         if dstype == LayerType.HEXBIN:
             self.message = f"There was an error while reading the 'data' property of the {dstype.value} layer.\n" \
-                           f"Error message: {message}"
+                           f"Error message:\n{message}"
         else:
             self.message = f"There was an error while reading the 'data' property of the " \
                            f"{dstype.value}-type layer named {name}.\n" \
-                           f"Error message: {message}"
+                           f"Error message:\n{message}"
         super().__init__(self.message)
 
 

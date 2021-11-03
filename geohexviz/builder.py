@@ -277,27 +277,13 @@ def _read_data_full(
 
     read_args = ()
     read_kwargs = {}
-    data_type = None
     rtype = 'file'
 
     if isinstance(data, dict):
-        try:
-            odata = deepcopy(data)
+        odata = deepcopy(data)
+        if "path" in odata:
             data = odata.pop("path")
-            if 'type' in odata:
-                data_type = odata.pop('type')
-                raise DataReadError(
-                    name, dstype,
-                    message=f"The given input data type must be one of: {valid_data_intypes}.\n"
-                            f"Received: {data_type}."
-                )
-
-        except KeyError:
-            raise DataReadError(
-                name, dstype,
-                message="There must be a 'path' key in the 'data' property if it is passed as a dict."
-            )
-        read_args, read_kwargs = parse_args_kwargs(odata)
+            read_args, read_kwargs = parse_args_kwargs(odata)
 
     # check if string
     if isinstance(data, str):
@@ -311,16 +297,18 @@ def _read_data_full(
         try:
             data = read_fn(data, *read_args, **read_kwargs)
         except Exception as e:
+            # TODO: to know if this was a region name or file path, use the os library.
             if allow_builtin:
                 try:
+                    print(data)
                     data, rtype = butil.get_shapes_from_world(data), 'builtin'
                 except (KeyError, ValueError, TypeError):
                     raise DataReadError(
                         name, dstype,
                         message="If the 'data' property passed was a filepath it was not read.\n"
-                                f"Error: {str(e)}"
+                                f"File Read Error:\n{str(e)}\n"
                                 "If the 'data' property passed was a region name "
-                                "(country or continent CAPS), it was invalid. "
+                                "(country or continent CAPS), it was invalid.\n"
                                 "Ensure that the region name is spelled out in full and is in all CAPS."
                     )
             else:
