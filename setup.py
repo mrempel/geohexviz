@@ -41,7 +41,8 @@ setup(
     extras_require={
         "dev": [
             "pip"
-            "Sphinx"
+            "Sphinx",
+            "openpyxl"
         ],
         "pdf-crop": [
             "pdfcropmargins~=1.0.5"

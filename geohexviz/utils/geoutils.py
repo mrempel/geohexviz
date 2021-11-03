@@ -435,37 +435,6 @@ def convert_dataframe_geometry_to_geodataframe(df: DataFrame, geometry_field: st
     return GeoDataFrame(df, geometry=df[geometry_field], crs='EPSG:4326')
 
 
-def convert_dataframe_coordinates_to_geodataframe(df: DataFrame, latitude_field: str = 'latitude',
-                                                  longitude_field: str = 'longitude', drop: bool = False,
-                                                  longlat_order: bool = True) -> GeoDataFrame:
-    """Converts a pandas dataframe to a GeoDataFrame based on pre-existing lat/lon fields.
-
-    This function takes a pandas dataframe and converts it by returning a GeoDataFrame
-    with its geometry attribute pointing at a new geometry column of the given dataframe.
-
-
-    :param df: The dataframe to convert
-    :type df: DataFrame
-    :param latitude_field: The name of the column containing lat values
-    :type latitude_field: str
-    :param longitude_field: The name of the column containing lon values
-    :type longitude_field: str
-    :param drop: Whether or not to drop the latitude and longitude columns after converting
-    :type drop: bool
-    :param longlat_order: Whether to use longitude latitude order or latitude longitude order
-    :type longlat_order: bool
-    :return: The converted dataframe (now GeoDataFrame)
-    :rtype: GeoDataFrame
-    """
-    if longlat_order:
-        geodf = GeoDataFrame(df, geometry=gpd.points_from_xy(df[longitude_field], df[latitude_field], crs='EPSG:4326'))
-    else:
-        geodf = GeoDataFrame(df, geometry=gpd.points_from_xy(df[latitude_field], df[longitude_field], crs='EPSG:4326'))
-    if drop:
-        geodf.drop(columns=[longitude_field, latitude_field], errors='raise', inplace=True)
-    return geodf
-
-
 def conform_geogeometry(gdf: GeoDataFrame, d3_geo: bool = True, fix_polys: bool = True) -> GeoDataFrame:
     """Fixes the winding order and antimeridian crossings for geometries in a GeoDataFrame.
 

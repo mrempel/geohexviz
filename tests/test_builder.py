@@ -42,6 +42,189 @@ class BuilderTestCase(unittest.TestCase):
     def setUp(self):
         self.builder = builder.PlotBuilder()
 
+    def test_read_data(self):
+        """Tests the builder module's ability to read GIS related formats.
+
+        Tests:
+        Through the various files included, test reading each of them.
+        Also test builtin names.
+        """
+
+        # method may be deprecated in the future
+        # test reading file with incorrect specified method (dict)
+        with self.assertRaises(ValueError):
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(
+                    path=pjoin(DATA_PATH, "sample-fires2017.xlsx"),
+                    method="xxx",
+                    args=[1, 2, 3]
+                )
+            )
+
+        # test reading excel file (requires dev-dependencies)
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                pjoin(DATA_PATH, "sample-fires2017.xlsx")
+            )
+        )
+
+        # test reading geopackage
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                pjoin(DATA_PATH, "sample-examplegpkg.gpkg")
+            )
+        )
+
+        # test reading csv
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                pjoin(DATA_PATH, "sample-fires2017.csv")
+            )
+        )
+
+        # test reading shapefile
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                pjoin(DATA_PATH, "sample-fires2017")
+            )
+        )
+
+        # test reading kml file
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                pjoin(DATA_PATH, "sample-fires2017.kml")
+            )
+        )
+
+        # test builtin names
+        with self.assertRaises(err.DataReadError):
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                "UNKUNK",
+                allow_builtin=True
+            )
+
+        # country name
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                "CANADA",
+                allow_builtin=True
+            )
+        )
+
+        # continent name
+        self.assertIsNotNone(
+            builder._read_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                "EUROPE",
+                allow_builtin=True
+            )
+        )
+
+    def test_convert_latlong_data(self):
+        """Tests the builder module's ability to parse the lat long data from a dataframes.
+
+        Tests:
+        Pass various dataframes, geodataframes (empty, coordinate-filled, incorrectly named, etc.) into
+        the function and ensure that errors are thrown or the data is read.
+        The output data is not tested here.
+        """
+
+        # test with empty dataframe
+        with self.assertRaises(err.DataEmptyError):
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                DataFrame()
+            )
+
+        testdf = DataFrame(dict(
+            lats=[1,1,1,1,1,1,1,1,1],
+            lons=[2,2,2,2,2,2,2,2,2]
+        ))
+
+        # test with coordinate-filled dataframe
+        self.assertIsNotNone(
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                testdf
+            )
+        )
+
+        testdf = DataFrame(dict(
+            ynkl=[1,1,1,1,1,1,1,1,1],
+            ynkll=[2,2,2,2,2,2,2,2,2]
+        ))
+
+        # test with incorrectly-named coordinate-filled dataframe (none specified)
+        with self.assertRaises(err.GeometryParseLatLongError):
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                testdf
+            )
+
+        # test with incorrectly-named coordinate-filled dataframe (columns specified)
+        self.assertIsNotNone(
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                testdf,
+                latitude_field="ynkl",
+                longitude_field="ynkll"
+            )
+        )
+
+        # test with empty geodataframe
+        with self.assertRaises(err.DataEmptyError):
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                DataFrame()
+            )
+
+        testdf = GeoDataFrame(dict(
+            ynkl=[1,1,1,1,1,1,1,1,1],
+            ynkll=[2,2,2,2,2,2,2,2,2]
+        ))
+
+        # test with incorrectly-named coordinate-filled geodataframe (none specified)
+        with self.assertRaises(err.GeometryParseLatLongError):
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                testdf
+            )
+
+        # test with incorrectly-named coordinate-filled geodataframe (columns specified)
+        self.assertIsNotNone(
+            builder._convert_latlong_data(
+                "sample",
+                err.LayerType.HEXBIN,
+                testdf,
+                latitude_field="ynkl",
+                longitude_field="ynkll"
+            )
+        )
+
+
     def test_invalid_naming(self):
         """Tests the builder's ability to detect invalid naming of passed data sets.
 
@@ -238,7 +421,7 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue('value_field' in getreg['data'])
         self.assertTrue(all(v == 0 for v in getreg['data']['value_field']))
 
-        self.builder.add_region('RRA2', pjoin(SHAPE_PATH, pjoin('polygon-like', 'sample2-canbuffer')))
+        self.builder.add_region('RRA2', pjoin(DATA_PATH, 'sample-canbuffer'))
         getreg = self.builder._get_region('RRA2')
         self.assertEqual(getreg['DSTYPE'], 'RGN')
         self.assertTrue('value_field' in getreg['data'])
@@ -257,7 +440,7 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue('value_field' in getgr['data'])
         self.assertTrue(all(v == 0 for v in getgr['data']['value_field']))
 
-        self.builder.add_grid('GGA2', pjoin(SHAPE_PATH, pjoin('polygon-like', 'sample2-canbuffer')))
+        self.builder.add_grid('GGA2', pjoin(DATA_PATH, 'sample-canbuffer'))
         getgr = self.builder._get_grid('GGA2')
         self.assertEqual(getgr['DSTYPE'], 'GRD')
         self.assertTrue('value_field' in getgr['data'])
@@ -275,7 +458,7 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue('value_field' in getout['data'])
         self.assertTrue(all(v == 0 for v in getout['data']['value_field']))
 
-        self.builder.add_outline('OOA2', pjoin(SHAPE_PATH, pjoin('polygon-like', 'sample2-canbuffer')))
+        self.builder.add_outline('OOA2', pjoin(DATA_PATH, 'sample-canbuffer'))
         getout = self.builder._get_outline('OOA2')
         self.assertEqual(getout['DSTYPE'], 'OUT')
         self.assertTrue('value_field' in getout['data'])

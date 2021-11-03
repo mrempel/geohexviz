@@ -388,23 +388,6 @@ class GeoUtilsTestCase(unittest.TestCase):
         self.assertTrue(geoutils.check_crossing(-178, 181, validate=False))
         self.assertFalse(geoutils.check_crossing(161, 172, validate=False))
 
-    def test_convert_dataframe_coordinates_to_geodataframe(self):
-        """Tests the module's ability to convert a dataframe into a geodataframe via latitude and longitude columns.
-
-        Tests:
-        Take a dataframe with lat/long columns and converts it into a geodataframe.
-        Ensure that the result properly converted the columns into point-like geometry.
-        """
-        testpoints = MultiPoint([[10, 10], [20, 20], [30, 30], [40, 40]])
-        latitude, longitude = zip(*((p.x, p.y) for p in testpoints))
-
-        testgdf = GeoDataFrame(geometry=[p for p in testpoints], crs='EPSG:4326')
-
-        inputdf = DataFrame(dict(latitude=latitude, longitude=longitude))
-        resultgdf = geoutils.convert_dataframe_coordinates_to_geodataframe(inputdf, drop=True, longlat_order=True)
-
-        self.assertTrue(testgdf.equals(resultgdf))
-
     def test_bin_by_hex(self):
         """Test the module's ability to bin a dataframe by hexagonal id.
 
