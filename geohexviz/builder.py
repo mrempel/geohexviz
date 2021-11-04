@@ -300,7 +300,6 @@ def _read_data_full(
             # TODO: to know if this was a region name or file path, use the os library.
             if allow_builtin:
                 try:
-                    print(data)
                     data, rtype = butil.get_shapes_from_world(data), 'builtin'
                 except (KeyError, ValueError, TypeError):
                     raise DataReadError(
@@ -2114,7 +2113,7 @@ class PlotBuilder:
             else:
                 crop_args.extend(["-p4", "1.5", "4.5", "2.5", "1.5"])
             crop_args.extend(["-u", "-s", filepath, "-o", newfilepath])
-            print(f"Call to PdfCropMargins: {crop_args}")
+            # print(f"Call to PdfCropMargins: {crop_args}")
             crop(crop_args)
 
             if not keep_original:

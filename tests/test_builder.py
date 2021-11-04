@@ -1212,7 +1212,12 @@ class BuilderTestCase(unittest.TestCase):
         self.assertTrue(ppa2['data']['value_field'].equals(ppa2vals))
 
     def test_reset(self):
-        print()
+        """Tests the builder's ability to reset to default state.
+
+        Tests:
+        Add various layers and ensure they are gone upon reset.
+        In the future this should test managers.
+        """
 
         self.builder.add_grid('GGA1', 'CANADA')
         self.builder.add_outline('OOA1', 'CANADA')
@@ -1220,6 +1225,15 @@ class BuilderTestCase(unittest.TestCase):
             latitude=[10, 10, 10, 10, 20, 20],
             longitude=[20, 20, 10, 10, 10, 10]
         )))
+
+        self.builder.reset()
+        with self.assertRaises(err.NoLayerError):
+            self.builder._get_grid('GGA1')
+        with self.assertRaises(err.NoLayerError):
+            self.builder._get_outline('OOA1')
+        with self.assertRaises(err.NoLayerError):
+            self.builder._get_point('PPA1')
+
 
     def test_auto_grid(self):
         """Tests the builders ability to... may scrap.
