@@ -16,26 +16,7 @@ For example, an analyst must make a variety of design decisions, including which
 
 Common across these applications is the requirement to have knowledge of geospatial concepts, and acquiring this knowledge has been identified as a significant challenge.
 In addition, the latter two options require programming. While many analysts have programming experience, not all do and in time-sensitive situations, as often encountered in a military setting, writing code to produce a visualization may not be feasible. With this in mind, GeoHexViz aims to reduce the time, in-depth knowledge, and programming required to produce publication-quality geospatial visualizations that use hexagonal binning.
-Implemented in Python, it seamlessly integrates several existing Python packages &mdash; Pandas, GeoPandas, Uber H3, Shapely, and Plotly &mdash; and extends their functionality to achieve these goals. Although originally designed for use within the military operations research community, it is expected that that GeoHexViz may be of use other communities as well.
-
-# Features
-
-In order to generate a publication-quality geospatial visualization, GeoHexViz requires an analyst to specify a set of *layers* &mdash; where each layer is defined as a "[group] of point, line, or area (polygon) features representing a particular class or type of real-world entities" [@layer-definition] &mdash; to be visualized. At a minimum, an analyst must specify one layer, the *hexbin layer*, through a set of required properties: first, a single reference to the point-like data to be hexagonally binned; and second, references to the data containing the latitude, longitude, and value at each coordinate. If a value at each coordinate is not specified, a value of one is assumed by default. In addition, optional properties may be defined, such as the function to be applied to the values, e.g., count, sum, max, and the resolution of the hexagons. Default values for these properties are provided by GeoHexViz; for example, the default function applied is `sum`.
-
-With this single layer, GeoHexViz generates a publication-quality visualization. However, if the visualization is not satisfactory, GeoHexViz enables an analyst to modify the visualization's properties. These properties may be categorized into two groups: first, those that use functionality provided by GeoHexViz that both integrate and extend its underlying libraries; and second, those that are passed directly to Plotly without modification. The first group of properties are:
-
-+ **scale**: the data displayed in the visualization may be on a linear (default) or logarithmic scale;
-+ **colour scale**: the colour scale of the visualization may be continuous (default) or discrete;
-+ **colour scale opacity**: the opacity of the colour scale may be set between opaque (default) to transparent;
-+ **focus**: the visualization may have no focal point (default), showing a view of the whole Earth, or may be focused on one or more layers; and
-+ **filter**: all the data may be present in the visualization (default) or may be clipped to a geographic region.
-
-The second group includes a range of properties provided by Plotly, such as border colour, land colour, sea colour, figure size, etc. While default values for these are set by Plotly, many of these defaults are overwritten by GeoHexViz in order to create a publication-quality visualization out of the box.
-
-Beyond the *hexbin layer*, an analyst may specify a variable number of optional layers, which include four types: *regions*, *outlines*, *point*, and *grid*. *Region* layers are plotted as filled polygons via Plotly Choropleth traces. *Outline* layers behave similarly to *region* layers; however, they are plotted as empty polygons via Plotly Scattergeo traces instead. *Point* layers enable an analyst to display additional point-like data, such as cities, on top of the hexagonally binned data. This layer is plotted via Plotly Scattergeo traces. In situations in which the data to be hexagonally binned does not cover the entire area of interest, *grid* layers, which are empty hexagons, may be specified to form a continuous grid of hexagons. Similar to the *hexbin* layer, each optional layer has its own set of properties, some of which are required in order to define a layer and others which are optional.
-
-GeoHexViz enables an analyst to create a visualization in two ways. First, an analyst may use GeoHexViz's command-line script `GeoHexSimple` to read a JSON file that specifies the layers' properties for the visualization. Second, an analyst may generate a visualization by writing a Python script that imports GeoHexViz's Python module and invokes its functions. In either case, the data to be hexagonally binned may be provided in a variety of formats, including Shapefile and CSV. In addition, when writing a Python script the data may be provided as a DataFrame [@mckinney2021a] or GeoDataFrame [@jordahl2021a].
-The visualization may be saved in a variety of formats, including PDF, PNG, JPEG, WEBP, SVG, and EPS formats.
+Implemented in Python, it seamlessly integrates several existing Python packages - Pandas, GeoPandas, Uber H3, Shapely, and Plotly - and extends their functionality to achieve these goals. Although originally designed for use within the military operations research community, it is expected that that GeoHexViz may be of use other communities as well.
 
 
 Example Usage
