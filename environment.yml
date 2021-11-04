@@ -5,12 +5,11 @@ channels:
   - plotly
 dependencies:
   - geopandas
-  - shapely
   - setuptools
-  - pyproj
   - python-kaleido
   - geojson
   - plotly
   - h3
   - pyyaml
   - rtree
+  - openpyxl

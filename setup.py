@@ -13,17 +13,18 @@ setup(
     url="",
     author="Tony Marco Abou Zeidan",
     author_email="tony.azp25@gmail.com",
-    license="",
+    license="BSD",
     classifiers=[
+        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.9.4",
         "License :: OSI Approved :: BSD License",   # TODO: ensure correct licensing
         "Operating System :: OS Independent",  # TODO: ensure deployment on other OS
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Visualization",
+        "Topic :: Scientific/Engineering"
     ],
     keywords='visualization,geospatial,hexagonal binning',
-    python_requires=">=3.6",
+    python_requires=">=3.7",
     packages=find_packages(exclude=["docs", "tests"]),
     include_package_data=True,
     install_requires=[
