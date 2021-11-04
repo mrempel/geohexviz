@@ -150,10 +150,28 @@ class BuilderTestCase(unittest.TestCase):
             builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
-                dict(path="CANADA!"),
+                dict(path="CANADA"),
                 allow_builtin=True
             )
         )
+
+        # test with invalid region name (in dict) builtins
+        with self.assertRaises(err.DataReadError):
+            builder._read_data_full(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(path="CANADA!"),
+                allow_builtin=True
+            )
+
+        # test with region name (in dict) no builtins
+        with self.assertRaises(err.DataFileReadError):
+            builder._read_data_full(
+                "sample",
+                err.LayerType.HEXBIN,
+                dict(path="CANADA"),
+                allow_builtin=False
+            )
 
     def test_convert_latlong_data(self):
         """Tests the builder module's ability to parse the lat long data from a dataframes.
