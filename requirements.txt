@@ -7,3 +7,4 @@ h3
 pyyaml
 rtree
 openpyxl
+xlrd

@@ -38,7 +38,7 @@ setup(
         "pyyaml~=5.4.1",
         "rtree~=0.9.1",
         "openpyxl~=3.0.9",
-        "xlrd"
+        "xlrd>=1.0.0"   # for older python versions
     ],
     extras_require={
         "dev": [
