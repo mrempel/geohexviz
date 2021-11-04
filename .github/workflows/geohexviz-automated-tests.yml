@@ -1,4 +1,4 @@
-name: GeoHexViz Run Tests
+name: GeoHexViz Run Tests (Other OS)
 on:
   push:
     branches:
