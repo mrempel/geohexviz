@@ -37,7 +37,8 @@ setup(
         "kaleido~=0.2.1",
         "pyyaml~=5.4.1",
         "rtree~=0.9.1",
-        "openpyxl~=3.0.9"
+        "openpyxl~=3.0.9",
+        "xlrd"
     ],
     extras_require={
         "dev": [
