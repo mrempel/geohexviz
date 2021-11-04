@@ -9,7 +9,7 @@ dependencies:
   - python-kaleido
   - geojson
   - plotly
-  - h3
+  - h3-py
   - pyyaml
   - rtree
   - openpyxl
