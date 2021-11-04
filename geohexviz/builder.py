@@ -26,7 +26,6 @@ import warnings
 _read_method_mapping = {
     'geopandas': gpd.read_file,
     'csv': pd.read_csv,
-    'shapefile': gpd.read_file,
     'excel': pd.read_excel
 }
 
@@ -34,6 +33,9 @@ _extension_mapping = {
     '.csv': pd.read_csv,
     '.xlsx': pd.read_excel,
     '.shp': gpd.read_file,
+    '.kml': gpd.read_file,
+    '.gpkg': gpd.read_file,
+    '.geojson': gpd.read_file,
     '': gpd.read_file
 }
 
@@ -72,6 +74,8 @@ _group_functions = {
 StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
+# add driver for KML files
+gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 
 def _reset_to_odata(layer: StrDict):
     """Resets the odata parameter of a layer.
@@ -184,7 +188,8 @@ def get_reader_function_from_method(method: str):
     try:
         return _read_method_mapping[method]
     except KeyError:
-        raise ValueError("The input read method was not valid.")
+        raise ValueError("The input read method was not valid."
+                         f"\n Available file read functions: {list(_read_method_mapping.keys())}")
 
 
 def get_reader_function_from_path(ext: str):
@@ -200,17 +205,16 @@ def _read_data_file_dict(data):
         try:
             dpath = data.pop("path")
         except KeyError:
-            raise DataReadError("There must be a 'path' parameter"
+            raise DataTypeError("There must be a 'path' parameter"
                                 " present when passing the 'data' parameter as a dict.")
         read_method = data.pop("method", None)
-        normal_errors = data.pop("normal_errors", False)
         read_args, read_kwargs = parse_args_kwargs(data)
         return _read_data_file(dpath, read_method=read_method,
-                               read_args=read_args, normal_errors=normal_errors, **read_kwargs)
+                               read_args=read_args, **read_kwargs)
     return _read_data_file(data)
 
 
-def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: bool = False, **kwargs) -> DataFrame:
+def _read_data_file(data: str, read_method=None, read_args=None, **kwargs) -> DataFrame:
     """Reads data from a file, based on extension.
 
     If the file extension is unknown the file is passed
@@ -230,16 +234,25 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
         read_args = ()
     try:
         filepath, extension = os.path.splitext(os.path.join(os.path.dirname(__file__), data))
-        filepath = fix_filepath(filepath, add_ext=extension)
+        filepath = f"{filepath}{extension}"
 
         try:
             read_fn = get_reader_function_from_method(read_method)
-        except ValueError:
-            read_fn = get_reader_function_from_path(extension)
+        except ValueError as e:
+            if read_method is not None:
+                raise e
+            try:
+                read_fn = get_reader_function_from_path(extension)
+            except ValueError:
+                read_fn = gpd.read_file
+
         try:
-            data = read_fn(filepath, *read_args, **kwargs)
+            data = read_fn(data, *read_args, **kwargs)
         except TypeError:
             raise DataFileReadError("The read function is not a callable object.")
+
+        except fiona.errors.DriverError:
+            raise DataFileReadError("The file could not be read, check the filepath.")
         try:
             if not data.crs:
                 data.crs = 'EPSG:4326'
@@ -247,10 +260,76 @@ def _read_data_file(data: str, read_method=None, read_args=None, normal_errors: 
                 data.to_crs(crs='EPSG:4326', inplace=True)
         except AttributeError:
             pass
-    except Exception as e:
-        raise e if normal_errors else DataFileReadError(str(e))
+
+    except TypeError:
+        pass
+    return data
+
+valid_data_intypes = ['region', 'dataframe', 'geodataframe', 'file']
+
+def _read_data_full(
+        name: str,
+        dstype: LayerType,
+        data: DFType,
+        allow_builtin: bool = False
+):
+    # TODO: refactored initial processing (informative errors)
+
+    read_args = ()
+    read_kwargs = {}
+    rtype = 'file'
+
+    if isinstance(data, dict):
+        odata = deepcopy(data)
+        if "path" in odata:
+            data = odata.pop("path")
+            read_args, read_kwargs = parse_args_kwargs(odata)
+
+    # check if string
+    if isinstance(data, str):
+        filepath, extension = os.path.splitext(os.path.join(os.path.dirname(__file__), data))
+
+        try:
+            read_fn = get_reader_function_from_path(extension)
+        except ValueError:
+            read_fn = gpd.read_file
+
+        try:
+            data = read_fn(data, *read_args, **read_kwargs)
+        except Exception as e:
+            # TODO: to know if this was a region name or file path, use the os library.
+            if allow_builtin:
+                try:
+                    data, rtype = butil.get_shapes_from_world(data), 'builtin'
+                except (KeyError, ValueError, TypeError):
+                    raise DataReadError(
+                        name, dstype,
+                        message="If the 'data' property passed was a filepath it was not read.\n"
+                                f"File Read Error:\n{str(e)}\n"
+                                "If the 'data' property passed was a region name "
+                                "(country or continent CAPS), it was invalid.\n"
+                                "Ensure that the region name is spelled out in full and is in all CAPS."
+                    )
+            else:
+                raise DataFileReadError(
+                    name, dstype,
+                    message="The file could not be read.\n"
+                            f"Error: {str(e)}"
+                )
+
+
+    try:
+        data = GeoDataFrame(data)
+        data['value_field'] = 0
+        data.RTYPE = rtype
+        data.VTYPE = 'NUM'
+    except Exception:
+        raise DataTypeError(name, dstype, allow_builtin=allow_builtin)
 
     return data
+
+
+
 
 
 def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
@@ -266,12 +345,14 @@ def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool =
     rtype = 'frame'
     try:
         data, rtype = _read_data_file_dict(data), 'file'
-    except (DataFileReadError, fiona.errors.DriverError):
+    except DataFileReadError as e:
         if allow_builtin:
             try:
                 data, rtype = butil.get_shapes_from_world(data), 'builtin'
             except (KeyError, ValueError, TypeError):
                 pass
+        elif not isinstance(data, DataFrame):
+            raise e
 
     if isinstance(data, DataFrame):
         data = GeoDataFrame(data)
@@ -279,7 +360,7 @@ def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool =
         data.RTYPE = rtype
         data.VTYPE = 'NUM'
     else:
-        raise DataReadError(name, dstype, allow_builtin)
+        raise DataTypeError(name, dstype, allow_builtin)
     return data
 
 
@@ -391,7 +472,6 @@ def _convert_to_hexbin_data(name: str, dstype: LayerType, data: GeoDataFrame, he
     :return: The hexbinified dataframe
     :rtype: GeoDataFrame
     """
-    bfield_passed = binning_field is not None
     data = _hexify_data(data, hex_resolution)
 
     if isinstance(binning_fn, dict):
@@ -411,8 +491,7 @@ def _convert_to_hexbin_data(name: str, dstype: LayerType, data: GeoDataFrame, he
         data[binning_field] = data[binning_field].astype(str)
 
     if binning_fn is None:
-        binning_fn = _group_functions['best'] if vtype == 'STR' else\
-            (_group_functions['sum'] if bfield_passed else _group_functions['count'])
+        binning_fn = _group_functions['best'] if vtype == 'STR' else _group_functions['sum']
 
     data = gcg.bin_by_hexid(data, binning_field=binning_field, binning_fn=binning_fn, binning_args=binning_args,
                             result_name='value_field', add_geoms=True, **kwargs)
@@ -641,7 +720,7 @@ class PlotBuilder:
         selected_res = (hex_resolution or hexbin_info.get('hex_resolution')) or self.default_hex_resolution
         hbin_info = dict(hex_resolution=selected_res)
 
-        data = _read_data('hexbin', LayerType.HEXBIN, data)
+        data = _read_data_full('hexbin', LayerType.HEXBIN, data)
         layer = dict(NAME='HEXBIN', RTYPE=data.RTYPE, DSTYPE='HEX', HRES=selected_res)
         data = _convert_latlong_data('hexbin', LayerType.HEXBIN, data,
                                      latitude_field=latitude_field, longitude_field=longitude_field)
@@ -751,7 +830,7 @@ class PlotBuilder:
         :type manager: StrDict
         """
         _check_name(name, LayerType.REGION)
-        data = _read_data(name, LayerType.REGION, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.REGION, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='RGN', VTYPE=data.VTYPE)
         data = data[['value_field', 'geometry']]
         layer['data'], layer['odata'] = data, data.copy(deep=True)
@@ -913,7 +992,7 @@ class PlotBuilder:
         selected_res = hex_resolution or self.default_hex_resolution
 
         _check_name(name, LayerType.GRID)
-        data = _read_data(name, LayerType.GRID, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.GRID, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='GRD', VTYPE=data.VTYPE, HRES=selected_res)
         data = _convert_latlong_data(name, LayerType.GRID, data,
                                      latitude_field=latitude_field, longitude_field=longitude_field)
@@ -1074,7 +1153,7 @@ class PlotBuilder:
         :type manager: StrDict
         """
         _check_name(name, LayerType.OUTLINE)
-        data = _read_data(name, LayerType.OUTLINE, data, allow_builtin=True)
+        data = _read_data_full(name, LayerType.OUTLINE, data, allow_builtin=True)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='OUT', VTYPE=data.VTYPE)
         data = _convert_latlong_data(name, LayerType.OUTLINE, data, latitude_field=latitude_field,
                                      longitude_field=longitude_field)[['value_field', 'geometry']]
@@ -1238,7 +1317,7 @@ class PlotBuilder:
         """
 
         _check_name(name, LayerType.POINT)
-        data = _read_data(name, LayerType.POINT, data, allow_builtin=False)
+        data = _read_data_full(name, LayerType.POINT, data, allow_builtin=False)
         layer = dict(NAME=name, RTYPE=data.RTYPE, DSTYPE='PNT', VTYPE=data.VTYPE)
         if text_field:
             data = _convert_latlong_data(name, LayerType.POINT, data, latitude_field=latitude_field,
@@ -2034,7 +2113,7 @@ class PlotBuilder:
             else:
                 crop_args.extend(["-p4", "1.5", "4.5", "2.5", "1.5"])
             crop_args.extend(["-u", "-s", filepath, "-o", newfilepath])
-            print(f"Call to PdfCropMargins: {crop_args}")
+            # print(f"Call to PdfCropMargins: {crop_args}")
             crop(crop_args)
 
             if not keep_original:

@@ -5,7 +5,7 @@ with open("README.rst") as readme_file:
     readme = readme_file.read()
 
 setup(
-    name="geohexviz",  # formerly real-geohexviz
+    name="geohexviz",
     version="1.0.0",
     description="A library for the visualization of hexagonally binned data sets.",
     long_description=readme,
@@ -18,7 +18,7 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.9.4",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)", # ensure license
-        "Operating System :: OS Independent",  # with exceptions
+        "Operating System :: OS Independent",  # with exceptions TBD
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Visualization",
     ],
@@ -40,8 +40,9 @@ setup(
     ],
     extras_require={
         "dev": [
-            "pip"
-            "Sphinx"
+            "pip",
+            "Sphinx",
+            "openpyxl"
         ],
         "pdf-crop": [
             "pdfcropmargins~=1.0.5"

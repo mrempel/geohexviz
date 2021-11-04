@@ -2,7 +2,7 @@ from enum import Enum
 
 
 class LayerType(Enum):
-    """An enumeration of different dataset types.
+    """An enumeration of different layer types.
     """
     HEXBIN = 'hexbin'
     REGION = 'region'
@@ -34,12 +34,32 @@ class ColorScaleError(Exception):
 
 class DataFileReadError(Exception):
 
-    def __init__(self, message: str = "There was an error while reading the data file."):
-        self.message = message
+    def __init__(self, name: str, dstype: LayerType, message: str = "There was an error while reading the data file."):
+        if dstype == LayerType.HEXBIN:
+            self.message = f"There was an error while reading the 'data' property of the {dstype.value} layer.\n" \
+                           f"Error message:\n{message}"
+        else:
+            self.message = f"There was an error while reading the 'data' property of the " \
+                           f"{dstype.value}-type layer named {name}.\n" \
+                           f"Error message:\n{message}"
         super().__init__(self.message)
 
 
 class DataReadError(Exception):
+
+    def __init__(self, name: str, dstype: LayerType,
+                 message: str = "There was an error while reading the 'data' parameter passed."):
+        if dstype == LayerType.HEXBIN:
+            self.message = f"There was an error while reading the 'data' property of the {dstype.value} layer.\n" \
+                           f"Error message:\n{message}"
+        else:
+            self.message = f"There was an error while reading the 'data' property of the " \
+                           f"{dstype.value}-type layer named {name}.\n" \
+                           f"Error message:\n{message}"
+        super().__init__(self.message)
+
+
+class DataTypeError(Exception):
 
     def __init__(self, name: str, dstype: LayerType, allow_builtin: bool):
 
@@ -52,10 +72,10 @@ class DataReadError(Exception):
         self.dstype = dstype
         self.allow_builtin = allow_builtin
         if dstype == LayerType.HEXBIN:
-            self.message = f"The 'data' parameter given for the {dstype.value} data set was invalid.\n" \
+            self.message = f"The 'data' parameter given for the {dstype.value} layer was invalid.\n" \
                            f"The data must be one of the following: {', '.join(self.options)}"
         else:
-            self.message = f"The 'data' parameter given for the {dstype.value}-type data set named {name} " \
+            self.message = f"The 'data' parameter given for the {dstype.value}-type layer named {name} " \
                            f"was invalid.\nThe data must be one of the following: {', '.join(self.options)}"
 
         super().__init__(self.message)
@@ -73,14 +93,14 @@ class GeometryParseLatLongError(Exception):
         self.dstype = dstype
         self.fmt = "latitude" if lat else "longitude"
         if dstype == LayerType.HEXBIN:
-            self.message = f"There was no geometry passed for the {dstype} data set.\n" \
+            self.message = f"There was no geometry passed for the {dstype} layer.\n" \
                            f"In these cases, the columns containing latitudes " \
                            f"and longitudes must be specified (missing {self.fmt});\n" \
                            f"unless the naming of these columns follow builtin naming conventions.\n" \
                            f"Valid latitude column names: {latitude_aliases}," \
                            f"\nValid longitude column names: {longitude_aliases}"
         else:
-            self.message = f"There was no geometry passed for the {dstype}-type data set named {name}.\n" \
+            self.message = f"There was no geometry passed for the {dstype}-type layer named {name}.\n" \
                            f"In these cases, the columns containing latitudes " \
                            f"and longitudes must be specified (missing {self.fmt});\n" \
                            f"unless the naming of these columns follow builtin naming conventions.\n" \
@@ -98,12 +118,12 @@ class LatLongParseTypeError(Exception):
         self.dstype = dstype
         self.fmt = "latitude" if lat else "longitude"
         if dstype == LayerType.HEXBIN:
-            self.message = f"A {self.fmt} column was passed or parsed for the {dstype} data set.\n" \
+            self.message = f"A {self.fmt} column was passed or parsed for the {dstype} layer.\n" \
                            f"The column does not contain numeric entries, " \
                            f"and could not be converted to numerical format."
         else:
             self.message = f"A {self.fmt} column was passed or parsed for the " \
-                           f"{dstype}-type data set named {name}.\n" \
+                           f"{dstype}-type layer named {name}.\n" \
                            f"The column does not contain numeric entries, " \
                            f"and could not be converted to numerical format."
 
@@ -160,10 +180,10 @@ class NoHexagonalTilingError(Exception):
         self.name = name
         self.dstype = dstype
         if dstype == LayerType.HEXBIN:
-            self.message = f"No hexagonal tiling could be generated for the {dstype.value} data set.\n"
+            self.message = f"No hexagonal tiling could be generated for the {dstype.value} layer.\n"
         else:
             self.message = f"No hexagonal tiling could be generated for the" \
-                           f" {dstype.value}-type data set named {name}.\n"
+                           f" {dstype.value}-type layer named {name}.\n"
         super().__init__(self.message)
 
 

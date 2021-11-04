@@ -1,5 +1,5 @@
 GeoHexSimple - Simple module
 ============================
 
-.. automodule:: scripts.geohexsimple.simple
+.. automodule:: geohexsimple
     :members:

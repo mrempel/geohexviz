@@ -1,0 +1,196 @@
+<?xml version="1.0" encoding="UTF-8"?><MD_Metadata xmlns:gts="http://www.isotc211.org/2005/gts" xmlns:gco="http://www.isotc211.org/2005/gco" xmlns:xalan="http://xml.apache.org/xalan" xmlns:srv="http://www.isotc211.org/2005/srv" xmlns:gmx="http://www.isotc211.org/2005/gmx" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:gml="http://www.opengis.net/gml" xmlns="http://www.isotc211.org/2005/gmd">
+    <fileIdentifier>
+        <gco:CharacterString>c57777877aa041ecaef98ff2519aabf6</gco:CharacterString>
+    </fileIdentifier>
+    <language>
+        <LanguageCode codeList="http://www.loc.gov/standards/iso639-2/php/code_list.php" codeListValue="eng" codeSpace="ISO639-2">eng</LanguageCode>
+    </language>
+    <characterSet>
+        <MD_CharacterSetCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode" codeListValue="utf8" codeSpace="ISOTC211/19115">utf8</MD_CharacterSetCode>
+    </characterSet>
+    <hierarchyLevel>
+        <MD_ScopeCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_ScopeCode" codeListValue="dataset" codeSpace="ISOTC211/19115">dataset</MD_ScopeCode>
+    </hierarchyLevel>
+    <hierarchyLevelName>
+        <gco:CharacterString>dataset</gco:CharacterString>
+    </hierarchyLevelName>
+    <contact>
+        <CI_ResponsibleParty>
+            <role>
+                <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="pointOfContact" codeSpace="ISOTC211/19115">pointOfContact</CI_RoleCode>
+            </role>
+        </CI_ResponsibleParty>
+    </contact>
+    <dateStamp>
+        <gco:Date>2020-03-31</gco:Date>
+    </dateStamp>
+    <metadataStandardName>
+        <gco:CharacterString>ISO 19139 Geographic Information - Metadata - Implementation Specification</gco:CharacterString>
+    </metadataStandardName>
+    <metadataStandardVersion>
+        <gco:CharacterString>2007</gco:CharacterString>
+    </metadataStandardVersion>
+    <spatialRepresentationInfo>
+        <MD_VectorSpatialRepresentation>
+            <geometricObjects>
+                <MD_GeometricObjects>
+                    <geometricObjectType gco:nilReason="missing"/>
+                    <geometricObjectCount>
+                        <gco:Integer>22969</gco:Integer>
+                    </geometricObjectCount>
+                </MD_GeometricObjects>
+            </geometricObjects>
+        </MD_VectorSpatialRepresentation>
+    </spatialRepresentationInfo>
+    <identificationInfo>
+        <MD_DataIdentification>
+            <citation>
+                <CI_Citation>
+                    <title>
+                        <gco:CharacterString>Monitoring Trends in Burn Severity: Fire Occurrence Locations and Burned Area Boundaries</gco:CharacterString>
+                    </title>
+                    <date gco:nilReason="missing"/>
+                    <citedResponsibleParty>
+                        <CI_ResponsibleParty>
+                            <role>
+                                <CI_RoleCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#CI_RoleCode" codeListValue="originator" codeSpace="ISOTC211/19115">originator</CI_RoleCode>
+                            </role>
+                        </CI_ResponsibleParty>
+                    </citedResponsibleParty>
+                </CI_Citation>
+            </citation>
+            <abstract>
+                <gco:CharacterString>A map service depicting Fire Occurrence Locations and Burned Area Boundaries from 1984 through 2018. The Monitoring Trends in Burn Severity (MTBS) project maps the location, extent, and severity of all large fires in the conterminous United States (CONUS), Alaska, Hawaii and Puerto Rico from 1984 to present. All documented fires greater than 1,000 acres in the western U.S. and greater than 500 acres in the eastern U.S. are mapped across all ownerships. The project produces geospatial and tabular data for analysis at a range of spatial, temporal, and thematic scales and are intended to meet a variety of information needs that require consistent data about fire effects through space and time. MTBS is conducted through a partnership between the U.S. Geological Survey National Center for Earth Resources Observation and Science (EROS) and the USDA Forest Service Remote Sensing Applications Center (RSAC). Metadata and Downloads</gco:CharacterString>
+            </abstract>
+            <purpose>
+                <gco:CharacterString>Monitoring Trends in Burn Severity Fire Occurrences and Burned Area Boundaries</gco:CharacterString>
+            </purpose>
+            <credit>
+                <gco:CharacterString>US Forest Service Enterprise Map Services Program</gco:CharacterString>
+            </credit>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>MTBS</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>EDW</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Area Boundaries</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Fire Occurrence</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Severity</gco:CharacterString>
+                    </keyword>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>MTBS</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>EDW</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Area Boundaries</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Fire Occurrence</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Severity</gco:CharacterString>
+                    </keyword>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>MTBS</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>EDW</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Area Boundaries</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Fire Occurrence</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Severity</gco:CharacterString>
+                    </keyword>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>MTBS</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>EDW</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Area Boundaries</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Fire Occurrence</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Severity</gco:CharacterString>
+                    </keyword>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <descriptiveKeywords>
+                <MD_Keywords>
+                    <keyword>
+                        <gco:CharacterString>MTBS</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>EDW</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Area Boundaries</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Fire Occurrence</gco:CharacterString>
+                    </keyword>
+                    <keyword>
+                        <gco:CharacterString>Burn Severity</gco:CharacterString>
+                    </keyword>
+                </MD_Keywords>
+            </descriptiveKeywords>
+            <resourceConstraints>
+                <MD_Constraints>
+                    <useLimitation>
+                        <gco:CharacterString>The USDA Forest Service makes no warranty, expressed or implied, including the warranties of merchantability and fitness for a particular purpose, nor assumes any legal liability or responsibility for the accuracy, reliability, completeness or utility of these geospatial data, or for the improper or incorrect use of these geospatial data. These geospatial data and related maps or graphics are not legal documents and are not intended to be used as such. The data and maps may not be used to determine title, ownership, legal descriptions or boundaries, legal jurisdiction, or restrictions that may be in place on either public or private land. Natural hazards may or may not be depicted on the data and maps, and land users should exercise due caution. The data are dynamic and may change over time. The user is responsible to verify the limitations of the geospatial data and to use the data accordingly.
+
+As a work of the United States Government, these data are within the public domain of the United States. Additionally, The U.S. Forest Service waives copyright and related rights in the work worldwide through the CC0 1.0 Universal Public Domain Dedication (which can be found at https://creativecommons.org/publicdomain/zero/1.0/).</gco:CharacterString>
+                    </useLimitation>
+                </MD_Constraints>
+            </resourceConstraints>
+            <language gco:nilReason="missing"/>
+            <characterSet>
+                <MD_CharacterSetCode codeList="http://www.isotc211.org/2005/resources/Codelist/gmxCodelists.xml#MD_CharacterSetCode" codeListValue="utf8" codeSpace="ISOTC211/19115">utf8</MD_CharacterSetCode>
+            </characterSet>
+        </MD_DataIdentification>
+    </identificationInfo>
+    <distributionInfo>
+        <MD_Distribution>
+            <transferOptions>
+                <MD_DigitalTransferOptions>
+                    <onLine>
+                        <CI_OnlineResource>
+                            <linkage>
+                                <URL>https://apps.fs.usda.gov/arcx/rest/services/EDW/EDW_MTBS_01/MapServer</URL>
+                            </linkage>
+                        </CI_OnlineResource>
+                    </onLine>
+                </MD_DigitalTransferOptions>
+            </transferOptions>
+        </MD_Distribution>
+    </distributionInfo>
+</MD_Metadata>
