@@ -24,7 +24,7 @@ setup(
     ],
     keywords='visualization,geospatial,hexagonal binning',
     python_requires=">=3.6",
-    packages=find_packages(exclude=tuple("tests")),
+    packages=find_packages(exclude=["docs", "tests"]),
     include_package_data=True,
     install_requires=[
         "h3~=3.7.0",
