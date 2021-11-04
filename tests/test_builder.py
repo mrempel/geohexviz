@@ -42,7 +42,7 @@ class BuilderTestCase(unittest.TestCase):
     def setUp(self):
         self.builder = builder.PlotBuilder()
 
-    def test_read_data_full_full(self):
+    def test_read_data_full(self):
         """Tests the builder module's ability to read GIS related formats.
 
         Tests:
