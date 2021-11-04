@@ -1,10 +1,9 @@
-geopandas
-shapely
 setuptools
-pyproj
+geopandas
 kaleido
 geojson
 plotly
 h3
 pyyaml
 rtree
+openpyxl

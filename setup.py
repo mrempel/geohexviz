@@ -36,7 +36,8 @@ setup(
         "plotly~=4.14.3",
         "kaleido~=0.2.1",
         "pyyaml~=5.4.1",
-        "rtree~=0.9.1"
+        "rtree~=0.9.1",
+        "openpyxl~=3.0.9"
     ],
     extras_require={
         "dev": [
@@ -47,17 +48,10 @@ setup(
         ],
         "pdf-crop": [
             "pdfcropmargins~=1.0.5"
-        ],
-        "excel-enabled": [
-            "openpyxl~=3.0.9"
-        ],
-        "all-extras": [
-            "openpyxl~=3.0.9",
-            "pdfcropmargins~=1.0.5"
         ]
     },
     entry_points={
-        "console_scripts": ["geohexsimple=geohexsimple.simple:main [pyyaml]"]
+        "console_scripts": ["geohexsimple=geohexsimple.simple:main"]
     }
 )
 
