@@ -1,6 +1,7 @@
 .. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
     :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
-.. |Action Status| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg?branch=master&event=workflow_run
+
+.. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
     :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
 
 
@@ -11,9 +12,14 @@
 
 Welcome to GeoHexViz!
 
-Geospatial visualization is often used in military operations research to convey analyses to both analysts and decision makers. For example, it has been used to help commanders coordinate units within a geographic region, to depict how terrain impacts vehicle performance, and inform training decisions in order to meet mission requirements. When such analyses include a large amount of point-like data, combining geospatial visualization and binning - in particular, hexagonal binning given its properties such as having the same number of neighbours as sides, the centre of each hexagon being equidistant from the centres of its neighbours, and that hexagons tile densely on curves surfaces - is an effective way to summarize and communicate the data. Recent examples in the military and public safety domains include assessing the impact of infrastructure on Arctic operations and communicating the spatial distribution COVID-19 cases respectively.
+Geospatial visualization is often used in military operations research to convey analyses to both analysts and decision makers.
+For example, it has been used to help commanders coordinate units within a geographic region [feibush2000a]_, to depict how terrain impacts vehicle performance [laskey2010a]_, and inform training decisions in order to meet mission requirements [goodrich2019a]_.
+When such analyses include a large amount of point-like data, combining geospatial visualization and binning -
+in particular, hexagonal binning given its properties such as having the same number of neighbours as sides, the centre of each hexagon being equidistant from the centres of its neighbours, and that hexagons tile densely on curves surfaces [carr1992a]_ [sinha2019a]_ -
+is an effective way to summarize and communicate the data.
+Recent examples in the military and public safety domains include assessing the impact of infrastructure on Arctic operations [hunter2021a]_ and communicating the spatial distribution COVID-19 cases [shaito2021a]_ respectively.
 
-However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz - which produces publication-quality geospatial visualizations with hexagonal binning - is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
+However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz &mdash; which produces publication-quality geospatial visualizations with hexagonal binning &mdash; is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
 
 Example Usage
 #############
@@ -320,6 +326,18 @@ Contact
 For any questions, feedback, bug reports, feature requests, etc please
 first present your thoughts via GitHub issues. For further assistance
 please contact tony.azp25@gmail.com.
+
+README References
+#################
+
+.. [feibush2000a] Feibush, E., Gagvani, N., & Williams, D. (2000). Visualization for situational awareness. *IEEE Computer Graphics and Applications, 20* (5), 38–45. https://doi.org/10.1109/38.865878
+.. [laskey2010a] Laskey, K. B., Wright, E. J., & da Costa, P. C. G. (2010). Envisioning uncertainty in geospatial information. *International Journal of Approximate Reasoning, 51* (2), 209–223. https://doi.org/10.1016/j.ijar.2009.05.011
+.. [goodrich2019a] Goodrich, D. C., Heilman, P., Guertin, D., Levick, L. R., Burns, I., Armendariz, G., & Wei, H. (2019). *Automated geospatial watershed assessment (AGWA) to aid in sustaining military mission and training*. USDA-ARS Southwest Watershed Research Center (SWRC) Tucson United States. https://apps.dtic.mil/sti/citations/AD1092333
+.. [carr1992a] Carr, D. B., Olsen, A. R., & White, D. (1992). Hexagon mosaic maps for display of univariate and bivariate geographical data. *Cartography and Geographic Information Systems, 19* (4), 228–236. https://doi.org/10.1559/152304092783721231
+.. [sinha2019a] Sinha, A. (2019). *Spatial modelling tidbits: Honeycomb or fishnets?* Towards Data Science. https://towardsdatascience.com/spatial-modelling-tidbits-honeycomb-or-fishnets-7f0b19273aab
+.. [hunter2021a] Hunter, G., Chan, J., & Rempel, M. (2021). *Assessing the impact of infrastructure on arctic operations* (Scientific Report DRDC-RDDC-2021-R024). Defence Research and Development Canada. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc356/p812844_A1b.pdf
+.. [shaito2021a] Shaito, M., & Elmasri, R. (2021). Map visualization using spatial and spatio-temporal data: Application to COVID-19 data. *The 14th Pervasive Technologies Related to Assistive Environments Conference*, 284--291. https://doi.org/10.1145/3453892.3461336
+
 
 Copyright and License
 #####################
