@@ -22,7 +22,7 @@ from shapely import wkt
 from pandas import DataFrame
 from os.path import join as pjoin
 import os
-from tests.testutils.test_geoutils import shapes_from_wkt
+from tests.test_geoutils import shapes_from_wkt
 import numpy as np
 
 DATA_PATH = pjoin(os.path.dirname(__file__), 'data')
