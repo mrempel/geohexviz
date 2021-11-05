@@ -1,4 +1,4 @@
-name: GeoHexViz Run Tests (Windows - Marketplace)
+name: GeoHexViz Run Tests (Miniconda Marketplace - MacOs, Ubuntu, Windows)
 on:
   push:
     branches:
