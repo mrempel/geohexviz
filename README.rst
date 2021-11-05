@@ -1,7 +1,10 @@
 .. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
     :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
-.. |Action Status| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-wndows2/badge.svg
-    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-wndows2.yml
+.. |Action Status| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg?branch=master&event=workflow_run
+    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
+
+
+
 .. image:: img_files/geohexviz-logo-med.png
     :align: center
 
