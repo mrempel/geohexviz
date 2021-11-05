@@ -1,6 +1,5 @@
 import os
-import sys
-from geohexsimple import run_file
+from geohexviz.utils.file import run_file
 import argparse
 
 
