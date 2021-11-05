@@ -1,28 +1,16 @@
 .. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
     :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
+.. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-wndows2/badge.svg
+    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-wndows2.yml
+.. image:: img_files/geohexviz-logo-med.png
+    :align: center
 
-GeoHexViz
-=========
 
 Welcome to GeoHexViz!
 
-Geospatial visualization is often used in military operations research to convey analyses to both analysts and decision makers. For example, it has been used to help commanders coordinate units within a geographic region [@feibush2000a], to depict how terrain impacts vehicle performance [@laskey2010a], and inform training decisions in order to meet mission requirements [@goodrich2019a]. When such analyses include a large amount of point-like data, combining geospatial visualization and binning - in particular, hexagonal binning given its properties such as having the same number of neighbours as sides, the centre of each hexagon being equidistant from the centres of its neighbours, and that hexagons tile densely on curves surfaces [@carr1992a; @sinha2019a] - is an effective way to summarize and communicate the data. Recent examples in the military and public safety domains include assessing the impact of infrastructure on Arctic operations [@hunter2021a] and communicating the spatial distribution COVID-19 cases [@shaito2021a] respectively. 
+Geospatial visualization is often used in military operations research to convey analyses to both analysts and decision makers. For example, it has been used to help commanders coordinate units within a geographic region, to depict how terrain impacts vehicle performance, and inform training decisions in order to meet mission requirements. When such analyses include a large amount of point-like data, combining geospatial visualization and binning - in particular, hexagonal binning given its properties such as having the same number of neighbours as sides, the centre of each hexagon being equidistant from the centres of its neighbours, and that hexagons tile densely on curves surfaces - is an effective way to summarize and communicate the data. Recent examples in the military and public safety domains include assessing the impact of infrastructure on Arctic operations and communicating the spatial distribution COVID-19 cases respectively.
 
 However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz - which produces publication-quality geospatial visualizations with hexagonal binning - is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
-
-GeoHexViz is accessible at `https://github.com/dnd-drdc-rddc/geohexviz` and is installed via a `setup.py` script.
-
-# Statement of need
-
-Creating geospatial visualizations is often time-consuming and laborious. For example, an analyst must make a variety of design decisions, including which map projection to use, the colour scheme, the basemap, and how to organize the data in layers. The resulting design may be implemented using one of many software packages, including:
-
-+ **ArcGIS** which provides a wide range of capabilities, but requires a paid license and a solid foundation in geospatial information processing;
-+ **QGIS** which is free and open source, but like ArcGIS requires in-depth knowledge of geospatial information processing to be used effectively;
-+ **D3** which emphasizes web standards rather than a proprietary framework, but requires extensive knowledge of JavaScript; and
-+ **Plotly** which is a free and open source Python graphing library, but like D3 and other packages requires knowledge of a programming language.
-
-Common across these applications is the requirement to have knowledge of geospatial concepts, and acquiring this knowledge has been identified as a significant challenge. In addition, the latter two options require programming. While many analysts have programming experience, not all do and in time-sensitive situations, as often encountered in a military setting, writing code to produce a visualization may not be feasible. With this in mind, GeoHexViz aims to reduce the time, in-depth knowledge, and programming required to produce publication-quality geospatial visualizations that use hexagonal binning. Implemented in Python, it seamlessly integrates several exisitng Python packages - Pandas, GeoPandas, Uber H3, Shapely, and Plotly - and extends their functionality to achieve these goals. Although originally designed for use within the military operations research community, it is expected that that GeoHexViz may be of use in other communities as well.
-
 
 Example Usage
 #############
