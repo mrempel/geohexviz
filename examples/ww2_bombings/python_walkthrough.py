@@ -8,10 +8,9 @@ Note that this needs to be run three different times for each .csv file (for eac
 
 # this file needs to be run for each .csv file (each year)
 # Method 2a: Using GeoHexSimple's functions to run a properties file
-from geohexsimple import run_file
+from geohexviz.utils.file import run_file
 
 run_file("<path to example3.json>")  # JSON file works
-run_file("<path to example3.yml>")  # YAML file works
 
 # Method 2b: Using GeoHexViz's functions to make a plot from scratch
 from geohexviz.builder import PlotBuilder

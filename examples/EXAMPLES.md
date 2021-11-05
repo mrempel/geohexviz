@@ -29,7 +29,7 @@ These four examples are also described in detail within the reference document p
    
 
 As previously mentioned, there are two methods to creating visualizations.
-Method 1 concerns using the GeoHexSimple package's script to run a file containing plot structure.
+Method 1 concerns using the functions that the GeoHexSimple script uses to run a file containing plot structure.
 Method 2 concerns using Python code to interact with the functions within the package.
 Method 2 method has two categories:
 

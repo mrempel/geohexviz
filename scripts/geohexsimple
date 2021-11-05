@@ -54,7 +54,7 @@ def main():
                                  "file (JSON, YAML) or a directory containing\nbuilder files.\n"
                                  "Options: file path, help, exit.\n")
             if option_input.lower() == 'exit':
-                return
+                break
             if option_input.lower() == 'help':
                 print("In order to use this script, a properly formatted JSON, or YAML file must be passed.\n"
                       "The user can also pass a directory of JSON files if they wish.\n")

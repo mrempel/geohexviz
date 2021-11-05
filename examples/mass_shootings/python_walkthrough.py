@@ -6,10 +6,9 @@ both of which pertain to usage within Python code.
 """
 
 # Method 2a: Using GeoHexSimple's functions to run a properties file
-from geohexsimple import run_file
+from geohexviz.utils.file import run_file
 
 run_file("<path to example2.json>")  # JSON file works
-run_file("<path to example2.yml>")  # YAML file works
 
 # Method 2b: Using GeoHexViz's functions to make a plot from scratch
 from geohexviz.builder import PlotBuilder

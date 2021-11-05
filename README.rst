@@ -25,8 +25,8 @@ Method 1 concerns using the GeoHexSimple package's script to run a file containi
 Method 2 concerns using Python code to interact with the functions within the package.
 Method 2 method has two categories:
 
-a) Using functions from the GeoHexSimple package \
-b) Using functions from the GeoHexViz package
+a) Using the functions that the GeoHexSimple script uses \
+b) Using the PlotBuilder object from the GeoHexViz package
 
 Please refer to the `examples directory <https://github.com/tony-zeidan/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods).
 
@@ -107,7 +107,7 @@ A simple example of this method is given below.
 
 .. code:: python
 
-    from geohexsimple import run_json
+    from geohexviz.utils.file import run_json
 
     run_json("<filepath here>")
 

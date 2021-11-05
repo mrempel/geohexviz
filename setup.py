@@ -52,9 +52,7 @@ setup(
             "pdfcropmargins~=1.0.5"
         ]
     },
-    entry_points={
-        "console_scripts": ["geohexsimple=scripts.geohexsimple:main"]
-    }
+    scripts=["scripts/geohexsimple"]
 )
 
 print(find_packages(exclude=tuple("tests")))
