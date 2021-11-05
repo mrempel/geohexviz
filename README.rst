@@ -1,20 +1,11 @@
-.. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
-    :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
-.. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
-    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
-.. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
-    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
-.. image:: https://img.shields.io/badge/python-3.7,_3.8,_3.9-blue.svg
-.. image:: https://img.shields.io/badge/geohexviz-v1.0.0-blue.svg
-.. image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
-    :target: https://github.com/tony-zeidan/geohexviz/blob/master/LICENSE
-
-
 .. image:: img_files/geohexviz-logo-med.png
     :align: right
     :width: 300
     :alt: GeoHexViz logo
 
+
+
+|travis| |ciconda| |cipip| |geohexvizver| |pythonver| |license|
 
 Welcome to GeoHexViz!
 
@@ -350,3 +341,18 @@ Copyright and License
 
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented
 by the Minister of National Defence, 2021.
+
+.. |travis| image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
+    :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
+.. |ciconda| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
+    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
+.. |cipip| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
+    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
+.. |pythonver| image:: https://img.shields.io/badge/python-3.7,_3.8,_3.9-blue.svg
+.. |geohexvizver| image:: https://img.shields.io/badge/geohexviz-v1.0.0-blue.svg
+.. |license| image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
+    :target: https://github.com/tony-zeidan/geohexviz/blob/master/LICENSE
+
+
+
+
