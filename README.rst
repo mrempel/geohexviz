@@ -4,6 +4,11 @@
     :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
 .. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
     :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
+.. image:: https://img.shields.io/badge/python-3.7,_3.8,_3.9-blue.svg
+.. image:: https://img.shields.io/badge/geohexviz-v1.0.0-blue.svg
+.. image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
+    :target: https://github.com/tony-zeidan/geohexviz/blob/master/LICENSE
+
 
 .. image:: img_files/geohexviz-logo-med.png
     :align: right
@@ -20,7 +25,7 @@ in particular, hexagonal binning given its properties such as having the same nu
 is an effective way to summarize and communicate the data.
 Recent examples in the military and public safety domains include assessing the impact of infrastructure on Arctic operations [hunter2021a]_ and communicating the spatial distribution COVID-19 cases [shaito2021a]_ respectively.
 
-However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz &mdash; which produces publication-quality geospatial visualizations with hexagonal binning &mdash; is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
+However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz - which produces publication-quality geospatial visualizations with hexagonal binning - is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
 
 Example Usage
 #############
