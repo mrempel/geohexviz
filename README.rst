@@ -1,11 +1,11 @@
+|travis| |ciconda| |cipip| |geohexvizver| |pythonver| |license|
+
+
+
 .. image:: img_files/geohexviz-logo-med.png
     :align: right
     :width: 300
     :alt: GeoHexViz logo
-
-
-
-|travis| |ciconda| |cipip| |geohexvizver| |pythonver| |license|
 
 Welcome to GeoHexViz!
 
