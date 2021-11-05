@@ -53,7 +53,7 @@ setup(
         ]
     },
     entry_points={
-        "console_scripts": ["geohexsimple=scripts/geohexsimple:main"]
+        "console_scripts": ["geohexsimple=scripts.geohexsimple:main"]
     }
 )
 
