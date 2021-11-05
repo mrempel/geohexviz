@@ -49,10 +49,13 @@ def main():
               " hexagonally binned geospatial visualizations.\n"
               "✨=============================================✨")
 
-        while (option_input := input("✨Main Menu✨\n"
-                                     "Please input the location of your parameterized\nbuilder "
-                                     "file (JSON, YAML) or a directory containing\nbuilder files.\n"
-                                     "Options: file path, help, exit.\n").lower()) != 'exit':
+        while True:
+            option_input = input("✨Main Menu✨\n"
+                                 "Please input the location of your parameterized\nbuilder "
+                                 "file (JSON, YAML) or a directory containing\nbuilder files.\n"
+                                 "Options: file path, help, exit.\n")
+            if option_input.lower() == 'exit':
+                return
             if option_input.lower() == 'help':
                 print("In order to use this script, a properly formatted JSON, or YAML file must be passed.\n"
                       "The user can also pass a directory of JSON files if they wish.\n")
@@ -67,7 +70,6 @@ def main():
                         print("The path you input exists, but is not a directory, JSON file, or YAML file.")
             else:
                 print('That was an incorrect option or the file does not exist, try again.')
-        sys.exit()
     else:
         if os.path.isdir(args.path):
             _plotDir(args.path, debug=not args.nofeedback, strict=args.verbose)

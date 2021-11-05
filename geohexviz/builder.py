@@ -75,7 +75,10 @@ StrDict = Dict[str, Any]
 DFType = Union[str, DataFrame, GeoDataFrame]
 
 # add driver for KML files
+gpd.io.file.fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
+gpd.io.file.fiona.drvsupport.supported_drivers['libkml'] = 'rw'
 gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
+gpd.io.file.fiona.drvsupport.supported_drivers['kml'] = 'rw'
 
 def _reset_to_odata(layer: StrDict):
     """Resets the odata parameter of a layer.
