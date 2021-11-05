@@ -1,13 +1,14 @@
 .. image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
     :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
-
 .. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
     :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
-
-
+.. image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
+    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
 
 .. image:: img_files/geohexviz-logo-med.png
-    :align: center
+    :align: right
+    :width: 300
+    :alt: GeoHexViz logo
 
 
 Welcome to GeoHexViz!

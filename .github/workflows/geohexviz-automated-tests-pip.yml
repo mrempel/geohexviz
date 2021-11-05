@@ -1,4 +1,4 @@
-name: GeoHexViz Run Tests (Pip - MacOs, Ubuntu)
+name: CI Tests (Pip)
 on:
   push:
     branches:
