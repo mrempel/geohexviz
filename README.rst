@@ -97,12 +97,12 @@ Or something like:
 Method 2
 ********
 As previously mentioned there are two ways to use the GeoHexViz library in Python code.
-Method 2a concerns using the functions within GeoHexSimple to create plots from pre-existing plot parameter files.
+Method 2a concerns using the functions that the GeoHexSimple script uses to create plots from pre-existing plot parameter files.
 Method 2b concerns using the functions from the GeoHexViz package to create plots.
 
 Method 2a Example Usage
 _______________________
-You can use the functions within GeoHexSimple to create a plot from a pre-existing plot parameter file.
+You can use the functions that the GeoHexSimple script uses to create a plot from a pre-existing plot parameter file.
 A simple example of this method is given below.
 
 .. code:: python
