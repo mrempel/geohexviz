@@ -4,7 +4,6 @@ import operator
 import warnings
 from typing import Callable, List, Optional, Dict, Any, Union, Tuple, Iterable
 import geopandas as gpd
-import numpy as np
 import pandas as pd
 from pyproj import Geod
 from geojson import Feature, FeatureCollection
@@ -15,19 +14,8 @@ from shapely.geometry import Polygon, Point, polygon, LineString, LinearRing, \
     MultiPoint, MultiPolygon, MultiLineString, GeometryCollection
 from functools import reduce
 
-'''
-Notes:
-Polygons must have Long/Lat form in order to be plotted with GeoJSONs.
-'''
-
 GeometryContainer = Union[MultiPolygon, MultiPoint, MultiLineString, GeometryCollection]
 AnyGeom = Union[Polygon, Point, LineString, GeometryContainer]
-
-"""
-COMBINING WITH ORIGINAL FUNCTIONALITY TO MAKE IT BETTER.
-____________________________________________________________________
-"""
-
 
 def add_geometry(row) -> Polygon:
     """Returns a Polygon of the hex id in the same row.

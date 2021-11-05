@@ -187,7 +187,7 @@ def _validate_layer(layer: StrDict):
         raise ValueError("There must be a 'data' member present in the layer.")
 
 
-def get_reader_function_from_method(method: str):
+def _get_reader_function_from_method(method: str):
     try:
         return _read_method_mapping[method]
     except KeyError:
@@ -195,7 +195,7 @@ def get_reader_function_from_method(method: str):
                          f"\n Available file read functions: {list(_read_method_mapping.keys())}")
 
 
-def get_reader_function_from_path(ext: str):
+def _get_reader_function_from_path(ext: str):
     try:
         return _extension_mapping[ext]
     except KeyError:
@@ -220,6 +220,8 @@ def _read_data_file_dict(data):
 def _read_data_file(data: str, read_method=None, read_args=None, **kwargs) -> DataFrame:
     """Reads data from a file, based on extension.
 
+    :DEPRECATED:
+
     If the file extension is unknown the file is passed
     directly into geopandas.read_file().
 
@@ -240,12 +242,12 @@ def _read_data_file(data: str, read_method=None, read_args=None, **kwargs) -> Da
         filepath = f"{filepath}{extension}"
 
         try:
-            read_fn = get_reader_function_from_method(read_method)
+            read_fn = _get_reader_function_from_method(read_method)
         except ValueError as e:
             if read_method is not None:
                 raise e
             try:
-                read_fn = get_reader_function_from_path(extension)
+                read_fn = _get_reader_function_from_path(extension)
             except ValueError:
                 read_fn = gpd.read_file
 
@@ -276,7 +278,27 @@ def _read_data_full(
         data: DFType,
         allow_builtin: bool = False
 ):
-    # TODO: refactored initial processing (informative errors)
+    """Reads data from a file, based on extension.
+
+    If the file extension is unknown the file is passed
+    directly into geopandas.read_file().
+
+    This function uses both geopandas and pandas to read data.
+
+    In the future it may be beneficial to allow the reading
+    of databases, and feather.
+
+    :param name: The name of the layer containing the given data
+    :type name: str
+    :param dstype: The type of layer containing the given data
+    :type dstype: LayerType
+    :param data: The data to be read
+    :type data: DFType
+    :param allow_builtin: Whether to allow builtin data types or not (countries, continents)
+    :type allow_builtin: bool
+    :return: The read data
+    :rtype: DataFrame
+    """
 
     read_args = ()
     read_kwargs = {}
@@ -293,7 +315,7 @@ def _read_data_full(
         filepath, extension = os.path.splitext(os.path.join(os.path.dirname(__file__), data))
 
         try:
-            read_fn = get_reader_function_from_path(extension)
+            read_fn = _get_reader_function_from_path(extension)
         except ValueError:
             read_fn = gpd.read_file
 

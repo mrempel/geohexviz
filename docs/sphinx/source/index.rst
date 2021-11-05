@@ -11,9 +11,9 @@ Welcome to GeoHexViz's documentation!
    :caption: Contents:
 
         Plot Builder Module <builder>
+        Utils Package <util>
         Errors Module <errors>
         Templates Module <templates>
-        GeoHexSimple Package <simple>
 
 Further Information
 ===================
@@ -109,17 +109,17 @@ Or something like:
 Method 2
 ********
 As previously mentioned there are two ways to use the GeoHexViz library in Python code.
-Method 2a concerns using the functions within GeoHexSimple to create plots from pre-existing plot parameter files.
+Method 2a concerns using the functions that the GeoHexSimple script uses to create plots from pre-existing plot parameter files.
 Method 2b concerns using the functions from the GeoHexViz package to create plots.
 
 Method 2a Example Usage
 _______________________
-You can use the functions within GeoHexSimple to create a plot from a pre-existing plot parameter file.
+You can use the functions that the GeoHexSimple script uses to create a plot from a pre-existing plot parameter file.
 A simple example of this method is given below.
 
 .. code:: python
 
-    from geohexsimple import run_json
+    from geohexviz.utils.file import run_json
 
     run_json("<filepath here>")
 
@@ -152,83 +152,6 @@ A simple example of this method is given below.
     builder.finalize()
     builder.display(clear_figure=True)
 
-
-Behind the Scenes
-*****************
-When the hexbin layer is set, the data is processed
-in the following steps:
-
-Data:
-
-+-------+-------+-------+-------+
-| index |  lats |  lons | value |
-+=======+=======+=======+=======+
-|   0   | 17.57 | 10.11 |  120  |
-+-------+-------+-------+-------+
-|   1   | 17.57 | 10.11 |  120  |
-+-------+-------+-------+-------+
-|   2   | 17.57 | 10.12 |  120  |
-+-------+-------+-------+-------+
-|   3   | 19.98 | 50.55 |  400  |
-+-------+-------+-------+-------+
-|   4   | 19.98 | 50.55 |  400  |
-+-------+-------+-------+-------+
-|   5   | 46.75 | 31.17 |  700  |
-+-------+-------+-------+-------+
-
-1) Coordinate columns are converted into geometry (if applicable)
-
-+-------+-------+---------------------+
-| index | value |       geometry      |
-+=======+=======+=====================+
-|   0   |  120  | POINT(17.57, 10.11) |
-+-------+-------+---------------------+
-|   1   |  120  | POINT(17.57, 10.11) |
-+-------+-------+---------------------+
-|   2   |  120  | POINT(17.57, 10.12) |
-+-------+-------+---------------------+
-|   3   |  400  | POINT(19.98, 50.55) |
-+-------+-------+---------------------+
-|   4   |  400  | POINT(19.98, 50.55) |
-+-------+-------+---------------------+
-|   5   |  700  | POINT(46.75, 31.17) |
-+-------+-------+---------------------+
-
-2) Hex cells are then placed over the data
-
-+-----------------+-------+---------------------+
-|       hex       | value |       geometry      |
-+=================+=======+=====================+
-| 83595afffffffff |  120  | POINT(17.57, 10.11) |
-+-----------------+-------+---------------------+
-| 83595afffffffff |  120  | POINT(17.57, 10.11) |
-+-----------------+-------+---------------------+
-| 83595afffffffff |  120  | POINT(17.57, 10.11) |
-+-----------------+-------+---------------------+
-| 835262fffffffff |  400  | POINT(19.98, 50.55) |
-+-----------------+-------+---------------------+
-| 835262fffffffff |  400  | POINT(19.98, 50.55) |
-+-----------------+-------+---------------------+
-| 831e5dfffffffff |  700  | POINT(46.75, 31.17) |
-+-----------------+-------+---------------------+
-(hex resolution = 3)
-
-3) The data is grouped together by hex, and hex geometry is added
-
-+-----------------+---------------+-------------+---------------------------------------------------+
-|       hex       |     items     | value_field |                      geometry                     |
-+=================+===============+=============+===================================================+
-| 83595afffffffff | (120,120,120) |     360     | POLYGON ((30.57051 46.80615, 30.47843 46.19931... |
-+-----------------+---------------+-------------+---------------------------------------------------+
-| 835262fffffffff |   (400, 400)  |     800     | POLYGON ((49.90903 20.19437, 49.74835 19.60088... |
-+-----------------+---------------+-------------+---------------------------------------------------+
-| 831e5dfffffffff |     (700)     |     700     | POLYGON ((9.44614 17.39197, 9.49704 16.75205, ... |
-+-----------------+---------------+-------------+---------------------------------------------------+
-(binning function = sum of grouped values)
-
-When the data is eventually plotted, a GeoJSON format of the data is
-passed alongside plotly properties are passed to the Plotly graphing
-library.
 
 Installation
 ############
@@ -287,7 +210,6 @@ Further Documentation
 #####################
 
 The official documentation for GeoHexViz can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
-In particular, the API documentation for Python users can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_.
 The reference document published alongside this package can also be seen in the `docs directory <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
 
 Limitations
@@ -338,6 +260,8 @@ please contact tony.azp25@gmail.com.
 
 Copyright and License
 #####################
+
+For license see `this page <https://github.com/tony-zeidan/geohexviz/blob/master/LICENSE>`_.
 
 Copyright (c) Her Majesty the Queen in Right of Canada, as represented
 by the Minister of National Defence, 2021.
