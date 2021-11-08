@@ -132,7 +132,7 @@ class BuilderTestCase(unittest.TestCase):
             builder._read_data_full(
                 "sample",
                 err.LayerType.HEXBIN,
-                dict(lats=[1,1,1,1,1,1], lons=[2,2,2,2,2,2])
+                dict(lats=[1, 1, 1, 1, 1, 1], lons=[2, 2, 2, 2, 2, 2])
             )
         )
 
@@ -191,8 +191,8 @@ class BuilderTestCase(unittest.TestCase):
             )
 
         testdf = DataFrame(dict(
-            lats=[1,1,1,1,1,1,1,1,1],
-            lons=[2,2,2,2,2,2,2,2,2]
+            lats=[1, 1, 1, 1, 1, 1, 1, 1, 1],
+            lons=[2, 2, 2, 2, 2, 2, 2, 2, 2]
         ))
 
         # test with coordinate-filled dataframe
@@ -205,8 +205,8 @@ class BuilderTestCase(unittest.TestCase):
         )
 
         testdf = DataFrame(dict(
-            ynkl=[1,1,1,1,1,1,1,1,1],
-            ynkll=[2,2,2,2,2,2,2,2,2]
+            ynkl=[1, 1, 1, 1, 1, 1, 1, 1, 1],
+            ynkll=[2, 2, 2, 2, 2, 2, 2, 2, 2]
         ))
 
         # test with incorrectly-named coordinate-filled dataframe (none specified)
@@ -236,9 +236,11 @@ class BuilderTestCase(unittest.TestCase):
                 DataFrame()
             )
 
+        latlist = [1, 1, 1, 1, 1, 1, 1, 1, 1]
+        lonlist = [2, 2, 2, 2, 2, 2, 2, 2, 2]
         testdf = GeoDataFrame(dict(
-            ynkl=[1,1,1,1,1,1,1,1,1],
-            ynkll=[2,2,2,2,2,2,2,2,2]
+            ynkl=latlist,
+            ynkll=lonlist
         ))
 
         # test with incorrectly-named coordinate-filled geodataframe (none specified)
@@ -250,15 +252,15 @@ class BuilderTestCase(unittest.TestCase):
             )
 
         # test with incorrectly-named coordinate-filled geodataframe (columns specified)
-        self.assertIsNotNone(
-            builder._convert_latlong_data(
+        data = builder._convert_latlong_data(
                 "sample",
                 err.LayerType.HEXBIN,
                 testdf,
                 latitude_field="ynkl",
                 longitude_field="ynkll"
             )
-        )
+        self.assertIsNotNone(data)
+
 
 
     def test_invalid_naming(self):
@@ -1234,7 +1236,6 @@ class BuilderTestCase(unittest.TestCase):
         with self.assertRaises(err.NoLayerError):
             self.builder._get_point('PPA1')
 
-
     def test_auto_grid(self):
         """Tests the builders ability to... may scrap.
 
@@ -1243,9 +1244,9 @@ class BuilderTestCase(unittest.TestCase):
         """
         # need to test by bounds version
         df = DataFrame(dict(
-                latitude=[10, 20, 30],
-                longitude=[10, 20, 30]
-            ))
+            latitude=[10, 20, 30],
+            longitude=[10, 20, 30]
+        ))
         self.builder.add_point('PPA1', df)
         self.builder.auto_grid(on='point:PPA1')
         getauto = self.builder.get_grid('|*AUTO-point:PPA1*|')
