@@ -28,25 +28,20 @@ setup(
     packages=find_packages(exclude=["docs", "tests"]),
     include_package_data=True,
     install_requires=[
-        "h3~=3.7.0",
-        "shapely~=1.7.1",
-        "pyproj~=3.0.0.post1",
-        "numpy~=1.20.3",
-        "geojson~=2.5.0",
-        "pandas~=1.3.0",
-        "plotly~=4.14.3",
-        "kaleido~=0.2.1",
-        "pyyaml~=5.4.1",
-        "rtree~=0.9.1",
-        "openpyxl~=3.0.9",
-        "xlrd>=1.0.0"   # for older python versions
+        "h3==3.7.0",
+        "shapely==1.7.1",
+        "geojson==2.5.0",
+        "plotly==4.14.3",
+        "kaleido==0.2.1",
+        "pyyaml==5.4.1",
+        "rtree==0.9.7",
+        "openpyxl==3.0.9"   # required for XLSX input
     ],
     extras_require={
         "dev": [
             "pip",
             "Sphinx",
-            "openpyxl~=3.0.9",
-            "pdfcropmargins~=1.0.5"
+            "pdfcropmargins==1.0.5"
         ],
         "pdf-crop": [
             "pdfcropmargins~=1.0.5"

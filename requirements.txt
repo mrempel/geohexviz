@@ -1,9 +1,9 @@
 setuptools
-geopandas
-kaleido
-geojson
-plotly
-h3
-pyyaml
-rtree
-openpyxl
+geopandas==0.10.2
+kaleido==0.2.1
+geojson==2.5.0
+plotly==4.14.3
+h3==3.7.0
+pyyaml==5.4.1
+rtree==0.9.7
+openpyxl==3.0.9
