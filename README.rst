@@ -18,6 +18,8 @@ Recent examples in the military and public safety domains include assessing the 
 
 However, creating such visualizations may be difficult for many since it requires in-depth knowledge of both Geographic Information Systems and analytical techniques, not to mention access to software that may require a paid license, training, and in some cases knowledge of a programming language such as Python or JavaScript. To help reduce these barriers, GeoHexViz - which produces publication-quality geospatial visualizations with hexagonal binning - is a Python package that provides a simple interface, requires minimal in-depth knowledge, and either limited or no programming. The result is an analyst being able to spend more time doing analysis and less time producing visualizations.
 
+For more information of the design of GeoHexViz, see [abouzeidan2021a]_.
+
 Example Usage
 #############
 GeoHexViz allows a user to generate hexagonally binned geospatial visualizations with two different methods.
@@ -28,7 +30,7 @@ Method 2 method has two categories:
 a) Using the functions that the GeoHexSimple script uses \
 b) Using the PlotBuilder object from the GeoHexViz package
 
-Please refer to the `examples directory <https://github.com/tony-zeidan/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods).
+Please refer to the `examples directory <https://github.com/mrempel/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods).
 
 Method 1 Example Usage
 **********************
@@ -256,7 +258,7 @@ The user may also install using pip and GitHub:
 
 .. code-block::
 
-    pip install git+https://github.com/tony-zeidan/geohexviz.git
+    pip install git+https://github.com/mrempel/geohexviz.git
 
 
 Setting up a conda environment first helps.
@@ -274,9 +276,9 @@ simply activate the environment and run the ``setup.py`` file as shown above.
 Further Documentation
 #####################
 
-The official documentation for GeoHexViz can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
-In particular, the API documentation for Python users can be found at `this page <https://github.com/tony-zeidan/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_.
-The reference document published alongside this package can also be seen in the `docs directory <https://github.com/tony-zeidan/geohexviz/blob/master/docs>`_.
+The official documentation for GeoHexViz can be found at `this page <https://github.com/mrempel/geohexviz/blob/master/docs>`_.
+In particular, the API documentation for Python users can be found at `this page <https://github.com/mrempel/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_.
+The reference document published alongside this package can also be seen in the `docs directory <https://github.com/mrempel/geohexviz/blob/master/docs>`_.
 
 Limitations
 ###########
@@ -309,7 +311,7 @@ Contributing
 ############
 
 For major changes, please open an issue first to discuss what you would like to change.
-For more details please see `this page <https://github.com/tony-zeidan/geohexviz/blob/master/CONTRIBUTING.md>`_.
+For more details please see `this page <https://github.com/mrempel/geohexviz/blob/master/CONTRIBUTING.md>`_.
 
 Acknowledgements
 ################
@@ -320,13 +322,14 @@ advice for the development of this package.
 Contact
 #######
 
-For any questions, feedback, bug reports, feature requests, etc please
+For any questions, feedback, bug reports, feature requests, etc. please
 first present your thoughts via GitHub issues. For further assistance
-please contact tony.azp25@gmail.com.
+please contact mark.rempel@forces.gc.ca.
 
 README References
 #################
 
+.. [abouzeidan2021a] Abou Zeidan, M. & Rempel, M. (2021). GeoHezViz---Geospatial visualization using hexagonal binning software: Design reference and instruction manual. *Defence Research and Development Canada, DRDC-RDDC-2021-D183*. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf
 .. [feibush2000a] Feibush, E., Gagvani, N., & Williams, D. (2000). Visualization for situational awareness. *IEEE Computer Graphics and Applications, 20* (5), 38–45. https://doi.org/10.1109/38.865878
 .. [laskey2010a] Laskey, K. B., Wright, E. J., & da Costa, P. C. G. (2010). Envisioning uncertainty in geospatial information. *International Journal of Approximate Reasoning, 51* (2), 209–223. https://doi.org/10.1016/j.ijar.2009.05.011
 .. [goodrich2019a] Goodrich, D. C., Heilman, P., Guertin, D., Levick, L. R., Burns, I., Armendariz, G., & Wei, H. (2019). *Automated geospatial watershed assessment (AGWA) to aid in sustaining military mission and training*. USDA-ARS Southwest Watershed Research Center (SWRC) Tucson United States. https://apps.dtic.mil/sti/citations/AD1092333
@@ -339,8 +342,8 @@ README References
 Copyright and License
 #####################
 
-Copyright (c) Her Majesty the Queen in Right of Canada, as represented
-by the Minister of National Defence, 2021.
+Copyright (c) His Majesty the King in Right of Canada, as represented
+by the Minister of National Defence, 2022.
 
 .. |travis| image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
     :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
