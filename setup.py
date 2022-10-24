@@ -13,11 +13,11 @@ setup(
     url="",
     author="Tony Marco Abou Zeidan",
     author_email="tony.azp25@gmail.com",
-    license="BSD",
+    license="MIT",
     classifiers=[
         "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: BSD License",   # TODO: ensure correct licensing
+        "License :: OSI Approved :: MIT License",   
         "Operating System :: OS Independent",  # TODO: ensure deployment on other OS
         "Topic :: Scientific/Engineering :: Information Analysis",
         "Topic :: Scientific/Engineering :: Visualization",
