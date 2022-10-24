@@ -1,4 +1,4 @@
-|travis| |ciconda| |cipip| |geohexvizver| |pythonver| |license|
+|travis| |ciconda| |cipip| |geohexvizver| |pythonver| 
 
 
 
