@@ -1,4 +1,8 @@
 |travis| |ciconda| |cipip| |geohexvizver| |pythonver| 
+|GitHub license|
+
+.. |GitHub license| image:: https://img.shields.io/github/license/mrempel/geohexviz.svg
+   :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
 
 
 
