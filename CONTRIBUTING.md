@@ -2,11 +2,11 @@
 
 #### **Did you find a bug?**
 
-* Bugs can be reported via the issue tracker (https://github.com/tony-zeidan/geohexviz/issues)
+* Bugs can be reported via the issue tracker (https://github.com/mrempel/geohexviz/issues)
 
 #### **Requesting a feature?**
 
-* If you would like to see a new feature please make a request in the issues tracker (https://github.com/tony-zeidan/geohexviz/issues); with the issue being tagged as a feature. If it seems that it would be of general usefulness we will happily consider implementing it.
+* If you would like to see a new feature please make a request in the issues tracker (https://github.com/mrempel/geohexviz/issues); with the issue being tagged as a feature. If it seems that it would be of general usefulness we will happily consider implementing it.
 
 #### **Want to develop?**
 
@@ -16,6 +16,6 @@
 
 #### **Any other questions?**
 
-* Answering your questions is what we are here for! Please contact us at tony.azp25@gmail.com.
+* Answering your questions is what we are here for! Please contact us at mark.rempel@forces.gc.ca.
 
 
