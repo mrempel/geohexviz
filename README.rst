@@ -1,4 +1,4 @@
-|travis| |ciconda| |cipip| |geohexvizver| |pythonver| 
+|ciconda| |cipip| |geohexvizver| |pythonver| 
 |GitHub license|
 
 .. |GitHub license| image:: https://img.shields.io/github/license/mrempel/geohexviz.svg
@@ -358,7 +358,7 @@ by the Minister of National Defence, 2022.
 .. |pythonver| image:: https://img.shields.io/badge/python-3.7,_3.8,_3.9-blue.svg
 .. |geohexvizver| image:: https://img.shields.io/badge/geohexviz-v1.0.0-blue.svg
 .. |license| image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
-    :target: https://github.com/tony-zeidan/geohexviz/blob/master/LICENSE
+    :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
 
 
 
