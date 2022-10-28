@@ -349,12 +349,10 @@ Copyright and License
 Copyright (c) His Majesty the King in Right of Canada, as represented
 by the Minister of National Defence, 2022.
 
-.. |travis| image:: https://app.travis-ci.com/tony-zeidan/GeoHexViz.svg?token=C7hNtodZZ6QrFPCe3ENK&branch=master
-    :target: https://app.travis-ci.com/tony-zeidan/GeoHexViz
-.. |ciconda| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
-    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
-.. |cipip| image:: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
-    :target: https://github.com/tony-zeidan/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
+.. |ciconda| image:: https://github.com/mrempel/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml/badge.svg
+    :target: https://github.com/mrempel/geohexviz/actions/workflows/geohexviz-automated-tests-conda.yml
+.. |cipip| image:: https://github.com/mrempel/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml/badge.svg
+    :target: https://github.com/mrempel/geohexviz/actions/workflows/geohexviz-automated-tests-pip.yml
 .. |pythonver| image:: https://img.shields.io/badge/python-3.7,_3.8,_3.9, 3.10, 3.11-blue.svg
 .. |geohexvizver| image:: https://img.shields.io/badge/geohexviz-v1.0.0-blue.svg
 .. |license| image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
