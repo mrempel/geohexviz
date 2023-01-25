@@ -4,7 +4,7 @@ channels:
   - defaults
   - plotly
 dependencies:
-  - geopandas=0.10.2
+  - geopandas
   - setuptools
   - python-kaleido=0.2.1
   - geojson=2.5.0

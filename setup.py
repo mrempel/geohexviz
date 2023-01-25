@@ -24,12 +24,12 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
     keywords='visualization,geospatial,hexagonal binning',
-    python_requires=">=3.7",
+    python_requires=[">=3.7", "<=3.8.16"],
     packages=find_packages(exclude=["docs", "tests"]),
     include_package_data=True,
     install_requires=[
         "h3==3.7.0",
-        "shapely==1.7.1",
+        "shapely==^1.7.1",
         "geojson==2.5.0",
         "plotly==4.14.3",
         "kaleido==0.2.1",
