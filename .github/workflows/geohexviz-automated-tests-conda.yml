@@ -41,9 +41,10 @@ jobs:
           active-environment: my-env
           use-mamba: true
 
-      - name: Set cache date and cache
+      - name: Set cache date
         run: echo "DATE=$(date +'%Y%m%d')" >> $GITHUB_ENV
 
+      - name: Perform caching
         uses: actions/cache@v2
         with:
           path: ${{ matrix.prefix }}
