@@ -13,7 +13,6 @@ from itertools import groupby
 from operator import itemgetter
 from h3 import h3
 from pandas import DataFrame
-from pandas.api.types import is_hashable, is_numeric_dtype, is_string_dtype
 from shapely.geometry import Point, LineString, Polygon, MultiPolygon, MultiPoint, MultiLineString, GeometryCollection
 
 DataSet = Dict[str, Any]

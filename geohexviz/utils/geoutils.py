@@ -118,7 +118,7 @@ def hexify_dataframe(gdf: GeoDataFrame, hex_resolution: int, add_geom: bool = Fa
         """A function to retrieve a list of hex ids for container-like geometries.
         """
         lst = []
-        for s in shape:
+        for s in shape.geoms:
             lst.extend(fn(s))
         return lst
 
@@ -371,7 +371,7 @@ def pointify_geodataframe(gdf: GeoDataFrame, keep_geoms: bool = True, raise_erro
         """A function to retrieve a list of hex ids for container-like geometries.
         """
         lst = []
-        for s in shape:
+        for s in shape.geoms:
             lst.extend(shape_to_points(s))
         return lst
 
@@ -690,7 +690,7 @@ def simple_geojson(gdf: GeoDataFrame, value_field: Optional[str] = None, id_fiel
 def clip_hexes_to_hexes(hexes: GeoDataFrame, clip: GeoDataFrame):
     if not hexes.empty and not clip.empty:
         clip = GeoDataFrame(clip['geometry'], geometry='geometry')
-        geodf_contains = gpd.sjoin(hexes, clip, op='intersects', how='inner')  # may also be contains
+        geodf_contains = gpd.sjoin(hexes, clip, predicate='intersects', how='inner')  # may also be contains
         return geodf_contains
     return hexes
 
@@ -698,7 +698,7 @@ def clip_hexes_to_hexes(hexes: GeoDataFrame, clip: GeoDataFrame):
 def clip_hexes_to_polygons(hexes: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFrame:
     if not hexes.empty and not clip.empty:
         clip = GeoDataFrame(clip['geometry'], geometry='geometry', crs=clip.crs)
-        geodf = gpd.sjoin(hexes.copy(deep=True), clip, op='intersects', how='inner')
+        geodf = gpd.sjoin(hexes.copy(deep=True), clip, predicate='intersects', how='inner')
         try:
             geodf.set_index('hex', inplace=True)
         except KeyError:
@@ -710,7 +710,7 @@ def clip_hexes_to_polygons(hexes: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFr
 def clip_points_to_polygons(points: GeoDataFrame, clip: GeoDataFrame) -> GeoDataFrame:
     if not points.empty and not clip.empty:
         clip = GeoDataFrame(clip['geometry'], geometry='geometry', crs=clip.crs)
-        geodf = gpd.sjoin(points, clip, op='within', how='inner')
+        geodf = gpd.sjoin(points, clip, predicate='within', how='inner')
         try:
             geodf.set_index('hex', inplace=True)
         except KeyError:
@@ -762,7 +762,7 @@ def sjoinclip(clip: GeoDataFrame, to: GeoDataFrame,
     """
 
     clip, to = convert_crs(clip, to, crs=enforce_crs)
-    return gpd.sjoin(clip, to[['geometry']], how='inner', op=operation).drop(columns='index_right', errors='ignore')
+    return gpd.sjoin(clip, to[['geometry']], how='inner', predicate=operation).drop(columns='index_right', errors='ignore')
 
 
 def gpdclip(clip: GeoDataFrame, to: GeoDataFrame, enforce_crs: Any = 'EPSG:4326',

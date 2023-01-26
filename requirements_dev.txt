@@ -1,3 +1,3 @@
 pip
 Sphinx
-pdfcropmargins==1.0.5
+pdfcropmargins>=1.0.5
