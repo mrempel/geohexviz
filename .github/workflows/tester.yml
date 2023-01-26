@@ -20,8 +20,8 @@ jobs:
 
     strategy:
       matrix:
-
         python-version: [ '3.7', '3.8' ]
+        os: [macos-latest, ubuntu-latest, ubuntu-latest]
         include:
           - os: ubuntu-latest
             label: linux-64
