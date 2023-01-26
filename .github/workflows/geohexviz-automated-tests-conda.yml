@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - buffer
   pull_request:
     branches:
       - master
