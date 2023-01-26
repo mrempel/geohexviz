@@ -20,6 +20,8 @@ jobs:
 
     strategy:
       matrix:
+        name: ${{ matrix.label }}, Python ${{ matrix.python-version }}
+        runs-on: ${{ matrix.os }}
         python-version: [ '3.7', '3.8' ]
         include:
           - os: ubuntu-latest
@@ -34,8 +36,6 @@ jobs:
             label: win-64
             prefix: C:\Miniconda3\envs\my-env
 
-    name: ${{ matrix.label }}
-    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v2
 
