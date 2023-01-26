@@ -17,13 +17,40 @@ jobs:
             os: [ubuntu-latest, macos-latest, windows-latest]
             python-version: [ '3.7', '3.8' ]
     steps:
-      - uses: actions/checkout@v2
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Cache Conda
+        uses: actions/cache@v1
+        env:
+          CACHE_NUMBER: 2
         with:
-          activate-environment: test
+          path: ~/conda_pkgs_dir
+          key: conda-${{ runner.os }}-${{ env.CACHE_NUMBER }}-${{ hashFiles('env.yml') }}
+
+      - name: Setup Conda
+
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          installer-url: https://github.com/conda-forge/miniforge/releases/download/4.9.2-2/Mambaforge-Linux-x86_64.sh
+          channel-priority: true
+          use-only-tar-bz2: true
           environment-file: environment.yml
+          activate-environment: test
           python-version: ${{ matrix.python-version }}
           auto-activate-base: false
+
+      - name: Anaconda Login
+        run: |
+          # Bypass the installation of anaconda-client
+          TOKEN_DIR="$HOME/.config/binstar"
+          TOKEN_PATH="$TOKEN_DIR/https%3A%2F%2Fapi.anaconda.org.token"
+          mkdir -p $TOKEN_DIR
+          echo -e "${ANACONDA_USER_TOKEN}\c" > $TOKEN_PATH
+
+      - name: Install Dependencies
+        run: mamba env update -f env.yml
+
       - shell: bash -l {0}
         run: |
           conda info
