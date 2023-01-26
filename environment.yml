@@ -6,11 +6,11 @@ channels:
 dependencies:
   - geopandas
   - setuptools
-  - python-kaleido>=0.2.1
-  - geojson>=2.5.0
-  - plotly>=4.14.3
-  - h3-py>=3.7.0
-  - pyyaml>=5.4.1
-  - rtree>=0.9.7
-  - openpyxl>=3.0.9
-  - shapely>=2.0.0
+  - python-kaleido
+  - geojson
+  - plotly
+  - h3-py
+  - pyyaml
+  - rtree
+  - openpyxl
+  - shapely
