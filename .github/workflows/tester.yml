@@ -20,19 +20,35 @@ jobs:
 
     strategy:
       matrix:
-        python-version: [ '3.7', '3.8' ]
-        os: [macos-latest, ubuntu-latest, ubuntu-latest]
         include:
           - os: ubuntu-latest
             label: linux-64
+            python-version: '3.7'
+            prefix: /usr/share/miniconda3/envs/my-env
+
+          - os: ubuntu-latest
+            label: linux-64
+            python-version: '3.8'
             prefix: /usr/share/miniconda3/envs/my-env
 
           - os: macos-latest
             label: osx-64
+            python-version: '3.7'
+            prefix: /Users/runner/miniconda3/envs/my-env
+
+          - os: macos-latest
+            label: osx-64
+            python-version: '3.8'
             prefix: /Users/runner/miniconda3/envs/my-env
 
           - os: windows-latest
             label: win-64
+            python-version: '3.7'
+            prefix: C:\Miniconda3\envs\my-env
+
+          - os: windows-latest
+            label: win-64
+            python-version: '3.8'
             prefix: C:\Miniconda3\envs\my-env
 
     name: ${{ matrix.label }}, Python ${{ matrix.python-version }}
