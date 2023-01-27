@@ -4,6 +4,8 @@ channels:
   - defaults
   - plotly
 dependencies:
+  - python<=3.8.16
+  - pip
   - geopandas
   - setuptools
   - python-kaleido
@@ -14,3 +16,5 @@ dependencies:
   - rtree
   - openpyxl
   - shapely
+  - pip:
+    - pdfcropmargins

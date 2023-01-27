@@ -9,7 +9,7 @@ both of which pertain to usage within Python code.
 # Method 2a: Using GeoHexSimple's functions to run a properties file
 from geohexviz.utils.file import run_file
 
-run_file("<path to example3.json>")  # JSON file works
+run_file("json_structure.json")  # JSON file works
 
 # Method 2b: Using GeoHexViz's functions to make a plot from scratch
 from geohexviz.builder import PlotBuilder
@@ -18,7 +18,7 @@ myBuilder = PlotBuilder()
 
 # set hexbin layer
 myBuilder.set_hexbin(
-    data="<path to data.csv>",
+    data="data.csv",
     hexbin_info=dict(
         hex_resolution=4,
         binning_field="FIRE_TYPE",
@@ -74,6 +74,6 @@ myBuilder.adjust_focus(
 # finalize and output
 myBuilder.finalize()
 myBuilder.output(
-    filepath="<path to output (.pdf)>",
+    filepath="output_visualization.pdf",
     crop_output=True
 )

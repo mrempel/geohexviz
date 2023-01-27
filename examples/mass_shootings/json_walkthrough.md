@@ -6,7 +6,7 @@ The first step is the same; the data that is to be hexagonally binned, alongside
 ```json
 {
 	"hexbin_layer": {
-		"data": "<path to data.csv>",
+		"data": "data.csv",
 		"hex_resolution":3,
 		"hexbin_info": {
 			"binning_field": "killed_injured",
@@ -51,7 +51,7 @@ To do this the `points` object is added to the JSON file.
 ```json
 	"points": {
 		"sample_Point_EPICENTERS": {
-			"data": "<path to data-epicenters.csv>",
+			"data": "data-epicenters.csv",
 			"text_field": "city",
 			"manager": {
 				"textposition": [
@@ -126,7 +126,7 @@ Finally, the output location of the visualization is specified in the JSON file 
 
 ```json
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 ```
@@ -137,7 +137,7 @@ The Python module translation of this JSON is listed in `python_walkthrough.ipyn
 ```json
 {
 	"hexbin_layer": {
-		"data": "<path to data.csv>",
+		"data": "data.csv",
 		"hex_resolution":3,
 		"hexbin_info": {
 			"binning_field": "killed_injured",
@@ -156,7 +156,7 @@ The Python module translation of this JSON is listed in `python_walkthrough.ipyn
 	},
 	"points": {
 		"sample_Point_EPICENTERS": {
-			"data": "<path to data-epicenters.csv>",
+			"data": "data-epicenters.csv",
 			"text_field": "city",
 			"manager": {
 				"textposition": [
@@ -193,7 +193,7 @@ The Python module translation of this JSON is listed in `python_walkthrough.ipyn
 		}
 	},
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }

@@ -1,6 +1,6 @@
 {
 	"hexbin_layer": {
-		"data":"<path to data.csv>",
+		"data":"data.csv",
 		"hexbin_info": {
 			"hex_resolution":4,
 			"binning_field": "FIRE_TYPE",
@@ -55,7 +55,7 @@
 		}
 	},
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }
