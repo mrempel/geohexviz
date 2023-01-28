@@ -377,7 +377,7 @@ def sjoin_clip(clip: GeoDataFrame, to: List[GeoDataFrame], operation: str = 'int
     :type to: List[GeoDataFrame]
     :param operation: The operation to be performed in the spatial join
     :type operation: str
-    :param validate: Whether or not to validate the result or not (throws)
+    :param validate: Whether to validate the result or not (throws)
     :type validate: bool
     :return: The result of the clip
     :rtype: GeoDataFrame
@@ -404,7 +404,7 @@ def gpd_clip(clip: GeoDataFrame, to: List[GeoDataFrame], validate: bool = True):
     :type clip: GeoDataFrame
     :param to: The list of data to act as the clip
     :type to: List[GeoDataFrame]
-    :param validate: Whether or not to validate the result or not (throws)
+    :param validate: Whether to validate the result or not (throws)
     :type validate: bool
     :return: The result of the clip
     :rtype: GeoDataFrame

@@ -1,6 +1,6 @@
 {
 	"hexbin_layer": {
-		"data":"<path to data-1943.csv, data-1944.csv, data-1945.csv> (run for each year)",
+		"data": "data-1943.csv",
 		"latitude_field": "target_latitude",
 		"longitude_field": "target_longitude",
 		"hexbin_info": {

@@ -459,7 +459,7 @@ class GeoUtilsTestCase(unittest.TestCase):
         inputdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
         testdf = GeoDataFrame(geometry=[Polygon.from_bounds(*inputdf.total_bounds)], crs='EPSG:4326')
         resultdf = geoutils.generate_grid_over(inputdf, 3)
-        resulting = gpd.sjoin(resultdf, testdf, op='intersects')
+        resulting = gpd.sjoin(resultdf, testdf, predicate='intersects')
         self.assertEqual(len(resultdf), len(resulting))
         self.assertTrue(all(i == 0 for i in resulting['index_right']))
 
@@ -468,7 +468,7 @@ class GeoUtilsTestCase(unittest.TestCase):
         inputdf = GeoDataFrame(geometry=testdata, crs='EPSG:4326')
         testdf = GeoDataFrame(geometry=[Polygon.from_bounds(*inputdf.total_bounds)], crs='EPSG:4326')
         resultdf = geoutils.generate_grid_over(inputdf, 3)
-        resulting = gpd.sjoin(resultdf, testdf, op='intersects')
+        resulting = gpd.sjoin(resultdf, testdf, predicate='intersects')
         self.assertEqual(len(resultdf), len(resulting))
         self.assertTrue(all(i == 0 for i in resulting['index_right']))
 

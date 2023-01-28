@@ -1,5 +1,5 @@
 from copy import deepcopy
-from enum import Enum
+
 import os
 from typing import Any, Tuple, Dict, Union, Callable
 
@@ -7,10 +7,10 @@ import fiona.errors
 import geopandas as gpd
 import numpy as np
 import pandas as pd
-import plotly.io as pio
+
 from geopandas import GeoDataFrame
 from pandas import DataFrame
-from plotly.graph_objs import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
+from plotly.graph_objects import Figure, Choropleth, Scattergeo, Choroplethmapbox, Scattermapbox
 
 from geohexviz.templates import get_template
 from geohexviz.utils import geoutils as gcg
@@ -79,6 +79,7 @@ gpd.io.file.fiona.drvsupport.supported_drivers['LIBKML'] = 'rw'
 gpd.io.file.fiona.drvsupport.supported_drivers['libkml'] = 'rw'
 gpd.io.file.fiona.drvsupport.supported_drivers['KML'] = 'rw'
 gpd.io.file.fiona.drvsupport.supported_drivers['kml'] = 'rw'
+
 
 def _reset_to_odata(layer: StrDict):
     """Resets the odata parameter of a layer.
@@ -270,7 +271,9 @@ def _read_data_file(data: str, read_method=None, read_args=None, **kwargs) -> Da
         pass
     return data
 
+
 valid_data_intypes = ['region', 'dataframe', 'geodataframe', 'file']
+
 
 def _read_data_full(
         name: str,
@@ -342,7 +345,6 @@ def _read_data_full(
                             f"Error: {str(e)}"
                 )
 
-
     try:
         data = GeoDataFrame(data)
         data['value_field'] = 0
@@ -352,9 +354,6 @@ def _read_data_full(
         raise DataTypeError(name, dstype, allow_builtin=allow_builtin)
 
     return data
-
-
-
 
 
 def _read_data(name: str, dstype: LayerType, data: DFType, allow_builtin: bool = False) -> GeoDataFrame:
@@ -1578,7 +1577,7 @@ class PlotBuilder:
         _update_manager(layer, butil.logify_scale(layer['data'], **kwargs))
 
     def clip_layers(self, clip: str, to: str, method: str = 'sjoin', reduce_first: bool = True,
-                      operation: str = 'intersects'):
+                    operation: str = 'intersects'):
         """Clips a query of layers to another layer.
         this function is experimental and may not always work as intended
 
@@ -1777,7 +1776,7 @@ class PlotBuilder:
             low = layer['manager'].get('zmin', min(layer['data']['value_field']))
             high = layer['manager'].get('zmax', max(layer['data']['value_field']))
             layer['manager']['colorscale'] = discretize_cscale(layer['manager'].get('colorscale'), scale_type,
-                                                                 low, high, **kwargs)
+                                                               low, high, **kwargs)
 
     """
     RETRIEVAL/SEARCHING FUNCTIONS
@@ -1974,10 +1973,10 @@ class PlotBuilder:
     def plot_outlines(self, raise_errors: bool = False):
         """Plots the outline layers within the builder.
 
-        All of the outlines are treated as separate plot traces.
+        All the outlines are treated as separate plot traces.
         The layers must first be converted into point-like geometries.
 
-        :param raise_errors: Whether or not to throw errors upon reaching empty dataframes
+        :param raise_errors: Whether to throw errors upon reaching empty dataframes
         :type raise_errors: bool
         """
         if not self._get_outlines():
@@ -1986,7 +1985,7 @@ class PlotBuilder:
         mapbox = self.plot_output_service == 'mapbox'
         for outname, outds in self._get_outlines().items():
             self._figure.add_trace(_prepare_scattergeo_trace(
-                gcg.pointify_geodataframe(outds['data'].explode(),
+                gcg.pointify_geodataframe(outds['data'].explode(index_parts=False),
                                           keep_geoms=False,
                                           raise_errors=raise_errors),
                 separate=True,
@@ -1998,7 +1997,7 @@ class PlotBuilder:
     def plot_points(self):
         """Plots the point layers within the builder.
 
-        All of the point are treated as separate plot traces.
+        All the point are treated as separate plot traces.
         """
 
         if not self._get_points():
@@ -2048,17 +2047,17 @@ class PlotBuilder:
         In the future we should alter these functions to
         allow trace order implementation.
 
-        :param plot_regions: Whether or not to plot region layers
+        :param plot_regions: Whether to plot region layers
         :type plot_regions: bool
-        :param plot_grids: Whether or not to plot grid layers
+        :param plot_grids: Whether to plot grid layers
         :type plot_grids: bool
-        :param plot_hexbin: Whether or not to plot the hexbin layer
+        :param plot_hexbin: Whether to plot the hexbin layer
         :type plot_hexbin: bool
-        :param plot_outlines: Whether or not to plot outline layers
+        :param plot_outlines: Whether to plot outline layers
         :type plot_outlines: bool
-        :param plot_points: Whether or not to plot point layers
+        :param plot_points: Whether to plot point layers
         :type plot_points: bool
-        :param raise_errors: Whether or not to raise errors related to empty layer collections
+        :param raise_errors: Whether to raise errors related to empty layer collections
         :type raise_errors: bool
         """
         if plot_regions:
@@ -2101,13 +2100,13 @@ class PlotBuilder:
 
         :param filepath: The filepath to output the figure at (including filename and extension)
         :type filepath: str
-        :param clear_figure: Whether or not to clear the figure after this operation
+        :param clear_figure: Whether to clear the figure after this operation
         :type clear_figure: bool
-        :param crop_output: Whether or not to crop the output figure (requires that extension be pdf, PdfCropMargins must be installed)
+        :param crop_output: Whether to crop the output figure (requires that extension be pdf, PdfCropMargins must be installed)
         :type crop_output: bool
         :param percent_retain: Percentage of margins to retain from crop (requires that extension be pdf, PdfCropMargins must be installed)
         :type percent_retain: float, str, list
-        :param keep_original: Whether or not to keep the original figure (requires that extension be pdf, PdfCropMargins must be installed)
+        :param keep_original: Whether to keep the original figure (requires that extension be pdf, PdfCropMargins must be installed)
         :type keep_original: bool
         :param kwargs: Keyword arguments for the write_image function
         :type kwargs: **kwargs
@@ -2151,7 +2150,7 @@ class PlotBuilder:
         The figure is displayed via Plotly's show() function.
         Extensions may be needed.
 
-        :param clear_figure: Whether or not to clear the figure after this operation
+        :param clear_figure: Whether to clear the figure after this operation
         :type clear_figure: bool
         :param kwargs: Keyword arguments for the show function
         :type kwargs: **kwargs

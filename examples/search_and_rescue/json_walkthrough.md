@@ -6,7 +6,7 @@ This is done by adding the hexbin_layer object to the JSON file.
 ```json
 {
 	"hexbin_layer": {
-		"data":"<path to data.csv>",
+		"data":"data.csv",
 		"hex_resolution":4,
 		"manager": {
 			"colorscale": "Viridis",
@@ -97,7 +97,7 @@ Finally, the output location of the visualization is specified in the JSON file 
 
 ```json
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }

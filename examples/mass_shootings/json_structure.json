@@ -1,6 +1,6 @@
 {
 	"hexbin_layer": {
-		"data": "<path to data.csv>",
+		"data": "data.csv",
 		"hex_resolution":3,
 		"hexbin_info": {
 			"binning_field": "killed_injured",
@@ -19,7 +19,7 @@
 	},
 	"points": {
 		"sample_Point_EPICENTERS": {
-			"data": "<path to data-epicenters.csv>",
+			"data": "data-epicenters.csv",
 			"text_field": "city",
 			"manager": {
 				"textposition": [
@@ -56,7 +56,7 @@
 		}
 	},
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }
