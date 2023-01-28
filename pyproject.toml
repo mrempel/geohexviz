@@ -1,3 +1,48 @@
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "geohexviz"
+authors = [
+    {name = "Tony Abou Zeidan", email="tony.azp25@gmail.com"},
+    {name = "Mark Rempel", email="mark.rempel@forces.gc.ca"}
+]
+description = "A library for the visualization of hexagonally binned data sets."
+readme = "README.rst"
+requires-python = ">=3.7, <=3.8.16"
+keywords = ["visualization","geospatial","hexagonal binning"]
+license = {text = "MIT"}
+dynamic = ['version']
+classifiers=[
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Information Analysis",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering"
+]
+dependencies = [
+    "h3>=3.7.0",
+    "shapely>=1.8.5",
+    "geojson>=2.5.0",
+    "plotly>=4.14.3",
+    "kaleido>=0.2.1",
+    "pyyaml>=5.4.1",
+    "rtree>=0.9.7",
+    "openpyxl>=3.0.9",
+    "pdfcropmargins"
+]
+
+[project.optional-dependencies]
+dev = ["pip", "Sphinx"]
+
+[tool.setuptools.packages.find]
+exclude=["docs", "tests"]
+
+[project.urls]
+Source = 'https://github.com/mrempel/geohexviz'
+
+[project.scripts]
+geohexsimple = "geohexviz.simple:main"

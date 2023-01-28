@@ -1,5 +1,5 @@
 |ciconda| |cipip| |geohexvizver| |pythonver| 
-|GitHub license|
+|GitHub license| |joss-status|
 
 .. |GitHub license| image:: https://img.shields.io/github/license/mrempel/geohexviz.svg
    :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
@@ -364,6 +364,8 @@ by the Minister of National Defence, 2022.
 .. |license| image:: https://img.shields.io/badge/License-BSD%203.0-blue.svg
     :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
 
+.. |joss-status| image:: https://joss.theoj.org/papers/c051df96dac973486cc312452575e804/status.svg
+    :target: https://joss.theoj.org/papers/c051df96dac973486cc312452575e804
 
 
 
