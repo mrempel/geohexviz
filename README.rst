@@ -34,7 +34,7 @@ Method 2 method has two categories:
 a) Using the functions that the GeoHexSimple script uses \
 b) Using the PlotBuilder object from the GeoHexViz package
 
-Please refer to the `examples directory <https://github.com/mrempel/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods).
+Please refer to the `examples directory <https://github.com/mrempel/geohexviz/blob/master/examples>`_ for additional examples that go into great depth (for both methods). Note that each example must be executed in its respective directory.
 
 Method 1 Example Usage
 **********************
@@ -246,17 +246,11 @@ Finally, the user can navigate to the directory containing the ``setup.py`` file
 
     python setup.py install
 
-Or
+or
 
 .. code-block::
 
     pip install .
-
-Note that to use the pdf cropping features, the user can do an editable install:
-
-.. code-block::
-
-    pip install -e .[pdf-crop]
 
 The user may also install using pip and GitHub:
 
@@ -266,16 +260,21 @@ The user may also install using pip and GitHub:
 
 
 Setting up a conda environment first helps.
-To make this process smoother the ``environment.yml`` file is included, which includes all dependencies.
-With this file, the first step (installation of GeoPandas) is done automatically.
-Using this file an environment can be set up like this:
+To make this process smoother an ``environment.yml`` file is included, which includes all dependencies.
+With this file, the first step (installation of GeoPandas) is done automatically. Simply clone the geohexviz repository, and setup the environment like this:
 
 .. code-block::
 
+    git clone https://github.com/mrempel/geohexviz.git
     conda env create -f environment.yml
 
-This will create an Anaconda environment called ``geohexviz`` on your machine,
-simply activate the environment and run the ``setup.py`` file as shown above.
+This will create an Anaconda environment called ``geohexviz`` on your machine;
+simply activate the environment and run the ``setup.py`` file:
+
+.. code-block::
+
+    conda activate geohexviz
+    python setup.py install
 
 Further Documentation
 #####################
@@ -316,6 +315,13 @@ Contributing
 
 For major changes, please open an issue first to discuss what you would like to change.
 For more details please see `this page <https://github.com/mrempel/geohexviz/blob/master/CONTRIBUTING.md>`_.
+
+Citing
+######
+
+If you use geohexviz in your work, please cite our Defence Research and Development Canada report:
+
+Abou Zeidan, M. & Rempel, M. (2021). GeoHezViz---Geospatial visualization using hexagonal binning software: Design reference and instruction manual. *Defence Research and Development Canada, DRDC-RDDC-2021-D183*. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf
 
 Acknowledgements
 ################
