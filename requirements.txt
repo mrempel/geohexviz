@@ -9,6 +9,6 @@ rtree>=0.9.7
 openpyxl>=3.0.9
 pandas
 numpy
-shapely
+shapely>=1.8.5
 pyproj
 fiona
