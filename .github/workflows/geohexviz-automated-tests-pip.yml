@@ -18,15 +18,20 @@ jobs:
         python-version: ['3.7', '3.8']
     name: Test Build ${{ matrix.os }}, Python ${{ matrix.python-version }}
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
+
       - name: Install Python
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
+          cache: 'CI-pip-' ${{ matrix.os }}
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install -r requirements_dev.txt
+
       - name: Run tests with unittest
         run: python -m unittest discover
