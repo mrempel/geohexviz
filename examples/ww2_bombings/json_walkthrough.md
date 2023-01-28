@@ -5,7 +5,7 @@ To make this visualization the required layer and its properties are passed via 
 ```json
 {
 	"hexbin_layer": {
-		"data":"<path to data-1943.csv, data-1944.csv, data-1945.csv> (run for each year)",
+		"data":"data-1943.csv",
 		"latitude_field": "target_latitude",
 		"longitude_field": "target_longitude",
 		"hexbin_info": {
@@ -158,7 +158,7 @@ The Python module translation of this JSON is given in `python_walkthrough.ipynb
 ```json
 {
 	"hexbin_layer": {
-		"data":"<path to data-1943.csv, data-1944.csv, data-1945.csv> (run for each year)",
+		"data":"data-1943.csv",
 		"latitude_field": "target_latitude",
 		"longitude_field": "target_longitude",
 		"hexbin_info": {
@@ -214,7 +214,7 @@ The Python module translation of this JSON is given in `python_walkthrough.ipynb
 		"adjust_focus": false
 	},
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization-1943.pdf",
 		"crop_output": true
 	}
 }

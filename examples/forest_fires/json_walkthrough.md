@@ -5,7 +5,7 @@ To make this visualization the required layer and its properties are passed via 
 ```json
 {
 	"hexbin_layer": {
-		"data":"<path to data.csv>",
+		"data":"data.csv",
 		"hexbin_info": {
 			"hex_resolution":4,
 			"binning_field": "FIRE_TYPE",
@@ -128,7 +128,7 @@ This step is identical to the examples shown in all other examples.
 
 ```json
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }
@@ -140,7 +140,7 @@ The Python module translation of this JSON is given in `python_walkthrough.ipynb
 ```json
 {
 	"hexbin_layer": {
-		"data":"<path to data.csv>",
+		"data":"data.csv",
 		"hexbin_info": {
 			"hex_resolution":4,
 			"binning_field": "FIRE_TYPE",
@@ -188,7 +188,7 @@ The Python module translation of this JSON is given in `python_walkthrough.ipynb
 		}
 	},
 	"output": {
-		"filepath": "<path to output (.pdf)>",
+		"filepath": "output_visualization.pdf",
 		"crop_output": true
 	}
 }

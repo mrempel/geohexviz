@@ -10,7 +10,7 @@ Note that this needs to be run three different times for each .csv file (for eac
 # Method 2a: Using GeoHexSimple's functions to run a properties file
 from geohexviz.utils.file import run_file
 
-run_file("<path to example3.json>")  # JSON file works
+run_file("json_structure.json")  # JSON file works
 
 # Method 2b: Using GeoHexViz's functions to make a plot from scratch
 from geohexviz.builder import PlotBuilder
@@ -19,7 +19,7 @@ myBuilder = PlotBuilder()
 
 # set hexbin layer
 myBuilder.set_hexbin(
-    data="<path to data-1943.csv, data-1944.csv, data-1945.csv>",
+    data="data-1943.csv",  # remember to change this every run (data-1943.csv, data-1944.csv, data-1945.csv)
     hexbin_info=dict(
         binning_field="high_explosives_weight_tons",
         binning_fn="sum"
@@ -92,7 +92,11 @@ myBuilder.logify_scale(
 
 # finalize and output
 myBuilder.finalize()
+
+# remember to change this every run:
+# output_visualization-1943.pdf, output_visualization-1944.pdf, output_visualization-1945.pdf
+
 myBuilder.output(
-    filepath="<path to output (.pdf)>",
+    filepath="output_visualization-1943.pdf",
     crop_output=True
 )
