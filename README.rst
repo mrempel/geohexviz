@@ -229,54 +229,32 @@ library.
 Installation
 ############
 
-There are a few steps that a user must follow when installing GeoHexViz.
-First, the user must install GeoPandas.
-This is most easily done through the use of Anaconda, with this tool it can be installed like this:
+GeoHexViz requires the installation of GeoPandas, and this is most easily done
+through the use of Anaconda. Thus, to install GeoHexViz there are two options.
 
+Option 1: Install from PyPI
+***************************
+This option requires the manual creation of a conda environment, installation of GeoPandas (GeoHexViz was developed with version 0.8.1 (build py_0)), and the installation of GeoHexViz from PyPI.
 
 .. code-block::
 
+    conda env create --name geohexviz python<=3.8
+    conda activate geohexviz
     conda install -c conda-forge geopandas
+    pip install geohexviz
 
-
-The version that GeoHexViz was developed with is version 0.8.1 (build py_0).
-Next, the user must download or clone GeoHexViz's GitHub repository.
-Finally, the user can navigate to the directory containing the ``setup.py`` file, and run:
-
-
-.. code-block::
-
-    python setup.py install
-
-or
-
-.. code-block::
-
-    pip install .
-
-The user may also install using pip and GitHub:
-
-.. code-block::
-
-    pip install git+https://github.com/mrempel/geohexviz.git
-
-
-Setting up a conda environment first helps.
-To make this process smoother an ``environment.yml`` file is included, which includes all dependencies.
-With this file, the first step (installation of GeoPandas) is done automatically. Simply clone the geohexviz repository, and setup the environment like this:
+Option 2: Install from GitHub
+*****************************
+This option requires that GeoHexViz be cloned from GitHub. Doing so will enable all dependencies, including GeoPandas, to be installed automatically.
 
 .. code-block::
 
     git clone https://github.com/mrempel/geohexviz.git
+    cd geohexviz
     conda env create -f environment.yml
-
-This will create an Anaconda environment called ``geohexviz`` on your machine;
-simply activate the environment and run the ``setup.py`` file:
-
-.. code-block::
-
     conda activate geohexviz
     python setup.py install
+
 
 Further Documentation
 #####################
