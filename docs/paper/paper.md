@@ -63,7 +63,7 @@ GeoHexViz enables an analyst to create a visualization in two ways. First, an an
 
 Allied aerial bombing in World War 2 occurred across a vast geographic region, with the focus shifting as the war progressed. In this example, a data set compiled by Lt Col Jenns Robertson of the United States Air Force and posted on Kaggle [@kaggle2021a] is used in conjunction with GeoHexViz to depict how this focus in Europe shifted over time. The `examples/ww2_bombings` directory in the GeoHexViz repository contains a JSON file `json_structure.json` that, in combination with command-line script, creates a visualization for either 1943, 1944, or 1945 by setting the path to the corresponding CSV file. For example, the total mass of bombs dropped by Allied forces in 1943 is depicted in Figure 1. Similar visualizations for 1944 and 1945 are provided in the aforementioned directory, plus `json_walkthrough.md` which explains the contents of the JSON file. The directory also includes the corresponding Python code `python_walkthrough.py` that creates these visualizations, and a Jupyter Notebook `python_walkthrough.ipynb` that explains how the Python code creates the visualization.
 
-![Total mass of Allied aerial bombs dropped in Europe in 1943 (mass in tons).](bombings-1943.pdf)
+![Total mass of Allied aerial bombs dropped in Europe in 1943 (mass in tons).](bombings-1943.png)
 
 # Limitations
 
