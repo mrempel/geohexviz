@@ -205,6 +205,7 @@ Data:
 +-----------------+-------+---------------------+
 | 831e5dfffffffff |  700  | POINT(46.75, 31.17) |
 +-----------------+-------+---------------------+
+
 (hex resolution = 3)
 
 3) The data is grouped together by hex, and hex geometry is added
@@ -218,6 +219,7 @@ Data:
 +-----------------+---------------+-------------+---------------------------------------------------+
 | 831e5dfffffffff |     (700)     |     700     | POLYGON ((9.44614 17.39197, 9.49704 16.75205, ... |
 +-----------------+---------------+-------------+---------------------------------------------------+
+
 (binning function = sum of grouped values)
 
 When the data is eventually plotted, a GeoJSON format of the data is
@@ -279,9 +281,8 @@ simply activate the environment and run the ``setup.py`` file:
 Further Documentation
 #####################
 
-The official documentation for GeoHexViz can be found at `this page <https://github.com/mrempel/geohexviz/blob/master/docs>`_.
-In particular, the API documentation for Python users can be found at `this page <https://github.com/mrempel/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_.
-The reference document published alongside this package can also be seen in the `docs directory <https://github.com/mrempel/geohexviz/blob/master/docs>`_.
+The official documentation for GeoHexViz can be found at `this page <https://github.com/mrempel/geohexviz/blob/master/docs>`_, in particular the `API documentation <https://github.com/mrempel/geohexviz/blob/master/docs/api_reference-v1.0.0.pdf>`_ for Python users.
+A Defence Research and Development Canada `reference document <https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf>`_ has also been published alongside this package.
 
 Limitations
 ###########
@@ -313,8 +314,7 @@ publication quality choropleth maps.
 Contributing
 ############
 
-For major changes, please open an issue first to discuss what you would like to change.
-For more details please see `this page <https://github.com/mrempel/geohexviz/blob/master/CONTRIBUTING.md>`_.
+For major changes, please open an issue first to discuss what you would like to change. For more details, `click here <https://github.com/mrempel/geohexviz/blob/master/CONTRIBUTING.md>`_.
 
 Citing
 ######
