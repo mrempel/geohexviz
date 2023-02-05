@@ -10,7 +10,7 @@ authors = [
 ]
 description = "A library for the visualization of hexagonally binned data sets."
 readme = "README.rst"
-requires-python = ">=3.7, <=3.8.16"
+requires-python = ">=3.7"
 keywords = ["visualization","geospatial","hexagonal binning"]
 license = {text = "MIT"}
 version="1.0.0"

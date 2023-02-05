@@ -23,7 +23,7 @@ setup(
         "Topic :: Scientific/Engineering"
     ],
     keywords='visualization,geospatial,hexagonal binning',
-    python_requires=">=3.7, <=3.8.16",
+    python_requires=">=3.7",
     packages=find_packages(exclude=["docs", "tests"]),
     include_package_data=True,
     install_requires=[
