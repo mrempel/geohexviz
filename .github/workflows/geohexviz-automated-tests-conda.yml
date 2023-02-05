@@ -31,6 +31,21 @@ jobs:
             python-version: '3.8'
             prefix: /usr/share/miniconda3/envs/my-env
 
+          - os: ubuntu-latest
+            label: linux-64
+            python-version: '3.9'
+            prefix: /usr/share/miniconda3/envs/my-env
+
+          - os: ubuntu-latest
+            label: linux-64
+            python-version: '3.10'
+            prefix: /usr/share/miniconda3/envs/my-env
+
+          - os: ubuntu-latest
+            label: linux-64
+            python-version: '3.11'
+            prefix: /usr/share/miniconda3/envs/my-env
+
           - os: macos-latest
             label: osx-64
             python-version: '3.7'
@@ -39,6 +54,21 @@ jobs:
           - os: macos-latest
             label: osx-64
             python-version: '3.8'
+            prefix: /Users/runner/miniconda3/envs/my-env
+
+          - os: macos-latest
+            label: osx-64
+            python-version: '3.9'
+            prefix: /Users/runner/miniconda3/envs/my-env
+
+          - os: macos-latest
+            label: osx-64
+            python-version: '3.10'
+            prefix: /Users/runner/miniconda3/envs/my-env
+
+          - os: macos-latest
+            label: osx-64
+            python-version: '3.11'
             prefix: /Users/runner/miniconda3/envs/my-env
 
           - os: windows-latest
@@ -49,6 +79,21 @@ jobs:
           - os: windows-latest
             label: win-64
             python-version: '3.8'
+            prefix: C:\Miniconda3\envs\my-env
+
+          - os: windows-latest
+            label: win-64
+            python-version: '3.9'
+            prefix: C:\Miniconda3\envs\my-env
+
+          - os: windows-latest
+            label: win-64
+            python-version: '3.10'
+            prefix: C:\Miniconda3\envs\my-env
+
+          - os: windows-latest
+            label: win-64
+            python-version: '3.11'
             prefix: C:\Miniconda3\envs\my-env
 
     name: ${{ matrix.label }}, Python ${{ matrix.python-version }}
