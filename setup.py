@@ -5,7 +5,7 @@ with open("README.rst") as readme_file:
 
 setup(
     name="geohexviz",
-    version="1.0.0",
+    version="1.0.1",
     description="A library for the visualization of hexagonally binned data sets.",
     long_description=readme,
     long_description_content_type="text/x-rst",
