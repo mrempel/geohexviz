@@ -1,5 +1,8 @@
-|ciconda| |cipip| |geohexvizver|  
+|ciconda| |cipip|  
 |GitHub license| |joss-status|
+
+.. image:: https://img.shields.io/pypi/v/geohexviz
+   :alt: PyPI
 
 .. |GitHub license| image:: https://img.shields.io/github/license/mrempel/geohexviz.svg
    :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
