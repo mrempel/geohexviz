@@ -1,10 +1,11 @@
-|ciconda| |cipip| |geohexvizver| |pythonver| 
+|ciconda| |cipip| |geohexvizver|  
 |GitHub license| |joss-status|
 
 .. |GitHub license| image:: https://img.shields.io/github/license/mrempel/geohexviz.svg
    :target: https://github.com/mrempel/geohexviz/blob/master/LICENSE
 
-
+.. image:: https://img.shields.io/pypi/pyversions/geohexviz
+   :alt: PyPI - Python Version
 
 .. image:: img_files/geohexviz-logo-med.png
     :align: right
