@@ -14,7 +14,6 @@ setup(
     author_email="tony.azp25@gmail.com, mark.rempel@forces.gc.ca",
     license="MIT",
     classifiers=[
-        "Programming Language :: Python :: 3 :: Only",
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
