@@ -299,7 +299,7 @@ Citing
 
 If you use geohexviz in your work, please cite our Defence Research and Development Canada report:
 
-Abou Zeidan, M. & Rempel, M. (2021). GeoHezViz---Geospatial visualization using hexagonal binning software: Design reference and instruction manual. *Defence Research and Development Canada, DRDC-RDDC-2021-D183*. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf
+Abou Zeidan, T. & Rempel, M. (2021). GeoHezViz---Geospatial visualization using hexagonal binning software: Design reference and instruction manual. *Defence Research and Development Canada, DRDC-RDDC-2021-D183*. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf
 
 Acknowledgements
 ################
