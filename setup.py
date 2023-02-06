@@ -46,9 +46,6 @@ setup(
             "pip",
             "Sphinx"
         ]
-    },
-    entry_points={
-        'console_scripts': ['geohexsimple=geohexviz.simple:main'],
     }
 )
 
