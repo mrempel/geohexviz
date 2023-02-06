@@ -9,6 +9,9 @@
 
 .. image:: https://img.shields.io/pypi/pyversions/geohexviz
    :alt: PyPI - Python Version
+   
+.. image:: https://zenodo.org/badge/421426202.svg
+   :target: https://zenodo.org/badge/latestdoi/421426202   
 
 .. image:: img_files/geohexviz-logo-med.png
     :align: right
