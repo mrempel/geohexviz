@@ -13,7 +13,8 @@ on:
     - cron: '0 0 * * *'
 
 env:
-  CACHE_NUMBER: 1  # increase to reset cache manually
+  CACHE_NUMBER: 2  # increase to reset cache manually
+  MAMBA_NO_LOW_SPEED_LIMIT: 0
 
 jobs:
   build:
