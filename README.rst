@@ -308,6 +308,25 @@ If you use geohexviz in your work, please cite our Defence Research and Developm
 
 Abou Zeidan, T. & Rempel, M. (2021). GeoHezViz---Geospatial visualization using hexagonal binning software: Design reference and instruction manual. *Defence Research and Development Canada, DRDC-RDDC-2021-D183*. https://cradpdf.drdc-rddc.gc.ca/PDFS/unc381/p814091_A1b.pdf
 
+and our article in the Journal of Open Source Software
+
+.. code-block::
+
+   @article{Zeidan2023, 
+     doi = {10.21105/joss.05073}, 
+     url = {https://doi.org/10.21105/joss.05073}, 
+     year = {2023}, 
+     publisher = {The Open Journal}, 
+     volume = {8}, 
+     number = {82}, 
+     pages = {5073},
+     author = {Tony M. Abou Zeidan and Mark Rempel}, 
+     title = {GeoHexViz: A Python package for the visualizing hexagonally binned geospatial data}, 
+     journal = {Journal of Open Source Software} 
+   } 
+
+
+
 Acknowledgements
 ################
 
